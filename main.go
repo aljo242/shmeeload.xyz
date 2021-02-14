@@ -15,8 +15,18 @@ const (
 	Port = "8080"
 )
 
-func home(w http.ResponseWriter, r *http.Request) {
+type webServer struct {
+	name        string
+	author      string
+	connections int
+}
+
+func (this webServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "This is a Simple HTTP Web Server!")
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	//w.Header().Set("Name", this.name)
+	//w.Header().Set("Author", this.author)
 }
 
 func getHostInfo() {
@@ -59,8 +69,16 @@ func getHostInfo() {
 func main() {
 	getHostInfo()
 
-	http.HandleFunc("/", home)
-	err := http.ListenAndServe(Host+":"+Port, nil)
+	web := webServer{
+		name:        "Demo Web Server",
+		author:      "Cozart Shmoopler",
+		connections: 1,
+	}
+
+	addr := Host + ":" + Port
+	fmt.Printf("Serving to %v\n", addr)
+
+	err := http.ListenAndServe(addr, web)
 	if err != nil {
 		log.Fatal("Error Starting the HTTP Server : ", err)
 		return
