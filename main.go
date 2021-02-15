@@ -6,13 +6,19 @@ import (
 	"net"
 	"net/http"
 	"os"
+	
+	"github.com/glendc/go-external-ip"
 )
 
 const (
-	// Host name of the HTTP Server
-	Host = "localhost"
 	// Port of the HTTP Server
-	Port = "8080"
+	Port = "80"
+)
+
+var (
+	
+	// Host name of the HTTP Server
+	Host = "192.168.1.18"
 )
 
 type webServer struct {
@@ -27,6 +33,20 @@ func (this webServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	//w.Header().Set("Name", this.name)
 	//w.Header().Set("Author", this.author)
+}
+
+func getExternalIP() (string, error) {
+	// create the default consensus
+	// using the default configuratoin and no logger
+	consensus := externalip.DefaultConsensus(nil,nil)
+	// Get my IP
+	// which is never <nil> when err is <nil>
+	extIP, err := consensus.ExternalIP()
+	if err != nil {
+		return "", err
+	}
+
+	return extIP.String(), nil
 }
 
 func getHostInfo() {
@@ -64,6 +84,15 @@ func getHostInfo() {
 			fmt.Printf("IP address: %v\n", ip)
 		}
 	}
+
+	extIP, err := getExternalIP()
+	if err != nil {
+		log.Fatal("Error getting external IP address: ", err)
+		return
+	} 
+
+	fmt.Printf("External IP address: %v\n", extIP)
+	// Host = extIP
 }
 
 func main() {
