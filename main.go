@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/glendc/go-external-ip"
+	"github.com/gorilla/mux"
 )
 
 const (
