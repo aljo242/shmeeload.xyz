@@ -30,7 +30,7 @@ var (
 	Port = "80"
 
 	// Host name of the HTTP Server
-	Host = "192.168.1.18"
+	Host = "localhost"
 )
 
 type webServer struct {
@@ -210,6 +210,16 @@ func ArticleHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "ID is %v\n", vars["id"])
 }
 
+func HomeHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "test")
+}
+
+func MainHandler(w http.ResponseWriter, r *http.Request) {
+	// redirect to home
+	http.Redirect(w, r, "http://shmeeload.xyz/home", http.StatusFound)
+}
+
 func startServer(wg *sync.WaitGroup) *http.Server {
 	m := getHostInfo()
 	Host := selectHost(m)
@@ -218,6 +228,8 @@ func startServer(wg *sync.WaitGroup) *http.Server {
 	r := mux.NewRouter()
 	// attach pather with handler
 	r.HandleFunc("/articles/{category}/{id:[0-9]+}", ArticleHandler).Name("articleRoute")
+	r.HandleFunc("/home", HomeHandler)
+	r.HandleFunc("/", MainHandler)
 
 	srv := &http.Server{
 		Handler:      r,
