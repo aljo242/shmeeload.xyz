@@ -212,7 +212,15 @@ func ArticleHandler(w http.ResponseWriter, r *http.Request) {
 
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "test")
+	wantFile := "./html/home.html"
+	if _, err := os.Stat(wantFile); os.IsNotExist(err) {
+		w.WriteHeader(http.StatusNotFound)
+		log.Fatalf("Error finding file %v : %v", wantFile, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	http.ServeFile(w, r, wantFile)
 }
 
 func MainHandler(w http.ResponseWriter, r *http.Request) {
