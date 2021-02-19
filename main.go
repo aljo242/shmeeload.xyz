@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"html"
 	"log"
@@ -9,12 +10,13 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aljo242/web_serve/romanNumerals"
 
 	"github.com/glendc/go-external-ip"
-	//"github.com/gorilla/mux"
+	"github.com/gorilla/mux"
 )
 
 const (
@@ -199,6 +201,85 @@ func runDemoServer() {
 	}
 }
 
+// ArticleHandler handles our Gorilla Server handler
+func ArticleHandler(w http.ResponseWriter, r *http.Request) {
+	// mux.Vars returns all path parameters as a map
+	vars := mux.Vars(r)
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "Category is: %v\n", vars["category"])
+	fmt.Fprintf(w, "ID is %v\n", vars["id"])
+}
+
+func startServer(wg *sync.WaitGroup) *http.Server {
+	m := getHostInfo()
+	Host := selectHost(m)
+	addr := Host + ":" + Port
+	// create new gorilla mux router
+	r := mux.NewRouter()
+	// attach pather with handler
+	r.HandleFunc("/articles/{category}/{id:[0-9]+}", ArticleHandler).Name("articleRoute")
+
+	srv := &http.Server{
+		Handler:      r,
+		Addr:         addr,
+		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  15 * time.Second,
+	}
+
+	log.Printf("Starting Server at: %v...", addr)
+	go func() {
+		defer wg.Done() // let main know we are done cleaning up
+		// always returns error.  ErrServerClosed on graceful close
+		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+			// unexpected error.
+			log.Fatalf("ListenAndServe(): %v", err)
+		}
+	}()
+	// return reference so caller can call Shutdown
+	return srv
+}
+
+const shutdownCode int = 10101
+
+func runGorillaServer() {
+	log.Printf("main: starting HTTP server...")
+
+	httpServerExitDone := &sync.WaitGroup{}
+
+	httpServerExitDone.Add(1)
+	srv := startServer(httpServerExitDone)
+
+	shutdownCh := make(chan int)
+	getUserInput := func(ch chan<- int) {
+		var code int
+		for {
+			fmt.Printf("Provide shutdown code: \n")
+			fmt.Scanln(&code)
+			if code == shutdownCode {
+				break
+			}
+
+			fmt.Printf("Invalid Code.\n")
+		}
+		ch <- code
+	}
+
+	go getUserInput(shutdownCh)
+	select {
+	case code := <-shutdownCh:
+		if err := srv.Shutdown(context.TODO()); err != nil {
+			panic(err)
+		}
+		log.Printf("main: shutdown code %d", code)
+		break
+	}
+
+	// wait for goroutine to stop
+	httpServerExitDone.Wait()
+
+	log.Printf("main: done. exiting...")
+}
+
 func main() {
-	runRomanServer()
+	runGorillaServer()
 }
