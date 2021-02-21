@@ -65,10 +65,46 @@ func HostInfo() (Host, error) {
 		// exclude internal device
 		if !strings.Contains(i.Name, "lo") {
 			for _, addr := range addrs {
+				var ip net.IP // IP address
+				switch v:= addr.(type){
+				case *net.IPNet:
+					ip = v.IP
+				case *net.IPAddr:
+					ip = v.IP
+				}
 
+				m[index] = ip.String()
+				index++
 			}
 		}
 	}
+	h.InternalIPs = m
 
 	return h, nil
+}
+
+// SelectHost accepts an IP map, and provides a user prompt to select an IP address to serve on
+func SelectHost(ipMap map[int]string) (string, error) {
+	fmt.Printf("Choose a host to use:\n")
+	for i := 0; i < len(ipMap); i++ {
+		val, _ := ipMap[i]
+		fmt.Printf("%d\t%d\n", i, val)
+	}
+
+	var userInd int = 0
+	_, err := fmt.Scanln(&userInd)
+	if err != nil {
+		return "", err
+	}
+		
+	var ret string
+	var ok bool
+	for {
+		ret, ok = ipMap[userInd]
+		if !ok {
+			return "", nil
+		}
+	}
+
+	return ret, nil
 }
