@@ -1,6 +1,7 @@
 package ip_util
 
 import (
+	"fmt"
 	"net"
 	"os"
 	"strings"
@@ -66,7 +67,7 @@ func HostInfo() (Host, error) {
 		if !strings.Contains(i.Name, "lo") {
 			for _, addr := range addrs {
 				var ip net.IP // IP address
-				switch v:= addr.(type){
+				switch v := addr.(type) {
 				case *net.IPNet:
 					ip = v.IP
 				case *net.IPAddr:
@@ -88,7 +89,7 @@ func SelectHost(ipMap map[int]string) (string, error) {
 	fmt.Printf("Choose a host to use:\n")
 	for i := 0; i < len(ipMap); i++ {
 		val, _ := ipMap[i]
-		fmt.Printf("%d\t%d\n", i, val)
+		fmt.Printf("%d\t%v\n", i, val)
 	}
 
 	var userInd int = 0
@@ -96,14 +97,16 @@ func SelectHost(ipMap map[int]string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-		
+
 	var ret string
 	var ok bool
 	for {
 		ret, ok = ipMap[userInd]
-		if !ok {
-			return "", nil
+		if ok {
+			break
 		}
+		// if here, incorrect user input -> try again
+		fmt.Printf("%d is not an index into IP map.  Try again.\n", userInd)
 	}
 
 	return ret, nil
