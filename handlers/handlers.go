@@ -128,13 +128,10 @@ func ArticleHandler(w http.ResponseWriter, r *http.Request) {
 func ScriptsHandler(scriptName string) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		urlPathElements := strings.Split(r.URL.Path, "/")
-
-		log.Println(r.URL.Path)
-		log.Println(urlPathElements)
-		log.Println(urlPathElements[2])
+		filename := urlPathElements[2]
 
 		if r.Method == "GET" {
-			wantFile := filepath.Join(jsDir, "app.js")
+			wantFile := filepath.Join(jsDir, filename)
 			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
 				w.WriteHeader(http.StatusNotFound)
 				log.Fatalf("Error finding file %v : %v", wantFile, err)
@@ -155,18 +152,18 @@ func ScriptsHandler(scriptName string) func(http.ResponseWriter, *http.Request) 
 func CSSHandler(filename string) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		urlPathElements := strings.Split(r.URL.Path, "/")
-
-		log.Println(r.URL.Path)
-		log.Println(urlPathElements)
-		log.Println(urlPathElements[2])
+		filename := urlPathElements[2]
 
 		if r.Method == "GET" {
-			wantFile := filepath.Join(cssDir, "main.css")
+			wantFile := filepath.Join(cssDir, filename)
 			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
 				w.WriteHeader(http.StatusNotFound)
+
 				log.Fatalf("Error finding file %v : %v", wantFile, err)
 				return
 			}
+
+			w.Header().Set("Content-Type", "text/css; charset=UTF-8")
 
 			w.WriteHeader(http.StatusOK)
 			http.ServeFile(w, r, wantFile)
