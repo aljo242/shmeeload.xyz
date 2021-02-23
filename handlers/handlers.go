@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -13,6 +14,12 @@ import (
 	"github.com/aljo242/web_serve/ip_util"
 	"github.com/aljo242/web_serve/romanNumerals"
 	"github.com/gorilla/mux"
+)
+
+const (
+	htmlDir string = "./web_res/"
+	jsDir   string = "./web_res/dist/"
+	cssDir  string = "./web_res/"
 )
 
 var (
@@ -25,11 +32,11 @@ type webServer struct {
 	connections int
 }
 
-func (this webServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (srv webServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "This is a Simple HTTP Web Server!")
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	//w.Header().Set("Name", this.name)
-	//w.Header().Set("Author", this.author)
+	//w.Header().Set("Name", srv.name)
+	//w.Header().Set("Author", srv.author)
 }
 
 func romanGet(w http.ResponseWriter, r *http.Request) {
@@ -117,11 +124,65 @@ func ArticleHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "ID is %v\n", vars["id"])
 }
 
+// ScriptsHandler takes a script name and
+func ScriptsHandler(scriptName string) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		urlPathElements := strings.Split(r.URL.Path, "/")
+
+		log.Println(r.URL.Path)
+		log.Println(urlPathElements)
+		log.Println(urlPathElements[2])
+
+		if r.Method == "GET" {
+			wantFile := filepath.Join(jsDir, "app.js")
+			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
+				w.WriteHeader(http.StatusNotFound)
+				log.Fatalf("Error finding file %v : %v", wantFile, err)
+				return
+			}
+
+			w.WriteHeader(http.StatusOK)
+			http.ServeFile(w, r, wantFile)
+
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+	}
+}
+
+// CSSHandler takes a script name and
+func CSSHandler(filename string) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		urlPathElements := strings.Split(r.URL.Path, "/")
+
+		log.Println(r.URL.Path)
+		log.Println(urlPathElements)
+		log.Println(urlPathElements[2])
+
+		if r.Method == "GET" {
+			wantFile := filepath.Join(cssDir, "main.css")
+			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
+				w.WriteHeader(http.StatusNotFound)
+				log.Fatalf("Error finding file %v : %v", wantFile, err)
+				return
+			}
+
+			w.WriteHeader(http.StatusOK)
+			http.ServeFile(w, r, wantFile)
+
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+	}
+}
+
 // HomeHandler serves the home.html file
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	// this page currently only serves html resources
 	if r.Method == "GET" {
-		wantFile := "./html/home.html"
+		wantFile := filepath.Join(htmlDir, "home.html")
 		if _, err := os.Stat(wantFile); os.IsNotExist(err) {
 			w.WriteHeader(http.StatusNotFound)
 			log.Fatalf("Error finding file %v : %v", wantFile, err)

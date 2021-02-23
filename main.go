@@ -45,6 +45,8 @@ func startServer(wg *sync.WaitGroup) *http.Server {
 	r.HandleFunc("/articles/{category}/{id:[0-9]+}", handlers.ArticleHandler).Name("articleRoute")
 	r.HandleFunc("/home", handlers.HomeHandler)
 	r.HandleFunc("/", handlers.RedirectHome)
+	r.HandleFunc("/scripts/{scriptname}", handlers.ScriptsHandler("bob"))
+	r.HandleFunc("/css/{filename}", handlers.CSSHandler("Joe"))
 
 	srv := &http.Server{
 		Handler:      r,
