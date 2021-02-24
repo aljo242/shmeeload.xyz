@@ -6,7 +6,7 @@ function printMessage(msg: string) {
 
 printMessage(msg)
 
-const button = document.getElementById("testButton")!
-button.onclick = () => {
+const homeButton = document.getElementById("testHomeButton")!
+homeButton.onclick = () => {
     printMessage("Button Pushed!")
 }

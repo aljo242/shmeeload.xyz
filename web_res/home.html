@@ -6,10 +6,10 @@
     <title>shmeeload</title>
     <meta name='viewport' content='width=device-width, initial-scale=1'>
     <link rel='stylesheet' type='text/css'  href='css/main.css'>
-    <script src='scripts/app.js' defer></script>
+    <script src='{{.Host}}/res/scripts/app.js' defer></script>
 </head>
 <body>
-    <button id="testButton">Click Me!</button>
+    <button id="testHomeButton">Click Me!</button>
 
     <h3>About Me</h3>
     <p>Something about me...</p>
@@ -17,8 +17,9 @@
     <h3>Navigation</h3>
     Where do you want to go?
     <ul>
-      <li><a href="http://shmeeload.xyz/resume">My Resume</a></li>
-      <li><a href="http://shmeeload.xyz/shoppers/home">Shoppers</a></li>
+      <li><a href="{{.Host}}/resume">My Resume</a></li>
+      <li><a href="{{.Host}}/shoppers/home">Shoppers</a></li>
+      <li><a href="{{.Host}}/chat/home">ChatRoom</a></li>
       <li><a href="https://github.com/aljo242" target="_blank" rel="noopener noreferrer">Github</a></li>
     </ul>
 </body>

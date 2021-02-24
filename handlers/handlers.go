@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aljo242/web_serve/ip_util"
-	"github.com/aljo242/web_serve/romanNumerals"
+	"github.com/aljo242/shmeeload.xyz/ip_util"
+	"github.com/aljo242/shmeeload.xyz/romanNumerals"
 	"github.com/gorilla/mux"
 )
 
@@ -125,10 +125,11 @@ func ArticleHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // ScriptsHandler takes a script name and
-func ScriptsHandler(scriptName string) func(http.ResponseWriter, *http.Request) {
+func ScriptsHandler(scriptName string, debugEnable bool) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		urlPathElements := strings.Split(r.URL.Path, "/")
-		filename := urlPathElements[2]
+		log.Println(r)
+		filename := filepath.Base(r.URL.Path)
+		log.Println(filename)
 
 		if r.Method == "GET" {
 			wantFile := filepath.Join(jsDir, filename)
@@ -149,10 +150,11 @@ func ScriptsHandler(scriptName string) func(http.ResponseWriter, *http.Request) 
 }
 
 // CSSHandler takes a script name and
-func CSSHandler(filename string) func(http.ResponseWriter, *http.Request) {
+func CSSHandler(filename string, debugEnable bool) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		urlPathElements := strings.Split(r.URL.Path, "/")
-		filename := urlPathElements[2]
+		log.Println(r)
+		filename := filepath.Base(r.URL.Path)
+		log.Println(filename)
 
 		if r.Method == "GET" {
 			wantFile := filepath.Join(cssDir, filename)
@@ -164,7 +166,6 @@ func CSSHandler(filename string) func(http.ResponseWriter, *http.Request) {
 			}
 
 			w.Header().Set("Content-Type", "text/css; charset=UTF-8")
-
 			w.WriteHeader(http.StatusOK)
 			http.ServeFile(w, r, wantFile)
 
@@ -199,4 +200,26 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 func RedirectHome(w http.ResponseWriter, r *http.Request) {
 	// redirect to home
 	http.Redirect(w, r, "http://shmeeload.xyz/home", http.StatusFound)
+}
+
+// ChatHomeHandler is the route for the chat home where users can get assigned unique identifiers
+func ChatHomeHandler(filename string, debugEnable bool) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// this page currently only serves html resources
+		if r.Method == "GET" {
+			wantFile := filepath.Join(htmlDir, "chat.html")
+			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
+				w.WriteHeader(http.StatusNotFound)
+				log.Fatalf("Error finding file %v : %v", wantFile, err)
+				return
+			}
+
+			w.WriteHeader(http.StatusOK)
+			http.ServeFile(w, r, wantFile)
+
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+	}
 }

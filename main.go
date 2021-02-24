@@ -2,14 +2,16 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
-	"github.com/aljo242/web_serve/handlers"
-	"github.com/aljo242/web_serve/ip_util"
+	"github.com/aljo242/shmeeload.xyz/handlers"
+	"github.com/aljo242/shmeeload.xyz/ip_util"
 
 	"github.com/gorilla/mux"
 )
@@ -18,6 +20,8 @@ const (
 	DefaultPort = "80"
 
 	DefaultHost = "localhost"
+
+	ConfigFile string = "config.json"
 )
 
 var (
@@ -25,28 +29,84 @@ var (
 	Port = "80"
 )
 
+type config struct {
+	Host     string `json:"host"`
+	Port     string `json:"port"`
+	IP       string `json:"IP"`
+	ChooseIP bool   `json:"chooseIP"`
+	HTTPS    bool   `json:"secure"`
+	DebugLog bool   `json:"debugLog"`
+	// TODO add more
+}
+
+func loadConfig(filename string) (config, error) {
+	cfg := config{}
+	cfgFile, err := os.Open(filename)
+	defer cfgFile.Close()
+	if err != nil {
+		return config{},
+			fmt.Errorf("Error opening config file %v : %w", filename, err)
+	}
+
+	jsonParser := json.NewDecoder(cfgFile)
+	err = jsonParser.Decode(&cfg)
+	if err != nil {
+		return config{},
+			fmt.Errorf("Error parsing file %v : %w", filename, err)
+	}
+
+	return cfg, nil
+}
+
+type htmlTemplateInfo struct {
+	Host string
+	// TODO add more
+}
+
+func setupTemplates() {
+
+}
+
 func startServer(wg *sync.WaitGroup) *http.Server {
-	h, err := ip_util.HostInfo()
+	cfg, err := loadConfig(ConfigFile)
 	if err != nil {
-		log.Fatalf("Error creating Host Struct : %v", err)
+		log.Fatalf("Error loading config : %v", err)
 		return nil
 	}
+	fmt.Printf("%v\n", cfg)
 
-	hostIP, err := ip_util.SelectHost(h.InternalIPs)
-	if err != nil {
-		log.Fatalf("Error chosing host IP : %v", err)
-		return nil
+	var hostIP string
+	if cfg.ChooseIP {
+
+		h, err := ip_util.HostInfo()
+		if err != nil {
+			log.Fatalf("Error creating Host Struct : %v", err)
+			return nil
+		}
+
+		hostIP, err = ip_util.SelectHost(h.InternalIPs)
+		if err != nil {
+			log.Fatalf("Error chosing host IP : %v", err)
+			return nil
+		}
+	} else {
+		hostIP = cfg.IP
 	}
 
-	addr := hostIP + ":" + Port
+	addr := hostIP + ":" + cfg.Port
+
+	// generate/execute resource templates
+
 	// create new gorilla mux router
 	r := mux.NewRouter()
 	// attach pather with handler
 	r.HandleFunc("/articles/{category}/{id:[0-9]+}", handlers.ArticleHandler).Name("articleRoute")
 	r.HandleFunc("/home", handlers.HomeHandler)
 	r.HandleFunc("/", handlers.RedirectHome)
-	r.HandleFunc("/scripts/{scriptname}", handlers.ScriptsHandler("bob"))
-	r.HandleFunc("/css/{filename}", handlers.CSSHandler("Joe"))
+	r.HandleFunc("/scripts/{scriptname}", handlers.ScriptsHandler("bob", cfg.DebugLog))
+	r.HandleFunc("/css/{filename}", handlers.CSSHandler("Joe", cfg.DebugLog))
+	r.HandleFunc("/chat/home", handlers.ChatHomeHandler("", cfg.DebugLog))
+	r.HandleFunc("/chat/{name}", handlers.ChatHomeHandler("", cfg.DebugLog))
 
 	srv := &http.Server{
 		Handler:      r,
