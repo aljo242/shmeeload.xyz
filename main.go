@@ -27,7 +27,7 @@ const (
 	// executed and copied to the res dir
 	TemplateBaseDir string = "./web_res"
 
-	//
+	// TemplateOutputDir is the directory all outputs of SetupTemplates will fall under
 	TemplateOutputDir string = "./static"
 )
 
@@ -142,8 +142,9 @@ func ExecuteTemplateHTML(cfg Config, path, newPath string) error {
 	return nil
 }
 
-//
-func setupTemplates(cfg Config) ([]string, error) {
+// SetupTemplates builds the template output directory, executes HTML templates,
+// and copies all web resource files to the template output directory (.js, .ts, .js.map, .css, .html)
+func SetupTemplates(cfg Config) ([]string, error) {
 	files := make([]string, 0)
 	DebugLogln(cfg.DebugLog, "SETTING UP TEMPLATES")
 
@@ -192,6 +193,15 @@ func setupTemplates(cfg Config) ([]string, error) {
 		}
 	}
 
+	tsOutputDir := filepath.Join(TemplateOutputDir, "src")
+	if !Exists(tsOutputDir) {
+		err := os.Mkdir(tsOutputDir, 0755)
+		if err != nil {
+			return nil,
+				fmt.Errorf("Error creating directory %v : %w", tsOutputDir, err)
+		}
+	}
+
 	DebugLogln(cfg.DebugLog, "Ensuring template base directory exists...")
 	// Ensure base template directory exists
 	if !Exists(TemplateBaseDir) {
@@ -222,6 +232,10 @@ func setupTemplates(cfg Config) ([]string, error) {
 				CopyFile(path, newPath)
 			case ".css":
 				newPath := filepath.Join(TemplateOutputDir, "css", filepath.Base(path))
+				DebugPrintln(cfg.DebugLog, path+" -> "+newPath)
+				CopyFile(path, newPath)
+			case ".ts":
+				newPath := filepath.Join(TemplateOutputDir, "src", filepath.Base(path))
 				DebugPrintln(cfg.DebugLog, path+" -> "+newPath)
 				CopyFile(path, newPath)
 			}
@@ -262,7 +276,7 @@ func startServer(wg *sync.WaitGroup) (*http.Server, *Config) {
 		hostIP = cfg.IP
 	}
 
-	_, err = setupTemplates(cfg)
+	_, err = SetupTemplates(cfg)
 	if err != nil {
 		log.Fatalf("Error setting up templates: %v", err)
 		return nil, nil
@@ -281,6 +295,7 @@ func startServer(wg *sync.WaitGroup) (*http.Server, *Config) {
 	r.HandleFunc("/static/js/{scriptname}", handlers.ScriptsHandler("bob", cfg.DebugLog))
 	r.HandleFunc("/static/css/{filename}", handlers.CSSHandler("Joe", cfg.DebugLog))
 	r.HandleFunc("/static/html/{filename}", handlers.HTMLHandler("Joe", cfg.DebugLog))
+	r.HandleFunc("static/src/{filename}", handlers.TypeScriptHandler("", cfg.DebugLog))
 	r.HandleFunc("/chat/home", handlers.ChatHomeHandler("", cfg.DebugLog))
 	r.HandleFunc("/chat/{name}", handlers.ChatHomeHandler("", cfg.DebugLog))
 

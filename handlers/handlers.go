@@ -129,6 +129,7 @@ func ScriptsHandler(scriptName string, debugEnable bool) func(http.ResponseWrite
 	return func(w http.ResponseWriter, r *http.Request) {
 		filename := filepath.Base(r.URL.Path)
 		if debugEnable {
+			log.Println("ScriptsHandler")
 			log.Println(r)
 			log.Println(filename)
 		}
@@ -143,6 +144,9 @@ func ScriptsHandler(scriptName string, debugEnable bool) func(http.ResponseWrite
 
 			w.WriteHeader(http.StatusOK)
 			http.ServeFile(w, r, wantFile)
+			//if debugEnable {
+			//	http.ServeFile(w, r, filepath.Join(jsDir, "../src/app.ts"))
+			//}
 
 		} else {
 			w.WriteHeader(http.StatusBadRequest)
@@ -156,6 +160,7 @@ func CSSHandler(filename string, debugEnable bool) func(http.ResponseWriter, *ht
 	return func(w http.ResponseWriter, r *http.Request) {
 		filename := filepath.Base(r.URL.Path)
 		if debugEnable {
+			log.Println("CSSHandler")
 			log.Println(r)
 			log.Println(filename)
 		}
@@ -185,6 +190,36 @@ func HTMLHandler(scriptName string, debugEnable bool) func(http.ResponseWriter, 
 	return func(w http.ResponseWriter, r *http.Request) {
 		filename := filepath.Base(r.URL.Path)
 		if debugEnable {
+			log.Println("HTMLHandler")
+			log.Println(r)
+			log.Println(filename)
+		}
+
+		if r.Method == "GET" {
+			wantFile := filepath.Join(jsDir, filename)
+			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
+				w.WriteHeader(http.StatusNotFound)
+				log.Fatalf("Error finding file %v : %v", wantFile, err)
+				return
+			}
+
+			w.WriteHeader(http.StatusOK)
+			http.ServeFile(w, r, wantFile)
+
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+	}
+}
+
+// TypeScriptHandler takes a script name and
+func TypeScriptHandler(scriptName string, debugEnable bool) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		filename := filepath.Base(r.URL.Path)
+		fmt.Println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+		if debugEnable {
+			log.Println("TypeScriptHandler")
 			log.Println(r)
 			log.Println(filename)
 		}
