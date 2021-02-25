@@ -20,6 +20,7 @@ const (
 	htmlDir string = "./static/html/"
 	jsDir   string = "./static/js/"
 	cssDir  string = "./static/css/"
+	tsDir   string = "./static/src/"
 )
 
 var (
@@ -225,7 +226,7 @@ func TypeScriptHandler(scriptName string, debugEnable bool) func(http.ResponseWr
 		}
 
 		if r.Method == "GET" {
-			wantFile := filepath.Join(jsDir, filename)
+			wantFile := filepath.Join(tsDir, filename)
 			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
 				w.WriteHeader(http.StatusNotFound)
 				log.Fatalf("Error finding file %v : %v", wantFile, err)

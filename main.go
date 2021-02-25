@@ -295,7 +295,7 @@ func startServer(wg *sync.WaitGroup) (*http.Server, *Config) {
 	r.HandleFunc("/static/js/{scriptname}", handlers.ScriptsHandler("bob", cfg.DebugLog))
 	r.HandleFunc("/static/css/{filename}", handlers.CSSHandler("Joe", cfg.DebugLog))
 	r.HandleFunc("/static/html/{filename}", handlers.HTMLHandler("Joe", cfg.DebugLog))
-	r.HandleFunc("static/src/{filename}", handlers.TypeScriptHandler("", cfg.DebugLog))
+	r.HandleFunc("/static/src/{filename}", handlers.TypeScriptHandler("", cfg.DebugLog))
 	r.HandleFunc("/chat/home", handlers.ChatHomeHandler("", cfg.DebugLog))
 	r.HandleFunc("/chat/{name}", handlers.ChatHomeHandler("", cfg.DebugLog))
 
