@@ -4,5 +4,6 @@
     "IP": "localhost",
     "chooseIP": false,
     "secure": false,
-    "debugLog": true
+    "debugLog": true,
+    "shutdownCode": 10101 
 }

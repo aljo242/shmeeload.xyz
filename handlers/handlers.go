@@ -17,9 +17,9 @@ import (
 )
 
 const (
-	htmlDir string = "./web_res/"
-	jsDir   string = "./web_res/dist/"
-	cssDir  string = "./web_res/"
+	htmlDir string = "./static/html/"
+	jsDir   string = "./static/js/"
+	cssDir  string = "./static/css/"
 )
 
 var (
@@ -127,9 +127,11 @@ func ArticleHandler(w http.ResponseWriter, r *http.Request) {
 // ScriptsHandler takes a script name and
 func ScriptsHandler(scriptName string, debugEnable bool) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		log.Println(r)
 		filename := filepath.Base(r.URL.Path)
-		log.Println(filename)
+		if debugEnable {
+			log.Println(r)
+			log.Println(filename)
+		}
 
 		if r.Method == "GET" {
 			wantFile := filepath.Join(jsDir, filename)
@@ -152,9 +154,11 @@ func ScriptsHandler(scriptName string, debugEnable bool) func(http.ResponseWrite
 // CSSHandler takes a script name and
 func CSSHandler(filename string, debugEnable bool) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		log.Println(r)
 		filename := filepath.Base(r.URL.Path)
-		log.Println(filename)
+		if debugEnable {
+			log.Println(r)
+			log.Println(filename)
+		}
 
 		if r.Method == "GET" {
 			wantFile := filepath.Join(cssDir, filename)
@@ -166,6 +170,33 @@ func CSSHandler(filename string, debugEnable bool) func(http.ResponseWriter, *ht
 			}
 
 			w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+			w.WriteHeader(http.StatusOK)
+			http.ServeFile(w, r, wantFile)
+
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+	}
+}
+
+// HTMLHandler takes a script name and
+func HTMLHandler(scriptName string, debugEnable bool) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		filename := filepath.Base(r.URL.Path)
+		if debugEnable {
+			log.Println(r)
+			log.Println(filename)
+		}
+
+		if r.Method == "GET" {
+			wantFile := filepath.Join(jsDir, filename)
+			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
+				w.WriteHeader(http.StatusNotFound)
+				log.Fatalf("Error finding file %v : %v", wantFile, err)
+				return
+			}
+
 			w.WriteHeader(http.StatusOK)
 			http.ServeFile(w, r, wantFile)
 

@@ -4,10 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"sync"
+	"text/template"
 	"time"
 
 	"github.com/aljo242/shmeeload.xyz/handlers"
@@ -17,41 +20,51 @@ import (
 )
 
 const (
-	DefaultPort = "80"
-
-	DefaultHost = "localhost"
-
+	// ConfigFile is the name of the user's config JSON file
 	ConfigFile string = "config.json"
+
+	// TemplateBaseDir is where HTML template files are located to be
+	// executed and copied to the res dir
+	TemplateBaseDir string = "./web_res"
+
+	//
+	TemplateOutputDir string = "./static"
 )
 
-var (
-	// Port of the HTTP Server
-	Port = "80"
-)
+// Exists is a basic file util that says if a dir or file exists
+func Exists(path string) bool {
+	_, err := os.Stat(path)
+	if !os.IsNotExist(err) {
+		return true // path/file exists
+	}
+	return false // path/file does not exist
+}
 
-type config struct {
-	Host     string `json:"host"`
-	Port     string `json:"port"`
-	IP       string `json:"IP"`
-	ChooseIP bool   `json:"chooseIP"`
-	HTTPS    bool   `json:"secure"`
-	DebugLog bool   `json:"debugLog"`
+// Config is the general struct holds parsed JSON config info
+type Config struct {
+	Host         string `json:"host"`
+	Port         string `json:"port"`
+	IP           string `json:"IP"`
+	ChooseIP     bool   `json:"chooseIP"`
+	HTTPS        bool   `json:"secure"`
+	DebugLog     bool   `json:"debugLog"`
+	ShutdownCode int    `json:"shutdownCode"`
 	// TODO add more
 }
 
-func loadConfig(filename string) (config, error) {
-	cfg := config{}
+func loadConfig(filename string) (Config, error) {
+	cfg := Config{}
 	cfgFile, err := os.Open(filename)
 	defer cfgFile.Close()
 	if err != nil {
-		return config{},
+		return Config{},
 			fmt.Errorf("Error opening config file %v : %w", filename, err)
 	}
 
 	jsonParser := json.NewDecoder(cfgFile)
 	err = jsonParser.Decode(&cfg)
 	if err != nil {
-		return config{},
+		return Config{},
 			fmt.Errorf("Error parsing file %v : %w", filename, err)
 	}
 
@@ -63,15 +76,171 @@ type htmlTemplateInfo struct {
 	// TODO add more
 }
 
-func setupTemplates() {
-
+// DebugLogln is a simple utility for conditional logging of bonus info
+func DebugLogln(toggle bool, msg string) {
+	if toggle {
+		log.Println(msg)
+	}
 }
 
-func startServer(wg *sync.WaitGroup) *http.Server {
+// DebugPrintln is a simple utility for conditional logging of bonus info
+func DebugPrintln(toggle bool, msg string) {
+	if toggle {
+		fmt.Println(msg)
+	}
+}
+
+// CopyFile copies filename src to dst
+func CopyFile(src, dst string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return fmt.Errorf("Error opening file: %v : %w", src, err)
+	}
+	defer in.Close()
+
+	out, err := os.Create(dst)
+	if err != nil {
+		return fmt.Errorf("Error creating file: %v : %w", src, err)
+	}
+	defer out.Close()
+
+	if _, err = io.Copy(out, in); err != nil {
+		return fmt.Errorf("Error copying %v to %v : %w", src, dst, err)
+	}
+
+	return nil
+}
+
+// ExecuteTemplateHTML is a util func for executing an html template
+// at path and saving the new file to newPath
+func ExecuteTemplateHTML(cfg Config, path, newPath string) error {
+	newFile, err := os.Create(newPath)
+	defer newFile.Close()
+	if err != nil {
+		return fmt.Errorf("Error creating file %v : %w", newPath, err)
+	}
+
+	tpl, err := template.ParseFiles(path)
+	if err != nil {
+		return fmt.Errorf("Error creating template : %w", err)
+	}
+
+	var httpPrefix string
+	if cfg.HTTPS {
+		httpPrefix = "https://"
+	} else {
+		httpPrefix = "http://"
+	}
+
+	p := htmlTemplateInfo{httpPrefix + cfg.Host}
+
+	err = tpl.Execute(newFile, p)
+	if err != nil {
+		return fmt.Errorf("Error executing template : %w", err)
+	}
+
+	return nil
+}
+
+//
+func setupTemplates(cfg Config) ([]string, error) {
+	files := make([]string, 0)
+	DebugLogln(cfg.DebugLog, "SETTING UP TEMPLATES")
+
+	DebugLogln(cfg.DebugLog, "Cleaning output directory...")
+	// clean static output dir
+	err := os.RemoveAll(TemplateOutputDir)
+	if err != nil {
+		return nil,
+			fmt.Errorf("Error cleaning ouput directory %v : %w", TemplateOutputDir, err)
+	}
+
+	DebugLogln(cfg.DebugLog, "Creating new output directories...")
+	// Create/ensure output directory
+	if !Exists(TemplateOutputDir) {
+		err := os.Mkdir(TemplateOutputDir, 0755)
+		if err != nil {
+			return nil,
+				fmt.Errorf("Error creating directory %v : %w", TemplateOutputDir, err)
+		}
+	}
+
+	// Create subdirs
+	htmlOutputDir := filepath.Join(TemplateOutputDir, "html")
+	if !Exists(htmlOutputDir) {
+		err := os.Mkdir(htmlOutputDir, 0755)
+		if err != nil {
+			return nil,
+				fmt.Errorf("Error creating directory %v : %w", htmlOutputDir, err)
+		}
+	}
+	jsOutputDir := filepath.Join(TemplateOutputDir, "js")
+	if !Exists(jsOutputDir) {
+		err := os.Mkdir(jsOutputDir, 0755)
+		if err != nil {
+			return nil,
+				fmt.Errorf("Error creating directory %v : %w", jsOutputDir, err)
+		}
+	}
+
+	cssOutputDir := filepath.Join(TemplateOutputDir, "css")
+	if !Exists(cssOutputDir) {
+		err := os.Mkdir(cssOutputDir, 0755)
+		if err != nil {
+			return nil,
+				fmt.Errorf("Error creating directory %v : %w", cssOutputDir, err)
+		}
+	}
+
+	DebugLogln(cfg.DebugLog, "Ensuring template base directory exists...")
+	// Ensure base template directory exists
+	if !Exists(TemplateBaseDir) {
+		return nil,
+			fmt.Errorf("Base Dir %v does not exist", TemplateBaseDir)
+	}
+
+	// walk through all files in the template resource dir
+	err = filepath.Walk(TemplateBaseDir,
+		func(path string, info os.FileInfo, err error) error {
+			// skip certain directories
+			if info.IsDir() && info.Name() == "node_modules" {
+				return filepath.SkipDir
+			}
+
+			switch filepath.Ext(path) {
+			case ".html":
+				newPath := filepath.Join(TemplateOutputDir, "html", filepath.Base(path))
+				DebugPrintln(cfg.DebugLog, path+" -> "+newPath)
+				ExecuteTemplateHTML(cfg, path, newPath)
+			case ".js":
+				newPath := filepath.Join(TemplateOutputDir, "js", filepath.Base(path))
+				DebugPrintln(cfg.DebugLog, path+" -> "+newPath)
+				CopyFile(path, newPath)
+			case ".map":
+				newPath := filepath.Join(TemplateOutputDir, "js", filepath.Base(path))
+				DebugPrintln(cfg.DebugLog, path+" -> "+newPath)
+				CopyFile(path, newPath)
+			case ".css":
+				newPath := filepath.Join(TemplateOutputDir, "css", filepath.Base(path))
+				DebugPrintln(cfg.DebugLog, path+" -> "+newPath)
+				CopyFile(path, newPath)
+			}
+
+			return nil
+		})
+	if err != nil {
+		return nil,
+			fmt.Errorf("Error walking %v : %w", TemplateBaseDir, err)
+	}
+
+	return files, nil
+}
+
+func startServer(wg *sync.WaitGroup) (*http.Server, *Config) {
 	cfg, err := loadConfig(ConfigFile)
 	if err != nil {
 		log.Fatalf("Error loading config : %v", err)
-		return nil
+		return nil, nil
 	}
 	fmt.Printf("%v\n", cfg)
 
@@ -81,16 +250,22 @@ func startServer(wg *sync.WaitGroup) *http.Server {
 		h, err := ip_util.HostInfo()
 		if err != nil {
 			log.Fatalf("Error creating Host Struct : %v", err)
-			return nil
+			return nil, nil
 		}
 
 		hostIP, err = ip_util.SelectHost(h.InternalIPs)
 		if err != nil {
 			log.Fatalf("Error chosing host IP : %v", err)
-			return nil
+			return nil, nil
 		}
 	} else {
 		hostIP = cfg.IP
+	}
+
+	_, err = setupTemplates(cfg)
+	if err != nil {
+		log.Fatalf("Error setting up templates: %v", err)
+		return nil, nil
 	}
 
 	addr := hostIP + ":" + cfg.Port
@@ -103,8 +278,9 @@ func startServer(wg *sync.WaitGroup) *http.Server {
 	r.HandleFunc("/articles/{category}/{id:[0-9]+}", handlers.ArticleHandler).Name("articleRoute")
 	r.HandleFunc("/home", handlers.HomeHandler)
 	r.HandleFunc("/", handlers.RedirectHome)
-	r.HandleFunc("/scripts/{scriptname}", handlers.ScriptsHandler("bob", cfg.DebugLog))
-	r.HandleFunc("/css/{filename}", handlers.CSSHandler("Joe", cfg.DebugLog))
+	r.HandleFunc("/static/js/{scriptname}", handlers.ScriptsHandler("bob", cfg.DebugLog))
+	r.HandleFunc("/static/css/{filename}", handlers.CSSHandler("Joe", cfg.DebugLog))
+	r.HandleFunc("/static/html/{filename}", handlers.HTMLHandler("Joe", cfg.DebugLog))
 	r.HandleFunc("/chat/home", handlers.ChatHomeHandler("", cfg.DebugLog))
 	r.HandleFunc("/chat/{name}", handlers.ChatHomeHandler("", cfg.DebugLog))
 
@@ -119,17 +295,22 @@ func startServer(wg *sync.WaitGroup) *http.Server {
 	go func() {
 		defer wg.Done() // let main know we are done cleaning up
 		// always returns error. ErrServerClosed on graceful close
-		if err = srv.ListenAndServe(); err != http.ErrServerClosed {
-			// unexpected error
-			log.Fatalf("ListenAndServe(): %v", err)
+		if cfg.HTTPS {
+			if err = srv.ListenAndServeTLS("", ""); err != http.ErrServerClosed {
+				// unexpected error
+				log.Fatalf("ListenAndServeTLS() NOT IMPLEMENTED: %v", err)
+			}
+		} else {
+			if err = srv.ListenAndServe(); err != http.ErrServerClosed {
+				// unexpected error
+				log.Fatalf("ListenAndServe(): %v", err)
+			}
 		}
 	}()
 
 	// return reference so caller can call Shutdown
-	return srv
+	return srv, &cfg
 }
-
-const shutdownCode int = 10101
 
 func runGorillaServer() {
 	log.Printf("main: starting HTTP server...")
@@ -137,7 +318,7 @@ func runGorillaServer() {
 	httpServerExitDone := &sync.WaitGroup{}
 
 	httpServerExitDone.Add(1)
-	srv := startServer(httpServerExitDone)
+	srv, cfg := startServer(httpServerExitDone)
 
 	shutdownCh := make(chan int)
 	getUserInput := func(ch chan<- int) {
@@ -145,7 +326,7 @@ func runGorillaServer() {
 		for {
 			fmt.Printf("Provide shutdown code: \n")
 			fmt.Scanln(&code)
-			if code == shutdownCode {
+			if code == cfg.ShutdownCode {
 				break
 			}
 
