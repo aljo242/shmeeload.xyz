@@ -282,6 +282,9 @@ func startServer(wg *sync.WaitGroup) (*http.Server, *Config) {
 		return nil, nil
 	}
 
+	hub := newHub()
+	go hub.run()
+
 	addr := hostIP + ":" + cfg.Port
 
 	// generate/execute resource templates
@@ -298,6 +301,7 @@ func startServer(wg *sync.WaitGroup) (*http.Server, *Config) {
 	r.HandleFunc("/static/src/{filename}", handlers.TypeScriptHandler("", cfg.DebugLog))
 	r.HandleFunc("/chat/home", handlers.ChatHomeHandler("", cfg.DebugLog))
 	r.HandleFunc("/chat/{name}", handlers.ChatHomeHandler("", cfg.DebugLog))
+	r.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) { serveWs(hub, w, r) })
 
 	srv := &http.Server{
 		Handler:      r,
