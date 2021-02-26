@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset='utf-8'>
     <meta http-equiv='X-UA-Compatible' content='IE=edge'>
@@ -7,7 +7,43 @@
     <meta name='viewport' content='width=device-width, initial-scale=1'>
     <link rel="shortcut icon" href="#" />
     <link rel='stylesheet' type='text/css'  href='{{.Host}}/static/css/main.css'>
-    <script src='{{.Host}}/static/js/chat.js' defer></script>
+    <script type="text/javascript">
+    window.onload = function() {
+        var conn;
+        var msg = document.getElementById("msg");
+        var log = document.getElementById("log");
+
+        function appendLog(item) {
+            var doScroll = log.scrollTop > log.scrollHeight - log.clientHeight - 1;
+            log.appendChild(item);
+            if (doScroll) {
+                log.scrollTop = log.scrollHeight - log.clientHeight;
+            }
+        }
+
+        document.getElementById("form").onsubmit = function() {
+            if (!conn) {
+                return false;
+            }
+
+            if (!msg.value) {
+                return false;
+            }
+
+            conn.send(msg.value);
+            msg.value = ""; // reset
+            return false;
+        };
+
+        // TODO TEMPLATIZE
+        if (window["WebSocket"]) {
+            conn = new WebSocket("ws://" + document.location.host + "chat/ws");
+            conn.onclose = function (evt) {
+                
+            }
+        }
+    }
+    </script>
 </head>
 <body>
     <button id="testChatButton">Click Me!</button>
