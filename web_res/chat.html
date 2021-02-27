@@ -11,6 +11,24 @@
 </head>
 <body>
 <div id="log"></div>
+
+<div class="loginPopUp">
+    <div class="formPopUp", id="popUpForm">
+        <form class="formContainer">
+            <h2>Please Sign In:</h2>
+            <label for="email">
+                <strong>email</strong>
+            </label>
+            <input type="text" id="email" placeholder="poop@fart.shit" name="email" required>
+            <label for="psw">
+                <strong>password</strong>
+            </label>
+            <input type="password" id="psw", placeholder="12345678" name="psw" required>
+            <button type="submit" class="btn">sign in</button>
+            <button type="button" class="btn cancel" onclick="closePopUpForm()">close</button>
+        </form>
+    </div>
+</div>
 <form id="form">
     <input type="submit" value="Send" />
     <input type="text" id="msg" size="64" autofocus />

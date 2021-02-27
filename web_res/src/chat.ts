@@ -1,4 +1,31 @@
+function openPopUpForm() {
+    let style = document.getElementsByClassName("loginPopUp");
+    if (style == null) {
+        console.log("Unable to access login form!")
+    }
+    console.log(style);
+    document.getElementById("popUpForm")!.style.display = "block";
+}
+
+function closePopUpForm() {
+    let style = document.getElementsByClassName("loginPopUp");
+    if (style == null) {
+        console.log("Unable to access login form!")
+    }
+    console.log(style);
+    document.getElementById("popUpForm")!.style.display = "none";
+
+}
+
+window.onclick = (event : MouseEvent) => {
+    let modal = document.getElementById("loginPopUp")!;
+    if (event.target == modal) {
+        closePopUpForm()
+    }
+}
+
 window.onload = () => {
+    openPopUpForm()
     let conn: WebSocket;
     let msg = document.getElementById("msg")!;
     let log = document.getElementById("log")!;
@@ -31,10 +58,10 @@ window.onload = () => {
             appendLog(item);
         };
         conn.onmessage = (evt) => {
-            let messages = evt.data.split('\n');
+            let messages : string[] = evt.data.split('\n');
             for (let i = 0; i < messages.length; i++) {
                 let item = document.createElement("div");
-                item.innerText = messages[i];
+                item.innerText = "Alex: " + messages[i];
                 appendLog(item);
             }
         };
@@ -44,3 +71,4 @@ window.onload = () => {
         appendLog(item);
     }
 };
+
