@@ -26,14 +26,14 @@ window.onload = () => {
     if (window["WebSocket"]) {
         conn = new WebSocket("ws://" + document.location.host + "/ws");
         conn.onclose = () => {
-            var item = document.createElement("div");
+            let item = document.createElement("div");
             item.innerHTML = "<b>Connection closed.</b>";
             appendLog(item);
         };
         conn.onmessage = (evt) => {
-            var messages = evt.data.split('\n');
-            for (var i = 0; i < messages.length; i++) {
-                var item = document.createElement("div");
+            let messages = evt.data.split('\n');
+            for (let i = 0; i < messages.length; i++) {
+                let item = document.createElement("div");
                 item.innerText = messages[i];
                 appendLog(item);
             }

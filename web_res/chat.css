@@ -8,11 +8,12 @@ body {
     margin: 0;
     width: 100%;
     height: 100%;
-    background: gray;
+    background: salmon;
 }
 
 #log {
-    background: white;
+    background: blanchedalmond;
+    color: blueviolet;
     margin: 0;
     padding: 0.5em 0.5em 0.5em 0.5em;
     position: absolute;
@@ -24,6 +25,7 @@ body {
 }
 
 #form {
+    color: black;
     padding: 0 0.5em 0 0.5em;
     margin: 0;
     position: absolute;
