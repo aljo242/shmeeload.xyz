@@ -68,7 +68,8 @@ window.onload = () => {
         if (!msg.value) {
             return false;
         }
-        conn.send(msg.value);
+        let messageWithName = signInName + ": " + msg.value;
+        conn.send(messageWithName);
         msg.value = "";
         return false;
     };
@@ -84,7 +85,7 @@ window.onload = () => {
             let messages : string[] = evt.data.split('\n');
             for (let i = 0; i < messages.length; i++) {
                 let item = document.createElement("div");
-                item.innerText = signInName + ": " + messages[i];
+                item.innerText = messages[i];
                 appendLog(item);
             }
         };
