@@ -7,6 +7,7 @@ function openPopUpForm() {
     document.getElementById("popUpForm")!.style.display = "block";
 }
 
+
 function closePopUpForm() {
     let style = document.getElementsByClassName("loginPopUp");
     if (style == null) {
@@ -20,7 +21,8 @@ function closePopUpForm() {
 window.onclick = (event : MouseEvent) => {
     let modal = document.getElementById("popUpForm")!;
     console.log(modal)
-    if (event.target == modal) {
+    if (event.target != modal) {
+        console.log(event)
         closePopUpForm()
     }
 }
