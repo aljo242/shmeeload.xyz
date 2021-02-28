@@ -1,29 +1,49 @@
+let signInName : string = "anon";
+
 function openPopUpForm() {
-    let style = document.getElementsByClassName("loginPopUp");
-    if (style == null) {
-        console.log("Unable to access login form!")
-    }
-    console.log(style);
-    document.getElementById("popUpForm")!.style.display = "block";
+    let form = document.getElementById("popUpForm");
+    if (form == null) {
+        console.log("Unable to access login form!");
+        return;
+    }  
+    form.style.display = "block";
 }
 
-
 function closePopUpForm() {
-    let style = document.getElementsByClassName("loginPopUp");
-    if (style == null) {
-        console.log("Unable to access login form!")
-    }
-    console.log(style);
-    document.getElementById("popUpForm")!.style.display = "none";
+    let form = document.getElementById("popUpForm");
+    if (form == null) {
+        console.log("Unable to access login form!");
+        return;
+    }  
+    form.style.display = "none";
+}
 
+function signIn() {
+    let userName = document.getElementById("chatname")! as HTMLInputElement;
+    signInName = userName.value;
+    console.log(signInName + " signed in!");
+    closePopUpForm();
+}
+
+//Since you know what type you are expecting, but the type 
+//system can't, to get this to work, you have to tell Typescript 
+//what type of element you expect to be selecting. You would do that 
+//through casting the type of the selected element as follows: 
+//const inputElement = <HTMLInputElement> document.getElementById("food-name-val"); 
+//or 
+//const inputElement = document.getElementById("food-name-val") as HTMLInputElement;
+
+
+
+function signInDefault() {
+    console.log(signInName + " signed in!")
+    closePopUpForm();
 }
 
 window.onclick = (event : MouseEvent) => {
     let modal = document.getElementById("popUpForm")!;
-    console.log(modal)
-    if (event.target != modal) {
-        console.log(event)
-        closePopUpForm()
+    if (event.target == modal) {
+        closePopUpForm();
     }
 }
 
@@ -64,7 +84,7 @@ window.onload = () => {
             let messages : string[] = evt.data.split('\n');
             for (let i = 0; i < messages.length; i++) {
                 let item = document.createElement("div");
-                item.innerText = "Alex: " + messages[i];
+                item.innerText = signInName + ": " + messages[i];
                 appendLog(item);
             }
         };
