@@ -18,7 +18,8 @@ function closePopUpForm() {
 }
 
 window.onclick = (event : MouseEvent) => {
-    let modal = document.getElementById("loginPopUp")!;
+    let modal = document.getElementById("popUpForm")!;
+    console.log(modal)
     if (event.target == modal) {
         closePopUpForm()
     }
