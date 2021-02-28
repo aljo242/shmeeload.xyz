@@ -50,7 +50,7 @@ window.onclick = (event : MouseEvent) => {
 window.onload = () => {
     openPopUpForm()
     let conn: WebSocket;
-    let msg = document.getElementById("msg")!;
+    let msg = document.getElementById("msg")! as HTMLInputElement;
     let log = document.getElementById("log")!;
 
     function appendLog(item : HTMLDivElement) {
@@ -65,11 +65,11 @@ window.onload = () => {
         if (!conn) {
             return false;
         }
-        if (!(<HTMLInputElement>msg).value) {
+        if (!msg.value) {
             return false;
         }
-        conn.send((<HTMLInputElement>msg).value);
-        (<HTMLInputElement>msg).value = "";
+        conn.send(msg.value);
+        msg.value = "";
         return false;
     };
 
