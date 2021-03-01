@@ -28,7 +28,7 @@ body {
     overflow: auto;
 }
 
-#form {
+#send_msg_form {
     color: black;
     padding: 0 0.5em 0 0.5em;
     margin: 0;

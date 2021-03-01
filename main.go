@@ -300,8 +300,8 @@ func startServer(wg *sync.WaitGroup) (*http.Server, *Config) {
 	r.HandleFunc("/static/html/{filename}", handlers.HTMLHandler("Joe", cfg.DebugLog))
 	r.HandleFunc("/static/src/{filename}", handlers.TypeScriptHandler("", cfg.DebugLog))
 	r.HandleFunc("/chat/home", handlers.ChatHomeHandler("", cfg.DebugLog))
-	r.HandleFunc("/chat/{name}", handlers.ChatHomeHandler("", cfg.DebugLog))
-	r.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) { serveWs(hub, w, r) })
+	//r.HandleFunc("/chat/{name}", handlers.ChatHomeHandler("", cfg.DebugLog))
+	r.HandleFunc("/chat/ws", func(w http.ResponseWriter, r *http.Request) { serveWs(hub, w, r) })
 
 	srv := &http.Server{
 		Handler:      r,

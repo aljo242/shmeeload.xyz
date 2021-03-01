@@ -1,10 +1,27 @@
-let signInName : string = "anon";
 const DEFAULT_NAME : string = "anon";
+const DEFUALT_DECODING : string = "utf-8";
 
-function convertArrayBufferToNumber(buffer: ArrayBuffer) {
-    const bytes = new Uint8Array(buffer);
-    const dv = new DataView(bytes.buffer);
-    return dv.getUint16(0, true);
+if (!("TextEncoder" in window)) {
+    alert("Sorry, this browser does not support TextEncoder!");
+}
+let encoder = new TextEncoder();
+
+if (!("TextDecoder" in window)) {
+    alert("Sorry, this browser does not support TextEncoder!");
+}
+let decoder = new TextDecoder(DEFUALT_DECODING);
+
+function encode(msg : string): ArrayBuffer {
+    return encoder.encode(msg).buffer as ArrayBuffer;
+}
+
+function decode(buf: ArrayBuffer): string {
+    return decoder.decode(buf);
+}
+
+
+if (!("WebSocket" in window)) {
+    alert("Sorry, this browser does not support WebSockets!");
 }
 
 class User {
@@ -21,13 +38,18 @@ class User {
     }
 
     signIn() {
-        const signInMessage = this.userName + " signed in!";
-        this.conn.send(signInMessage);
-        console.log(signInMessage);
+        const signInMessage = encode(`<b>${this.userName} signed in.</b>`);
+        this.broadcast(signInMessage);
+    }
 
-        let item = document.createElement("div");
-        item.innerHTML = "<b>Connection closed.</b>";
-        appendLog(item);
+    broadcast(buf: ArrayBuffer) {
+        this.conn.send(buf);
+    }
+
+    p2pSend(msg: string, target: string) {
+        console.log(`Sending message to ${target}`);
+        console.log(msg);
+        this.conn.send(msg);
     }
 }
 
@@ -72,10 +94,7 @@ function appendLog(item : HTMLDivElement) {
     if (doScroll) {
         log.scrollTop = log.scrollHeight - log.clientHeight;
     }
-    console.log(log);
-
 }
-
 
 window.onload = () => {
     openPopUpForm()
@@ -84,20 +103,25 @@ window.onload = () => {
     let msg = document.getElementById("msg")! as HTMLInputElement;
 
     if (window["WebSocket"]) {
-        conn = new WebSocket("ws://" + document.location.host + "/ws");
+        conn = new WebSocket("ws://" + document.location.host + "/chat/ws");
+        conn.binaryType = "arraybuffer";
         conn.onclose = () => {
             let item = document.createElement("div");
-            item.innerHTML = "<b>Connection closed.</b>";
+            item.innerHTML = "<b>Connection to server closed.</b>";
             appendLog(item);
         };
         conn.onmessage = (evt) => {
-            let messages : string[] = evt.data.split('\n');
-            for (let i = 0; i < messages.length; i++) {
-                let item = document.createElement("div");
-                item.innerText = messages[i];
-                appendLog(item);
-            }
+            //console.log(evt);
+            let buf = evt.data as ArrayBuffer;
+            //let message : string[] = decode(evt.data).split("\n");
+            let item = document.createElement("div");
+            item.innerHTML = `${buf}`;
+            appendLog(item);
         };
+        conn.onclose = (evt) => {
+            console.log(evt);
+        };
+
     } else {
         let item = document.createElement("div");
         item.innerHTML = "<b>Your browser does not support WebSockets.</b>";
@@ -112,13 +136,13 @@ window.onload = () => {
             user = new User(userName.value, conn);
             closePopUpForm(); 
         } else {
-            console.log("USER INPUT ERROR");
+            console.error("USER INPUT ERROR");
             user = new User(DEFAULT_NAME, conn);
             closePopUpForm(); 
         }
     }
 
-    let msgForm = document.getElementById("signInButton")!;
+    let msgForm = document.getElementById("send_msg_form")!;
     msgForm.onsubmit = () => {
         if (!conn) {
             return false;
@@ -126,8 +150,9 @@ window.onload = () => {
         if (!msg.value) {
             return false;
         }
-        const messageWithName = user.userName + ": " + msg.value;
-        conn.send(messageWithName);
+        const messageWithName = encode(`${user.userName}: ${msg.value}`);
+        user.broadcast(messageWithName);
+
         msg.value = "";
         return false;
     };
