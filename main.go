@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -49,6 +51,8 @@ type Config struct {
 	HTTPS        bool   `json:"secure"`
 	DebugLog     bool   `json:"debugLog"`
 	ShutdownCode int    `json:"shutdownCode"`
+	CertFile     string `json:"certFile"`
+	KeyFile      string `json:"keyFile"`
 	// TODO add more
 }
 
@@ -250,6 +254,45 @@ func SetupTemplates(cfg Config) ([]string, error) {
 	return files, nil
 }
 
+func getTLSConfig1(host, caCertFile string, certOpt tls.ClientAuthType) (*tls.Config, error) {
+	var caCert []byte
+	var caCertPool *x509.CertPool
+
+	if certOpt > tls.RequestClientCert {
+		f, err := os.Open(caCertFile)
+		if err != nil {
+			log.Fatalf("Error opening cert file %v : %w", caCertFile, err)
+		}
+		caCert, err = io.ReadAll(f)
+		if err != nil {
+			return &tls.Config{},
+				fmt.Errorf("Error opening cert file %v : %w", caCertFile, err)
+		}
+		caCertPool = x509.NewCertPool()
+		caCertPool.AppendCertsFromPEM(caCert)
+	}
+
+	return &tls.Config{
+		ServerName: host,
+		ClientAuth: certOpt,
+		ClientCAs:  caCertPool,
+		MinVersion: tls.VersionTLS13,
+	}, nil
+}
+
+func getTLSConfig2(cfg Config) (*tls.Config, error) {
+
+	cer, err := tls.LoadX509KeyPair(cfg.CertFile, cfg.KeyFile)
+	if err != nil {
+		return &tls.Config{}, fmt.Errorf("Error Loading Key Pair (%v, %v) : %w", cfg.CertFile, cfg.KeyFile, err)
+	}
+
+	return &tls.Config{
+		Certificates: []tls.Certificate{cer},
+		MinVersion:   tls.VersionTLS13,
+	}, nil
+}
+
 func startServer(wg *sync.WaitGroup) (*http.Server, *Config) {
 	cfg, err := loadConfig(ConfigFile)
 	if err != nil {
@@ -310,12 +353,23 @@ func startServer(wg *sync.WaitGroup) (*http.Server, *Config) {
 		ReadTimeout:  15 * time.Second,
 	}
 
+	// add TLS Config if using HTTPS
+	if cfg.HTTPS {
+		// TODO FLESH OUT
+		srv.TLSConfig, err = getTLSConfig2(cfg)
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Printf("Using HTTPS\n")
+		log.Printf("Key Pair:\t(%v, %v)\n", cfg.CertFile, cfg.KeyFile)
+	}
+
 	log.Printf("Starting Server at: %v...", addr)
 	go func() {
 		defer wg.Done() // let main know we are done cleaning up
 		// always returns error. ErrServerClosed on graceful close
 		if cfg.HTTPS {
-			if err = srv.ListenAndServeTLS("", ""); err != http.ErrServerClosed {
+			if err = srv.ListenAndServeTLS(cfg.CertFile, cfg.KeyFile); err != http.ErrServerClosed {
 				// unexpected error
 				log.Fatalf("ListenAndServeTLS() NOT IMPLEMENTED: %v", err)
 			}
