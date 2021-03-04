@@ -218,7 +218,6 @@ func HTMLHandler(scriptName string, debugEnable bool) func(http.ResponseWriter, 
 func TypeScriptHandler(scriptName string, debugEnable bool) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		filename := filepath.Base(r.URL.Path)
-		fmt.Println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
 		if debugEnable {
 			log.Println("TypeScriptHandler")
 			log.Println(r)
@@ -264,10 +263,16 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // RedirectHome redirects urls to the address to be served by HomeHandler
-func RedirectHome(w http.ResponseWriter, r *http.Request) {
-	// redirect to home
-	http.Redirect(w, r, "http://shmeeload.xyz/home", http.StatusFound)
+func RedirectHome(host string, debugEnable bool) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		home := host + "/home"
+		if debugEnable {
+			log.Println(home)
+		}
+		http.Redirect(w, r, "/home", http.StatusFound)
+	}
 }
+
 
 // ChatHomeHandler is the route for the chat home where users can get assigned unique identifiers
 func ChatHomeHandler(filename string, debugEnable bool) func(http.ResponseWriter, *http.Request) {

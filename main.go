@@ -337,7 +337,7 @@ func startServer(wg *sync.WaitGroup) (*http.Server, *Config) {
 	// attach pather with handler
 	r.HandleFunc("/articles/{category}/{id:[0-9]+}", handlers.ArticleHandler).Name("articleRoute")
 	r.HandleFunc("/home", handlers.HomeHandler)
-	r.HandleFunc("/", handlers.RedirectHome)
+	r.HandleFunc("/", handlers.RedirectHome(cfg.Host, cfg.DebugLog))
 	r.HandleFunc("/static/js/{scriptname}", handlers.ScriptsHandler("bob", cfg.DebugLog))
 	r.HandleFunc("/static/css/{filename}", handlers.CSSHandler("Joe", cfg.DebugLog))
 	r.HandleFunc("/static/html/{filename}", handlers.HTMLHandler("Joe", cfg.DebugLog))
