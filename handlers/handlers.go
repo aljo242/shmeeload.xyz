@@ -40,6 +40,16 @@ func (srv webServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	//w.Header().Set("Author", srv.author)
 }
 
+// CheckHTTP2Support is a simple test to see if HTTP2 is supported by checking if http.Pusher is in the responsewriter
+func CheckHTTP2Support(w http.ResponseWriter) {
+	_, ok := w.(http.Pusher)
+	if ok {
+		log.Printf("HTTP/2 Supported!\n")
+	}
+	log.Printf("HTTP/2 NOT Supported!\n")
+
+}
+
 func romanGet(w http.ResponseWriter, r *http.Request) {
 	urlPathElements := strings.Split(r.URL.Path, "/")
 
@@ -244,6 +254,7 @@ func TypeScriptHandler(scriptName string, debugEnable bool) func(http.ResponseWr
 
 // HomeHandler serves the home.html file
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
+	CheckHTTP2Support(w)
 	// this page currently only serves html resources
 	if r.Method == "GET" {
 		wantFile := filepath.Join(htmlDir, "home.html")
@@ -272,7 +283,6 @@ func RedirectHome(host string, debugEnable bool) func(http.ResponseWriter, *http
 		http.Redirect(w, r, "/home", http.StatusFound)
 	}
 }
-
 
 // ChatHomeHandler is the route for the chat home where users can get assigned unique identifiers
 func ChatHomeHandler(filename string, debugEnable bool) func(http.ResponseWriter, *http.Request) {
