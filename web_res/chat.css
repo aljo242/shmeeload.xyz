@@ -9,6 +9,7 @@ body {
     width: 100%;
     height: 100%;
     background: salmon;
+    font-family: "Andale Mono", monospace;
 }
 
 * {
@@ -26,6 +27,7 @@ body {
     right: 0.5em;
     bottom: 3em;
     overflow: auto;
+    font-family: "Andale Mono", monospace;
 }
 
 #send_msg_form {
@@ -37,6 +39,7 @@ body {
     left: 0px;
     width: 100%;
     overflow: hidden;
+    font-family: "Andale Mono", monospace;
 }
 
 .openBtn {
@@ -52,12 +55,14 @@ body {
     padding: 14px 20px;
     cursor: pointer;
     position: fixed;
+    font-family: "Andale Mono", monospace;
 }
 
 .loginPopUp {
     position: relative;
     text-align: center;
     width: 100%;
+    font-family: "Andale Mono", monospace;
 }
 
 .formPopUp {
@@ -68,12 +73,14 @@ body {
     transform: translate(-50%, 5%);
     border: 3px solid #999999;
     z-index: 9;
+    font-family: "Andale Mono", monospace;
 }
 
 .formContainer {
     max-width: 300px;
     padding: 20px;
     background-color: #fff;
+    font-family: "Andale Mono", monospace;
 }
 
 .formContainer input[type=text]:focus,
