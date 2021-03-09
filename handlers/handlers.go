@@ -305,3 +305,31 @@ func ChatHomeHandler(filename string, debugEnable bool) func(http.ResponseWriter
 		}
 	}
 }
+
+// ResumeHomeHandler takes a script name and
+func ResumeHomeHandler(debugEnable bool) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		filename := filepath.Base(r.URL.Path)
+		if debugEnable {
+			log.Println("ResumeHomeHandler")
+			log.Println(r)
+			log.Println(filename)
+		}
+
+		if r.Method == "GET" {
+			wantFile := filepath.Join(htmlDir, "resumeHome.html")
+			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
+				w.WriteHeader(http.StatusNotFound)
+				log.Fatalf("Error finding file %v : %v", wantFile, err)
+				return
+			}
+
+			w.WriteHeader(http.StatusOK)
+			http.ServeFile(w, r, wantFile)
+
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+	}
+}
