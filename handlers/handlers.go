@@ -274,7 +274,8 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 		pusher, ok := w.(http.Pusher)
 		if ok {
 			// push js file
-			wantFile := filepath.Join(jsDir, "app.js")
+			//wantFile := filepath.Join(jsDir, "app.js")
+			wantFile := "https://shmeeload.xyz/static/js/app.js"
 			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
 				w.WriteHeader(http.StatusNotFound)
 				log.Fatalf("Error finding file %v : %v", wantFile, err)
@@ -287,7 +288,8 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			// push css file
-			wantFile = filepath.Join(cssDir, "home.css")
+			//wantFile = filepath.Join(cssDir, "home.css")
+			wantFile = "https://shmeeload.xyz/static/css/home.css"
 			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
 				w.WriteHeader(http.StatusNotFound)
 				log.Fatalf("Error finding file %v : %v", wantFile, err)
