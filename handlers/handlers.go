@@ -41,7 +41,7 @@ func (srv webServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // CheckHTTP2Support is a simple test to see if HTTP2 is supported by checking if http.Pusher is in the responsewriter
-func CheckHTTP2Support(w http.ResponseWriter) {
+func CheckHTTP2Support(w http.ResponseWriter) bool {
 	_, ok := w.(http.Pusher)
 	if ok {
 		log.Printf("HTTP/2 Supported!\n")
@@ -49,6 +49,7 @@ func CheckHTTP2Support(w http.ResponseWriter) {
 		log.Printf("HTTP/2 NOT Supported!\n")
 	}
 
+	return ok
 }
 
 func romanGet(w http.ResponseWriter, r *http.Request) {
@@ -258,20 +259,59 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	CheckHTTP2Support(w)
 	// this page currently only serves html resources
 	if r.Method == "GET" {
-		wantFile := filepath.Join(htmlDir, "home.html")
-		if _, err := os.Stat(wantFile); os.IsNotExist(err) {
-			w.WriteHeader(http.StatusNotFound)
-			log.Fatalf("Error finding file %v : %v", wantFile, err)
-			return
-		}
+		defer func() {
+			wantFile := filepath.Join(htmlDir, "home.html")
+			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
+				w.WriteHeader(http.StatusNotFound)
+				log.Fatalf("Error finding file %v : %v", wantFile, err)
+				return
+			}
 
-		w.WriteHeader(http.StatusOK)
-		http.ServeFile(w, r, wantFile)
+			w.WriteHeader(http.StatusOK)
+			http.ServeFile(w, r, wantFile)
+		}()
+
+		pusher, ok := w.(http.Pusher)
+		if ok {
+			// push js file
+			wantFile := filepath.Join(jsDir, "app.js")
+			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
+				w.WriteHeader(http.StatusNotFound)
+				log.Fatalf("Error finding file %v : %v", wantFile, err)
+				return
+			}
+			err := pusher.Push(wantFile, nil)
+			if err != nil {
+				log.Printf("Error pushing file %v : %v", wantFile, err)
+				return
+			}
+
+			// push css file
+			wantFile = filepath.Join(cssDir, "home.css")
+			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
+				w.WriteHeader(http.StatusNotFound)
+				log.Fatalf("Error finding file %v : %v", wantFile, err)
+				return
+			}
+			err = pusher.Push(wantFile, nil)
+			if err != nil {
+				log.Printf("Error pushing file %v : %v", wantFile, err)
+				return
+			}
+		}
 
 	} else {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+
+	_, ok := w.(http.Pusher)
+	if ok {
+		log.Printf("HTTP/2 Supported!\n")
+	} else {
+		log.Printf("HTTP/2 NOT Supported!\n")
+	}
+
 }
 
 // RedirectHome redirects urls to the address to be served by HomeHandler
