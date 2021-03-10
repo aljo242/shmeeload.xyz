@@ -363,6 +363,7 @@ func startServer(wg *sync.WaitGroup) (*http.Server, *Config) {
 		}
 		log.Printf("Using HTTPS\n")
 		log.Printf("Key Pair:\t(%v, %v)\n", cfg.CertFile, cfg.KeyFile)
+		log.Println(srv.TLSConfig)
 	}
 
 	log.Printf("Starting Server at: %v...", addr)
