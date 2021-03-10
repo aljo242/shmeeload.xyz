@@ -395,7 +395,7 @@ func startServer(wg *sync.WaitGroup) (*http.Server, *Config) {
 		}
 		log.Printf("Using HTTPS\n")
 		log.Printf("Key Pair:\t(%v, %v)\n", cfg.CertFile, cfg.KeyFile)
-		log.Println(srv.TLSConfig)
+		//log.Println(srv.TLSConfig)
 	}
 
 	log.Printf("Starting Server at: %v...", addr)
@@ -407,6 +407,14 @@ func startServer(wg *sync.WaitGroup) (*http.Server, *Config) {
 				// unexpected error
 				log.Fatalf("ListenAndServeTLS() NOT IMPLEMENTED: %v", err)
 			}
+			// listen for HTTP traffic and redirect to HTTPS
+			go func(hostName string) {
+				httpAddr := addr + ":80"
+				httpsHost := "https://" + hostName
+				if err := http.ListenAndServe(httpAddr, http.HandlerFunc(handlers.RedirectHTTPS(httpsHost, cfg.DebugLog))); err != nil {
+					log.Fatalf("ListenAndServe error: %v", err)
+				}
+			}(cfg.Host)
 		} else {
 			if err = srv.ListenAndServe(); err != http.ErrServerClosed {
 				// unexpected error

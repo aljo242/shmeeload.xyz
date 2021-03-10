@@ -327,6 +327,16 @@ func RedirectHome(host string, debugEnable bool) func(http.ResponseWriter, *http
 	}
 }
 
+// RedirectHTTPS can redirect all http traffic to corresponding https addresses
+func RedirectHTTPS(httpsHost string, debugEnable bool) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if debugEnable {
+			log.Printf("%v\n", httpsHost+r.RequestURI)
+		}
+		http.Redirect(w, r, httpsHost+r.RequestURI, http.StatusMovedPermanently)
+	}
+}
+
 // ChatHomeHandler is the route for the chat home where users can get assigned unique identifiers
 func ChatHomeHandler(filename string, debugEnable bool) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
