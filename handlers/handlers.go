@@ -45,8 +45,9 @@ func CheckHTTP2Support(w http.ResponseWriter) {
 	_, ok := w.(http.Pusher)
 	if ok {
 		log.Printf("HTTP/2 Supported!\n")
+	} else {
+		log.Printf("HTTP/2 NOT Supported!\n")
 	}
-	log.Printf("HTTP/2 NOT Supported!\n")
 
 }
 
