@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -282,8 +283,34 @@ func getTLSConfig1(host, caCertFile string, certOpt tls.ClientAuthType) (*tls.Co
 }
 
 func getTLSConfig3(cfg Config) (*tls.Config, error) {
+	cer, err := tls.LoadX509KeyPair(cfg.CertFile, cfg.KeyFile)
+	if err != nil {
+		return &tls.Config{}, fmt.Errorf("Error Loading Key Pair (%v, %v) : %w", cfg.CertFile, cfg.KeyFile, err)
+	}
 
-	return &tls.Config{}, nil
+	rootCAPool := x509.NewCertPool()
+
+	// read rootCA file into byte
+	f, err := os.Open(cfg.RootCA)
+	if err != nil {
+		return &tls.Config{}, fmt.Errorf("Error Opening Root CA file %v : %w", cfg.RootCA, err)
+	}
+
+	b, err := ioutil.ReadAll(f)
+	if err != nil {
+		return &tls.Config{}, fmt.Errorf("Error Reading Root CA file %v : %w", cfg.RootCA, err)
+	}
+
+	ok := rootCAPool.AppendCertsFromPEM(b)
+	if !ok {
+		return &tls.Config{}, fmt.Errorf("Error appending root CA cert %v : %w", cfg.RootCA, err)
+	}
+
+	return &tls.Config{
+		Certificates: []tls.Certificate{cer},
+		MinVersion:   tls.VersionTLS13,
+		RootCAs:      rootCAPool,
+	}, nil
 }
 
 func getTLSConfig2(cfg Config) (*tls.Config, error) {
@@ -363,7 +390,7 @@ func startServer(wg *sync.WaitGroup) (*http.Server, *Config) {
 	// add TLS Config if using HTTPS
 	if cfg.HTTPS {
 		// TODO FLESH OUT
-		srv.TLSConfig, err = getTLSConfig2(cfg)
+		srv.TLSConfig, err = getTLSConfig3(cfg)
 		if err != nil {
 			log.Fatal(err)
 		}
