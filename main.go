@@ -53,6 +53,7 @@ type Config struct {
 	ShutdownCode int    `json:"shutdownCode"`
 	CertFile     string `json:"certFile"`
 	KeyFile      string `json:"keyFile"`
+	RootCA       string `json:"rootCA"`
 	// TODO add more
 }
 
@@ -280,6 +281,11 @@ func getTLSConfig1(host, caCertFile string, certOpt tls.ClientAuthType) (*tls.Co
 	}, nil
 }
 
+func getTLSConfig3(cfg Config) (*tls.Config, error) {
+
+	return &tls.Config{}, nil
+}
+
 func getTLSConfig2(cfg Config) (*tls.Config, error) {
 
 	cer, err := tls.LoadX509KeyPair(cfg.CertFile, cfg.KeyFile)
@@ -371,7 +377,7 @@ func startServer(wg *sync.WaitGroup) (*http.Server, *Config) {
 		defer wg.Done() // let main know we are done cleaning up
 		// always returns error. ErrServerClosed on graceful close
 		if cfg.HTTPS {
-			if err = srv.ListenAndServeTLS(cfg.CertFile, cfg.KeyFile); err != http.ErrServerClosed {
+			if err = srv.ListenAndServeTLS("", ""); err != http.ErrServerClosed {
 				// unexpected error
 				log.Fatalf("ListenAndServeTLS() NOT IMPLEMENTED: %v", err)
 			}
