@@ -357,7 +357,7 @@ func startServer(wg *sync.WaitGroup) (*http.Server, *Config) {
 	// add TLS Config if using HTTPS
 	if cfg.HTTPS {
 		// TODO FLESH OUT
-		srv.TLSConfig, err = getTLSConfig2(cfg)
+		srv.TLSConfig, err = getTLSConfig1(cfg.Host, cfg.CertFile, tls.RequireAndVerifyClientCert)
 		if err != nil {
 			log.Fatal(err)
 		}
