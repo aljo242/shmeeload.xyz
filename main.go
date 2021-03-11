@@ -410,7 +410,7 @@ func startServer(wg *sync.WaitGroup) (*http.Server, *Config) {
 			}
 			// listen for HTTP traffic and redirect to HTTPS
 			go func(hostName string) {
-				httpAddr := addr + ":80"
+				httpAddr := hostIP + ":80"
 				httpsHost := "https://" + hostName
 				log.Printf("Redirecting all traffic to http://%v/* to %v/*", httpAddr, httpsHost)
 				if err := http.ListenAndServe(httpAddr, http.HandlerFunc(handlers.RedirectHTTPS(httpsHost, cfg.DebugLog))); err != nil {
