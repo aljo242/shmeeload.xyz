@@ -309,6 +309,7 @@ func getTLSConfig3(cfg Config) (*tls.Config, error) {
 	return &tls.Config{
 		Certificates: []tls.Certificate{cer},
 		RootCAs:      rootCAPool,
+		MinVersion:   tls.VersionTLS13,
 	}, nil
 }
 
