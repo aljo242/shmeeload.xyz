@@ -1,8 +1,21 @@
 const DEFAULT_NAME : string = "anon";
 const DEFUALT_DECODING : string = "utf-8";
 
+// TODO MAKE CheckHTTPS() func
 const currentURL = window.location.href;
 console.log(currentURL)
+let websocketPrefix = ""
+if (currentURL.includes("http:/")) {
+    console.log("USING HTTP")
+    websocketPrefix = "ws://"
+}
+if (currentURL.includes("https://")) {
+    console.log("USING HTTPS")
+    websocketPrefix = "wss://"
+}
+
+console.log(websocketPrefix)
+
 
 if (!("TextEncoder" in window)) {
     alert("Sorry, this browser does not support TextEncoder!");
@@ -106,7 +119,7 @@ window.onload = () => {
     let msg = document.getElementById("msg")! as HTMLInputElement;
 
     if (window["WebSocket"]) {
-        conn = new WebSocket("ws://" + document.location.host + "/chat/ws");
+        conn = new WebSocket(websocketPrefix + document.location.host + "/chat/ws");
         conn.binaryType = "arraybuffer";
         conn.onclose = () => {
             let item = document.createElement("div");
