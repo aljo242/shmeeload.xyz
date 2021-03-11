@@ -256,33 +256,7 @@ func SetupTemplates(cfg Config) ([]string, error) {
 	return files, nil
 }
 
-func getTLSConfig1(host, caCertFile string, certOpt tls.ClientAuthType) (*tls.Config, error) {
-	var caCert []byte
-	var caCertPool *x509.CertPool
-
-	if certOpt > tls.RequestClientCert {
-		f, err := os.Open(caCertFile)
-		if err != nil {
-			log.Fatalf("Error opening cert file %v : %w", caCertFile, err)
-		}
-		caCert, err = io.ReadAll(f)
-		if err != nil {
-			return &tls.Config{},
-				fmt.Errorf("Error opening cert file %v : %w", caCertFile, err)
-		}
-		caCertPool = x509.NewCertPool()
-		caCertPool.AppendCertsFromPEM(caCert)
-	}
-
-	return &tls.Config{
-		ServerName: host,
-		ClientAuth: certOpt,
-		ClientCAs:  caCertPool,
-		MinVersion: tls.VersionTLS13,
-	}, nil
-}
-
-func getTLSConfig3(cfg Config) (*tls.Config, error) {
+func getTLSConfig(cfg Config) (*tls.Config, error) {
 	cer, err := tls.LoadX509KeyPair(cfg.CertFile, cfg.KeyFile)
 	if err != nil {
 		return &tls.Config{}, fmt.Errorf("Error Loading Key Pair (%v, %v) : %w", cfg.CertFile, cfg.KeyFile, err)
@@ -309,20 +283,7 @@ func getTLSConfig3(cfg Config) (*tls.Config, error) {
 	return &tls.Config{
 		Certificates: []tls.Certificate{cer},
 		RootCAs:      rootCAPool,
-		MinVersion:   tls.VersionTLS13,
-	}, nil
-}
-
-func getTLSConfig2(cfg Config) (*tls.Config, error) {
-
-	cer, err := tls.LoadX509KeyPair(cfg.CertFile, cfg.KeyFile)
-	if err != nil {
-		return &tls.Config{}, fmt.Errorf("Error Loading Key Pair (%v, %v) : %w", cfg.CertFile, cfg.KeyFile, err)
-	}
-
-	return &tls.Config{
-		Certificates: []tls.Certificate{cer},
-		MinVersion:   tls.VersionTLS13,
+		MinVersion:   tls.VersionTLS12,
 	}, nil
 }
 
@@ -390,7 +351,7 @@ func startServer(wg *sync.WaitGroup) (*http.Server, *Config) {
 	// add TLS Config if using HTTPS
 	if cfg.HTTPS {
 		// TODO FLESH OUT
-		srv.TLSConfig, err = getTLSConfig3(cfg)
+		srv.TLSConfig, err = getTLSConfig(cfg)
 		if err != nil {
 			log.Fatal(err)
 		}
