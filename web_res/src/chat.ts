@@ -1,6 +1,9 @@
 const DEFAULT_NAME : string = "anon";
 const DEFUALT_DECODING : string = "utf-8";
 
+const currentURL = window.location.href;
+console.log(currentURL)
+
 if (!("TextEncoder" in window)) {
     alert("Sorry, this browser does not support TextEncoder!");
 }
