@@ -404,10 +404,6 @@ func startServer(wg *sync.WaitGroup) (*http.Server, *Config) {
 		defer wg.Done() // let main know we are done cleaning up
 		// always returns error. ErrServerClosed on graceful close
 		if cfg.HTTPS {
-			if err = srv.ListenAndServeTLS("", ""); err != http.ErrServerClosed {
-				// unexpected error
-				log.Fatalf("ListenAndServeTLS() NOT IMPLEMENTED: %v", err)
-			}
 			// listen for HTTP traffic and redirect to HTTPS
 			go func(hostName string) {
 				httpAddr := hostIP + ":80"
@@ -417,6 +413,11 @@ func startServer(wg *sync.WaitGroup) (*http.Server, *Config) {
 					log.Fatalf("ListenAndServe error: %v", err)
 				}
 			}(cfg.Host)
+
+			if err = srv.ListenAndServeTLS("", ""); err != http.ErrServerClosed {
+				// unexpected error
+				log.Fatalf("ListenAndServeTLS() NOT IMPLEMENTED: %v", err)
+			}
 		} else {
 			if err = srv.ListenAndServe(); err != http.ErrServerClosed {
 				// unexpected error
