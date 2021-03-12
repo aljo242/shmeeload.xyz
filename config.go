@@ -42,7 +42,7 @@ func loadConfig(filename string) (ServerConfig, error) {
 
 // Print provides a pretty formatted print of a ServerConfig
 func (cfg *ServerConfig) Print() {
-	fmt.Printf("-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-\n")
+	fmt.Printf("\n-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-\n")
 	fmt.Printf("ServerConfig:\n")
 	fmt.Printf("\tHost:\t\t%v\n", cfg.Host)
 	fmt.Printf("\tPort:\t\t%v\n", cfg.Port)
@@ -55,5 +55,5 @@ func (cfg *ServerConfig) Print() {
 	fmt.Printf("\tCertFile:\t%v\n", cfg.CertFile)
 	fmt.Printf("\tKeyFile:\t%v\n", cfg.KeyFile)
 	fmt.Printf("\tRootCA:\t%v\n", cfg.RootCA)
-	fmt.Printf("-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-\n")
+	fmt.Printf("-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-\n\n")
 }
