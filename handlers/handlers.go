@@ -270,7 +270,8 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 				log.Fatalf("Error finding file %v : %v", wantFile, err)
 				return
 			}
-			err := pusher.Push(wantFile, nil)
+			absWantFile, _ := filepath.Abs(wantFile)
+			err := pusher.Push(absWantFile, nil)
 			if err != nil {
 				log.Printf("Error pushing file %v : %v", wantFile, err)
 				return
@@ -284,7 +285,8 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 				log.Fatalf("Error finding file %v : %v", wantFile, err)
 				return
 			}
-			err = pusher.Push(wantFile, nil)
+			absWantFile, _= filepath.Abs(wantFile)
+			err = pusher.Push(absWantFile, nil)
 			if err != nil {
 				log.Printf("Error pushing file %v : %v", wantFile, err)
 				return
