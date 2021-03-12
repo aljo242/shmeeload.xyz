@@ -16,8 +16,8 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/aljo242/ip_util"
 	"github.com/aljo242/shmeeload.xyz/handlers"
-	"github.com/aljo242/shmeeload.xyz/ip_util"
 
 	"github.com/gorilla/mux"
 )
@@ -342,10 +342,11 @@ func startServer(wg *sync.WaitGroup) (*http.Server, *Config) {
 	r.HandleFunc("/resume/home", handlers.ResumeHomeHandler(cfg.DebugLog))
 
 	srv := &http.Server{
-		Handler:      r,
-		Addr:         addr,
-		WriteTimeout: 15 * time.Second,
-		ReadTimeout:  15 * time.Second,
+		Handler:        r,
+		Addr:           addr,
+		WriteTimeout:   15 * time.Second,
+		ReadTimeout:    15 * time.Second,
+		MaxHeaderBytes: 1 << 20,
 	}
 
 	// add TLS Config if using HTTPS

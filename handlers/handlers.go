@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aljo242/shmeeload.xyz/ip_util"
+	"github.com/aljo242/ip_util"
 	"github.com/aljo242/shmeeload.xyz/romanNumerals"
 	"github.com/gorilla/mux"
 )
