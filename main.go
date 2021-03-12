@@ -207,7 +207,8 @@ func startServer(wg *sync.WaitGroup) (*http.Server, *ServerConfig) {
 		log.Fatalf("Error loading config : %v", err)
 		return nil, nil
 	}
-	fmt.Printf("%v\n", cfg)
+
+	cfg.Print()
 
 	var hostIP string
 	if cfg.ChooseIP {
