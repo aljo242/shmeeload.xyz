@@ -54,6 +54,6 @@ func (cfg *ServerConfig) Print() {
 	fmt.Printf("\tShutdownCode:\t%d\n", cfg.ShutdownCode)
 	fmt.Printf("\tCertFile:\t%v\n", cfg.CertFile)
 	fmt.Printf("\tKeyFile:\t%v\n", cfg.KeyFile)
-	fmt.Printf("\tRootCA:\t%v\n", cfg.RootCA)
+	fmt.Printf("\tRootCA:\t\t%v\n", cfg.RootCA)
 	fmt.Printf("-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-\n\n")
 }
