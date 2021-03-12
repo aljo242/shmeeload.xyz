@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -13,7 +12,6 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
-	"text/template"
 	"time"
 
 	"github.com/aljo242/ip_util"
@@ -43,59 +41,6 @@ func Exists(path string) bool {
 	return false // path/file does not exist
 }
 
-// Config is the general struct holds parsed JSON config info
-type Config struct {
-	Host         string `json:"host"`
-	Port         string `json:"port"`
-	IP           string `json:"IP"`
-	ChooseIP     bool   `json:"chooseIP"`
-	HTTPS        bool   `json:"secure"`
-	DebugLog     bool   `json:"debugLog"`
-	ShutdownCode int    `json:"shutdownCode"`
-	CertFile     string `json:"certFile"`
-	KeyFile      string `json:"keyFile"`
-	RootCA       string `json:"rootCA"`
-	// TODO add more
-}
-
-func loadConfig(filename string) (Config, error) {
-	cfg := Config{}
-	cfgFile, err := os.Open(filename)
-	defer cfgFile.Close()
-	if err != nil {
-		return Config{},
-			fmt.Errorf("Error opening config file %v : %w", filename, err)
-	}
-
-	jsonParser := json.NewDecoder(cfgFile)
-	err = jsonParser.Decode(&cfg)
-	if err != nil {
-		return Config{},
-			fmt.Errorf("Error parsing file %v : %w", filename, err)
-	}
-
-	return cfg, nil
-}
-
-type htmlTemplateInfo struct {
-	Host string
-	// TODO add more
-}
-
-// DebugLogln is a simple utility for conditional logging of bonus info
-func DebugLogln(toggle bool, msg string) {
-	if toggle {
-		log.Println(msg)
-	}
-}
-
-// DebugPrintln is a simple utility for conditional logging of bonus info
-func DebugPrintln(toggle bool, msg string) {
-	if toggle {
-		fmt.Println(msg)
-	}
-}
-
 // CopyFile copies filename src to dst
 func CopyFile(src, dst string) error {
 	in, err := os.Open(src)
@@ -117,40 +62,9 @@ func CopyFile(src, dst string) error {
 	return nil
 }
 
-// ExecuteTemplateHTML is a util func for executing an html template
-// at path and saving the new file to newPath
-func ExecuteTemplateHTML(cfg Config, path, newPath string) error {
-	newFile, err := os.Create(newPath)
-	defer newFile.Close()
-	if err != nil {
-		return fmt.Errorf("Error creating file %v : %w", newPath, err)
-	}
-
-	tpl, err := template.ParseFiles(path)
-	if err != nil {
-		return fmt.Errorf("Error creating template : %w", err)
-	}
-
-	var httpPrefix string
-	if cfg.HTTPS {
-		httpPrefix = "https://"
-	} else {
-		httpPrefix = "http://"
-	}
-
-	p := htmlTemplateInfo{httpPrefix + cfg.Host}
-
-	err = tpl.Execute(newFile, p)
-	if err != nil {
-		return fmt.Errorf("Error executing template : %w", err)
-	}
-
-	return nil
-}
-
 // SetupTemplates builds the template output directory, executes HTML templates,
 // and copies all web resource files to the template output directory (.js, .ts, .js.map, .css, .html)
-func SetupTemplates(cfg Config) ([]string, error) {
+func SetupTemplates(cfg ServerConfig) ([]string, error) {
 	files := make([]string, 0)
 	DebugLogln(cfg.DebugLog, "SETTING UP TEMPLATES")
 
@@ -256,7 +170,7 @@ func SetupTemplates(cfg Config) ([]string, error) {
 	return files, nil
 }
 
-func getTLSConfig(cfg Config) (*tls.Config, error) {
+func getTLSConfig(cfg ServerConfig) (*tls.Config, error) {
 	cer, err := tls.LoadX509KeyPair(cfg.CertFile, cfg.KeyFile)
 	if err != nil {
 		return &tls.Config{}, fmt.Errorf("Error Loading Key Pair (%v, %v) : %w", cfg.CertFile, cfg.KeyFile, err)
@@ -287,7 +201,7 @@ func getTLSConfig(cfg Config) (*tls.Config, error) {
 	}, nil
 }
 
-func startServer(wg *sync.WaitGroup) (*http.Server, *Config) {
+func startServer(wg *sync.WaitGroup) (*http.Server, *ServerConfig) {
 	cfg, err := loadConfig(ConfigFile)
 	if err != nil {
 		log.Fatalf("Error loading config : %v", err)
