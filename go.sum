@@ -1,3 +1,5 @@
+github.com/aljo242/http_util v0.0.0-20210312015743-f74595548ec3 h1:aG03HPHvmUj7hOmmZZWgk4vBB9iH1WKyCr/MxOWH/IM=
+github.com/aljo242/http_util v0.0.0-20210312015743-f74595548ec3/go.mod h1:Cl0YkZbeJx2xdqS12vR9pKKBe6tvVd0CJbPedq1+45o=
 github.com/aljo242/ip_util v0.0.0-20210312012915-afbfc74e1355 h1:U9z+ShhRaLrdW8rIHYxOk13qADAJlaAYoZJuUtofymA=
 github.com/aljo242/ip_util v0.0.0-20210312012915-afbfc74e1355/go.mod h1:dALxI4OsvNa/Tb38hT1xxX+N7kCSoZia934V1xXjjIY=
 github.com/glendc/go-external-ip v0.0.0-20200601212049-c872357d968e h1:gLpAlmoGqnW3a3GCkOe+Ic8hZoSCfi0PdA0B8j7d6uw=
