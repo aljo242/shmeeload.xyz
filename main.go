@@ -5,11 +5,10 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
-	"net"
+	//"net"
 	"os"
 	"path/filepath"
 	"sync"
@@ -33,35 +32,6 @@ const (
 	TemplateOutputDir string = "./static"
 )
 
-// Exists is a basic file util that says if a dir or file exists
-func Exists(path string) bool {
-	_, err := os.Stat(path)
-	if !os.IsNotExist(err) {
-		return true // path/file exists
-	}
-	return false // path/file does not exist
-}
-
-// CopyFile copies filename src to dst
-func CopyFile(src, dst string) error {
-	in, err := os.Open(src)
-	if err != nil {
-		return fmt.Errorf("Error opening file: %v : %w", src, err)
-	}
-	defer in.Close()
-
-	out, err := os.Create(dst)
-	if err != nil {
-		return fmt.Errorf("Error creating file: %v : %w", src, err)
-	}
-	defer out.Close()
-
-	if _, err = io.Copy(out, in); err != nil {
-		return fmt.Errorf("Error copying %v to %v : %w", src, dst, err)
-	}
-
-	return nil
-}
 
 // SetupTemplates builds the template output directory, executes HTML templates,
 // and copies all web resource files to the template output directory (.js, .ts, .js.map, .css, .html)
@@ -257,11 +227,11 @@ func startServer(wg *sync.WaitGroup) (*http.Server, *ServerConfig) {
 	r.HandleFunc("/chat/ws", serveWs(hub))
 	r.HandleFunc("/resume/home", handlers.ResumeHomeHandler(cfg.DebugLog))
 
-	connstateCallback := func(con net.Conn, state http.ConnState) {
-		log.Printf("LOGGING CONNSTATE:\n")
-		fmt.Printf("\t\t%v\n", con)
-		fmt.Printf("\t\t%v\n", state)
-	}
+	//connstateCallback := func(con net.Conn, state http.ConnState) {
+	//	log.Printf("LOGGING CONNSTATE:\n")
+	//	fmt.Printf("\t\t%v\n", con)
+	//	fmt.Printf("\t\t%v\n", state)
+	//}
 
 	srv := &http.Server{
 		Handler:           r,
@@ -270,7 +240,7 @@ func startServer(wg *sync.WaitGroup) (*http.Server, *ServerConfig) {
 		ReadTimeout:       15 * time.Second,
 		ReadHeaderTimeout: 15 * time.Second,
 		MaxHeaderBytes:    1 << 20,
-		ConnState:		   connstateCallback,
+		//ConnState:		   connstateCallback,
 	}
 
 	// add TLS Config if using HTTPS

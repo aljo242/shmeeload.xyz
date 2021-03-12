@@ -14,7 +14,10 @@
   ],
   "author": "Cozart Shmoopler",
   "license": "ISC",
+  "devDependencies": {
+    "typescript": "^4.2.3"
+  },
   "dependencies": {
-    "typescript": "^4.2.2"
+    "tsc": "^1.20150623.0"
   }
 }
