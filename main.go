@@ -37,9 +37,9 @@ const (
 // and copies all web resource files to the template output directory (.js, .ts, .js.map, .css, .html)
 func SetupTemplates(cfg ServerConfig) ([]string, error) {
 	files := make([]string, 0)
-	DebugLogln(cfg.DebugLog, "SETTING UP TEMPLATES")
+	DebugLogln(cfg.DebugLog, "setting up templates...")
 
-	DebugLogln(cfg.DebugLog, "Cleaning output directory...")
+	DebugLogln(cfg.DebugLog, "cleaning output directory...")
 	// clean static output dir
 	err := os.RemoveAll(TemplateOutputDir)
 	if err != nil {
@@ -47,7 +47,7 @@ func SetupTemplates(cfg ServerConfig) ([]string, error) {
 			fmt.Errorf("error cleaning ouput directory %v : %w", TemplateOutputDir, err)
 	}
 
-	DebugLogln(cfg.DebugLog, "Creating new output directories...")
+	DebugLogln(cfg.DebugLog, "creating new output directories...")
 	// Create/ensure output directory
 	if !Exists(TemplateOutputDir) {
 		err := os.Mkdir(TemplateOutputDir, 0755)
@@ -93,7 +93,7 @@ func SetupTemplates(cfg ServerConfig) ([]string, error) {
 		}
 	}
 
-	DebugLogln(cfg.DebugLog, "Ensuring template base directory exists...")
+	DebugLogln(cfg.DebugLog, "ensuring template base directory exists...")
 	// Ensure base template directory exists
 	if !Exists(TemplateBaseDir) {
 		return nil,
@@ -138,6 +138,7 @@ func SetupTemplates(cfg ServerConfig) ([]string, error) {
 			fmt.Errorf("error walking %v : %w", TemplateBaseDir, err)
 	}
 
+	DebugLogln(cfg.DebugLog, "template setup complete.")
 	return files, nil
 }
 
@@ -175,7 +176,7 @@ func getTLSConfig(cfg ServerConfig) (*tls.Config, error) {
 func startServer(wg *sync.WaitGroup) (*http.Server, *ServerConfig) {
 	cfg, err := loadConfig(ConfigFile)
 	if err != nil {
-		log.Fatalf("Error loading config : %v", err)
+		log.Fatalf("error loading config : %v", err)
 		return nil, nil
 	}
 
@@ -186,13 +187,13 @@ func startServer(wg *sync.WaitGroup) (*http.Server, *ServerConfig) {
 
 		h, err := ip_util.HostInfo()
 		if err != nil {
-			log.Fatalf("Error creating Host Struct : %v", err)
+			log.Fatalf("error creating Host Struct : %v", err)
 			return nil, nil
 		}
 
 		hostIP, err = ip_util.SelectHost(h.InternalIPs)
 		if err != nil {
-			log.Fatalf("Error chosing host IP : %v", err)
+			log.Fatalf("error chosing host IP : %v", err)
 			return nil, nil
 		}
 	} else {
@@ -201,7 +202,7 @@ func startServer(wg *sync.WaitGroup) (*http.Server, *ServerConfig) {
 
 	_, err = SetupTemplates(cfg)
 	if err != nil {
-		log.Fatalf("Error setting up templates: %v", err)
+		log.Fatalf("error setting up templates: %v", err)
 		return nil, nil
 	}
 
@@ -245,7 +246,8 @@ func startServer(wg *sync.WaitGroup) (*http.Server, *ServerConfig) {
 		}
 	}
 
-	log.Printf("Starting Server at: %v...", addr)
+	fmt.Printf("\n")
+	log.Printf("starting Server at: %v...", addr)
 	go func() {
 		defer wg.Done() // let main know we are done cleaning up
 		// always returns error. ErrServerClosed on graceful close
@@ -254,7 +256,7 @@ func startServer(wg *sync.WaitGroup) (*http.Server, *ServerConfig) {
 			go func(hostName string) {
 				httpAddr := hostIP + ":80"
 				httpsHost := "https://" + hostName
-				log.Printf("Redirecting all traffic to http://%v/* to %v/*", httpAddr, httpsHost)
+				log.Printf("redirecting all traffic to http://%v/* to %v/*", httpAddr, httpsHost)
 				if err := http.ListenAndServe(httpAddr, http.HandlerFunc(handlers.RedirectHTTPS(httpsHost, cfg.DebugLog))); err != nil {
 					log.Fatalf("ListenAndServe error: %v", err)
 				}
@@ -288,13 +290,13 @@ func runGorillaServer() {
 	getUserInput := func(ch chan<- int) {
 		var code int
 		for {
-			fmt.Printf("Provide shutdown code: \n")
+			fmt.Printf("provide shutdown code: \n")
 			fmt.Scanln(&code)
 			if code == cfg.ShutdownCode {
 				break
 			}
 
-			fmt.Printf("Invalid Code.\n")
+			fmt.Printf("invalid code.\n")
 		}
 		ch <- code
 	}
