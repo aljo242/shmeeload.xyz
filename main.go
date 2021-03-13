@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+
 	//"net"
 	"os"
 	"path/filepath"
@@ -32,7 +33,6 @@ const (
 	TemplateOutputDir string = "./static"
 )
 
-
 // SetupTemplates builds the template output directory, executes HTML templates,
 // and copies all web resource files to the template output directory (.js, .ts, .js.map, .css, .html)
 func SetupTemplates(cfg ServerConfig) ([]string, error) {
@@ -44,7 +44,7 @@ func SetupTemplates(cfg ServerConfig) ([]string, error) {
 	err := os.RemoveAll(TemplateOutputDir)
 	if err != nil {
 		return nil,
-			fmt.Errorf("Error cleaning ouput directory %v : %w", TemplateOutputDir, err)
+			fmt.Errorf("error cleaning ouput directory %v : %w", TemplateOutputDir, err)
 	}
 
 	DebugLogln(cfg.DebugLog, "Creating new output directories...")
@@ -53,7 +53,7 @@ func SetupTemplates(cfg ServerConfig) ([]string, error) {
 		err := os.Mkdir(TemplateOutputDir, 0755)
 		if err != nil {
 			return nil,
-				fmt.Errorf("Error creating directory %v : %w", TemplateOutputDir, err)
+				fmt.Errorf("error creating directory %v : %w", TemplateOutputDir, err)
 		}
 	}
 
@@ -63,7 +63,7 @@ func SetupTemplates(cfg ServerConfig) ([]string, error) {
 		err := os.Mkdir(htmlOutputDir, 0755)
 		if err != nil {
 			return nil,
-				fmt.Errorf("Error creating directory %v : %w", htmlOutputDir, err)
+				fmt.Errorf("error creating directory %v : %w", htmlOutputDir, err)
 		}
 	}
 	jsOutputDir := filepath.Join(TemplateOutputDir, "js")
@@ -71,7 +71,7 @@ func SetupTemplates(cfg ServerConfig) ([]string, error) {
 		err := os.Mkdir(jsOutputDir, 0755)
 		if err != nil {
 			return nil,
-				fmt.Errorf("Error creating directory %v : %w", jsOutputDir, err)
+				fmt.Errorf("error creating directory %v : %w", jsOutputDir, err)
 		}
 	}
 
@@ -80,7 +80,7 @@ func SetupTemplates(cfg ServerConfig) ([]string, error) {
 		err := os.Mkdir(cssOutputDir, 0755)
 		if err != nil {
 			return nil,
-				fmt.Errorf("Error creating directory %v : %w", cssOutputDir, err)
+				fmt.Errorf("error creating directory %v : %w", cssOutputDir, err)
 		}
 	}
 
@@ -89,7 +89,7 @@ func SetupTemplates(cfg ServerConfig) ([]string, error) {
 		err := os.Mkdir(tsOutputDir, 0755)
 		if err != nil {
 			return nil,
-				fmt.Errorf("Error creating directory %v : %w", tsOutputDir, err)
+				fmt.Errorf("error creating directory %v : %w", tsOutputDir, err)
 		}
 	}
 
@@ -97,7 +97,7 @@ func SetupTemplates(cfg ServerConfig) ([]string, error) {
 	// Ensure base template directory exists
 	if !Exists(TemplateBaseDir) {
 		return nil,
-			fmt.Errorf("Base Dir %v does not exist", TemplateBaseDir)
+			fmt.Errorf("base Dir %v does not exist", TemplateBaseDir)
 	}
 
 	// walk through all files in the template resource dir
@@ -111,23 +111,23 @@ func SetupTemplates(cfg ServerConfig) ([]string, error) {
 			switch filepath.Ext(path) {
 			case ".html":
 				newPath := filepath.Join(TemplateOutputDir, "html", filepath.Base(path))
-				DebugPrintln(cfg.DebugLog, "\t" + path +" -> "+newPath)
+				DebugPrintln(cfg.DebugLog, "\t"+path+" -> "+newPath)
 				ExecuteTemplateHTML(cfg, path, newPath)
 			case ".js":
 				newPath := filepath.Join(TemplateOutputDir, "js", filepath.Base(path))
-				DebugPrintln(cfg.DebugLog, "\t" + path+" -> "+newPath)
+				DebugPrintln(cfg.DebugLog, "\t"+path+" -> "+newPath)
 				CopyFile(path, newPath)
 			case ".map":
 				newPath := filepath.Join(TemplateOutputDir, "js", filepath.Base(path))
-				DebugPrintln(cfg.DebugLog, "\t" + path+" -> "+newPath)
+				DebugPrintln(cfg.DebugLog, "\t"+path+" -> "+newPath)
 				CopyFile(path, newPath)
 			case ".css":
 				newPath := filepath.Join(TemplateOutputDir, "css", filepath.Base(path))
-				DebugPrintln(cfg.DebugLog, "\t" + path+" -> "+newPath)
+				DebugPrintln(cfg.DebugLog, "\t"+path+" -> "+newPath)
 				CopyFile(path, newPath)
 			case ".ts":
 				newPath := filepath.Join(TemplateOutputDir, "src", filepath.Base(path))
-				DebugPrintln(cfg.DebugLog, "\t" + path+" -> "+newPath)
+				DebugPrintln(cfg.DebugLog, "\t"+path+" -> "+newPath)
 				CopyFile(path, newPath)
 			}
 
@@ -135,7 +135,7 @@ func SetupTemplates(cfg ServerConfig) ([]string, error) {
 		})
 	if err != nil {
 		return nil,
-			fmt.Errorf("Error walking %v : %w", TemplateBaseDir, err)
+			fmt.Errorf("error walking %v : %w", TemplateBaseDir, err)
 	}
 
 	return files, nil
@@ -144,7 +144,7 @@ func SetupTemplates(cfg ServerConfig) ([]string, error) {
 func getTLSConfig(cfg ServerConfig) (*tls.Config, error) {
 	cer, err := tls.LoadX509KeyPair(cfg.CertFile, cfg.KeyFile)
 	if err != nil {
-		return &tls.Config{}, fmt.Errorf("Error Loading Key Pair (%v, %v) : %w", cfg.CertFile, cfg.KeyFile, err)
+		return &tls.Config{}, fmt.Errorf("error loading key pair (%v, %v) : %w", cfg.CertFile, cfg.KeyFile, err)
 	}
 
 	rootCAPool := x509.NewCertPool()
@@ -152,17 +152,17 @@ func getTLSConfig(cfg ServerConfig) (*tls.Config, error) {
 	// read rootCA file into byte
 	f, err := os.Open(cfg.RootCA)
 	if err != nil {
-		return &tls.Config{}, fmt.Errorf("Error Opening Root CA file %v : %w", cfg.RootCA, err)
+		return &tls.Config{}, fmt.Errorf("error opening Root CA file %v : %w", cfg.RootCA, err)
 	}
 
 	b, err := ioutil.ReadAll(f)
 	if err != nil {
-		return &tls.Config{}, fmt.Errorf("Error Reading Root CA file %v : %w", cfg.RootCA, err)
+		return &tls.Config{}, fmt.Errorf("error reading Root CA file %v : %w", cfg.RootCA, err)
 	}
 
 	ok := rootCAPool.AppendCertsFromPEM(b)
 	if !ok {
-		return &tls.Config{}, fmt.Errorf("Error appending root CA cert %v : %w", cfg.RootCA, err)
+		return &tls.Config{}, fmt.Errorf("error appending Root CA cert %v : %w", cfg.RootCA, err)
 	}
 
 	return &tls.Config{
@@ -227,12 +227,6 @@ func startServer(wg *sync.WaitGroup) (*http.Server, *ServerConfig) {
 	r.HandleFunc("/chat/ws", serveWs(hub))
 	r.HandleFunc("/resume/home", handlers.ResumeHomeHandler(cfg.DebugLog))
 
-	//connstateCallback := func(con net.Conn, state http.ConnState) {
-	//	log.Printf("LOGGING CONNSTATE:\n")
-	//	fmt.Printf("\t\t%v\n", con)
-	//	fmt.Printf("\t\t%v\n", state)
-	//}
-
 	srv := &http.Server{
 		Handler:           r,
 		Addr:              addr,
@@ -240,7 +234,6 @@ func startServer(wg *sync.WaitGroup) (*http.Server, *ServerConfig) {
 		ReadTimeout:       15 * time.Second,
 		ReadHeaderTimeout: 15 * time.Second,
 		MaxHeaderBytes:    1 << 20,
-		//ConnState:		   connstateCallback,
 	}
 
 	// add TLS Config if using HTTPS
@@ -250,9 +243,6 @@ func startServer(wg *sync.WaitGroup) (*http.Server, *ServerConfig) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Printf("Using HTTPS\n")
-		log.Printf("Key Pair:\t(%v, %v)\n", cfg.CertFile, cfg.KeyFile)
-		//log.Println(srv.TLSConfig)
 	}
 
 	log.Printf("Starting Server at: %v...", addr)
@@ -312,7 +302,7 @@ func runGorillaServer() {
 	go getUserInput(shutdownCh)
 	select {
 	case code := <-shutdownCh:
-		if err := srv.Shutdown(context.TODO()); err != nil {
+		if err := srv.Shutdown(context.Background()); err != nil {
 			panic(err)
 		}
 		log.Printf("main: shutdown code %d", code)

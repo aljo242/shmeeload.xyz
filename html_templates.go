@@ -17,12 +17,12 @@ func ExecuteTemplateHTML(cfg ServerConfig, path, newPath string) error {
 	newFile, err := os.Create(newPath)
 	defer newFile.Close()
 	if err != nil {
-		return fmt.Errorf("Error creating file %v : %w", newPath, err)
+		return fmt.Errorf("error creating file %v : %w", newPath, err)
 	}
 
 	tpl, err := template.ParseFiles(path)
 	if err != nil {
-		return fmt.Errorf("Error creating template : %w", err)
+		return fmt.Errorf("error creating template : %w", err)
 	}
 
 	var httpPrefix string
@@ -36,7 +36,7 @@ func ExecuteTemplateHTML(cfg ServerConfig, path, newPath string) error {
 
 	err = tpl.Execute(newFile, p)
 	if err != nil {
-		return fmt.Errorf("Error executing template : %w", err)
+		return fmt.Errorf("error executing template : %w", err)
 	}
 
 	return nil

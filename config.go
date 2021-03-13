@@ -27,14 +27,14 @@ func loadConfig(filename string) (ServerConfig, error) {
 	defer cfgFile.Close()
 	if err != nil {
 		return ServerConfig{},
-			fmt.Errorf("Error opening config file %v : %w", filename, err)
+			fmt.Errorf("error opening config file %v : %w", filename, err)
 	}
 
 	jsonParser := json.NewDecoder(cfgFile)
 	err = jsonParser.Decode(&cfg)
 	if err != nil {
 		return ServerConfig{},
-			fmt.Errorf("Error parsing file %v : %w", filename, err)
+			fmt.Errorf("error parsing file %v : %w", filename, err)
 	}
 
 	return cfg, nil
