@@ -227,10 +227,10 @@ func initServer(wg *sync.WaitGroup) (*Server, *ServerConfig) {
 	r.HandleFunc("/chat/ws", serveWs(hub))
 	r.HandleFunc("/resume/home", handlers.ResumeHomeHandler(cfg.DebugLog))
 
-	srv := NewServer(cfg, r, addr)
-
 	fmt.Printf("\n")
 	log.Printf("starting Server at: %v...", addr)
+	srv := NewServer(cfg, r)
+
 	go func() {
 		defer wg.Done() // let main know we are done cleaning up
 		// always returns error. ErrServerClosed on graceful close
@@ -259,6 +259,68 @@ func initServer(wg *sync.WaitGroup) (*Server, *ServerConfig) {
 
 	// return reference so caller can call Shutdown
 	return srv, &cfg
+}
+
+func initServer2() *Server {
+	cfg, err := loadConfig(ConfigFile)
+	if err != nil {
+		log.Fatalf("error loading config : %v", err)
+		return nil
+	}
+
+	cfg.Print()
+
+	var hostIP string
+	if cfg.ChooseIP {
+
+		h, err := ip_util.HostInfo()
+		if err != nil {
+			log.Fatalf("error creating Host Struct : %v", err)
+			return nil
+		}
+
+		hostIP, err = ip_util.SelectHost(h.InternalIPs)
+		if err != nil {
+			log.Fatalf("error chosing host IP : %v", err)
+			return nil
+		}
+	} else {
+		hostIP = cfg.IP
+	}
+
+	_, err = SetupTemplates(cfg)
+	if err != nil {
+		log.Fatalf("error setting up templates: %v", err)
+		return nil
+	}
+
+	hub := newHub()
+	go hub.run()
+
+	addr := hostIP + ":" + cfg.Port
+
+	// generate/execute resource templates
+
+	// create new gorilla mux router
+	r := mux.NewRouter()
+	// attach pather with handler
+	r.HandleFunc("/articles/{category}/{id:[0-9]+}", handlers.ArticleHandler).Name("articleRoute")
+	r.HandleFunc("/home", handlers.HomeHandler)
+	r.HandleFunc("/", handlers.RedirectHome(cfg.Host, cfg.DebugLog))
+	r.HandleFunc("/static/js/{scriptname}", handlers.ScriptsHandler("bob", cfg.DebugLog))
+	r.HandleFunc("/static/css/{filename}", handlers.CSSHandler("Joe", cfg.DebugLog))
+	r.HandleFunc("/static/html/{filename}", handlers.HTMLHandler("Joe", cfg.DebugLog))
+	r.HandleFunc("/static/src/{filename}", handlers.TypeScriptHandler("", cfg.DebugLog))
+	r.HandleFunc("/chat/home", handlers.ChatHomeHandler("", cfg.DebugLog))
+	//r.HandleFunc("/chat/{name}", handlers.ChatHomeHandler("", cfg.DebugLog))
+	r.HandleFunc("/chat/ws", serveWs(hub))
+	r.HandleFunc("/resume/home", handlers.ResumeHomeHandler(cfg.DebugLog))
+
+	fmt.Printf("\n")
+	log.Printf("starting Server at: %v...", addr)
+	srv := NewServer(cfg, r)
+
+	return srv
 }
 
 func runGorillaServer() {
@@ -300,5 +362,9 @@ func runGorillaServer() {
 }
 
 func main() {
-	runGorillaServer()
+	//runGorillaServer()
+	log.Printf("main: starting HTTP server...")
+	srv := initServer2()
+	srv.Run()
+
 }
