@@ -13,7 +13,6 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
-	"time"
 
 	"github.com/aljo242/ip_util"
 	"github.com/aljo242/shmeeload.xyz/handlers"
@@ -173,7 +172,7 @@ func getTLSConfig(cfg ServerConfig) (*tls.Config, error) {
 	}, nil
 }
 
-func startServer(wg *sync.WaitGroup) (*http.Server, *ServerConfig) {
+func initServer(wg *sync.WaitGroup) (*Server, *ServerConfig) {
 	cfg, err := loadConfig(ConfigFile)
 	if err != nil {
 		log.Fatalf("error loading config : %v", err)
@@ -228,23 +227,7 @@ func startServer(wg *sync.WaitGroup) (*http.Server, *ServerConfig) {
 	r.HandleFunc("/chat/ws", serveWs(hub))
 	r.HandleFunc("/resume/home", handlers.ResumeHomeHandler(cfg.DebugLog))
 
-	srv := &http.Server{
-		Handler:           r,
-		Addr:              addr,
-		WriteTimeout:      15 * time.Second,
-		ReadTimeout:       15 * time.Second,
-		ReadHeaderTimeout: 15 * time.Second,
-		MaxHeaderBytes:    1 << 20,
-	}
-
-	// add TLS Config if using HTTPS
-	if cfg.HTTPS {
-		// TODO FLESH OUT
-		srv.TLSConfig, err = getTLSConfig(cfg)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
+	srv := NewServer(cfg, r, addr)
 
 	fmt.Printf("\n")
 	log.Printf("starting Server at: %v...", addr)
@@ -284,10 +267,10 @@ func runGorillaServer() {
 	httpServerExitDone := &sync.WaitGroup{}
 
 	httpServerExitDone.Add(1)
-	srv, cfg := startServer(httpServerExitDone)
+	srv, cfg := initServer(httpServerExitDone)
 
-	shutdownCh := make(chan int)
-	getUserInput := func(ch chan<- int) {
+	shutdownCh := make(chan interface{})
+	getUserInput := func(ch chan<- interface{}) {
 		var code int
 		for {
 			fmt.Printf("provide shutdown code: \n")
@@ -303,11 +286,10 @@ func runGorillaServer() {
 
 	go getUserInput(shutdownCh)
 	select {
-	case code := <-shutdownCh:
+	case <-shutdownCh:
 		if err := srv.Shutdown(context.Background()); err != nil {
 			panic(err)
 		}
-		log.Printf("main: shutdown code %d", code)
 		break
 	}
 
