@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -31,6 +32,12 @@ const (
 	// TemplateOutputDir is the directory all outputs of SetupTemplates will fall under
 	TemplateOutputDir string = "./static"
 )
+
+var configFile string
+
+func init() {
+	flag.StringVar(&configFile, "c", DefaultConfigFile, "Full path to JSON configuration file")
+}
 
 // SetupTemplates builds the template output directory, executes HTML templates,
 // and copies all web resource files to the template output directory (.js, .ts, .js.map, .css, .html)
@@ -173,7 +180,7 @@ func getTLSConfig(cfg ServerConfig) (*tls.Config, error) {
 }
 
 func initServer(wg *sync.WaitGroup) (*Server, *ServerConfig) {
-	cfg, err := loadConfig(DefaultConfigFile)
+	cfg, err := loadConfig(configFile)
 	if err != nil {
 		log.Fatalf("error loading config : %v", err)
 		return nil, nil
@@ -262,7 +269,8 @@ func initServer(wg *sync.WaitGroup) (*Server, *ServerConfig) {
 }
 
 func initServer2() *Server {
-	cfg, err := loadConfig(DefaultConfigFile)
+	log.Printf("loading configuration in file: %v", configFile)
+	cfg, err := loadConfig(configFile)
 	if err != nil {
 		log.Fatalf("error loading config : %v", err)
 		return nil
@@ -362,6 +370,7 @@ func runGorillaServer() {
 }
 
 func main() {
+	flag.Parse()
 	//runGorillaServer()
 	log.Printf("main: starting HTTP server...")
 	srv := initServer2()
