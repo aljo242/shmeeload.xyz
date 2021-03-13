@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aljo242/http_util"
 	"github.com/aljo242/ip_util"
 	"github.com/aljo242/shmeeload.xyz/romanNumerals"
 	"github.com/gorilla/mux"
@@ -245,7 +244,7 @@ func TypeScriptHandler(scriptName string, debugEnable bool) func(http.ResponseWr
 
 // HomeHandler serves the home.html file
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
-	http_util.CheckHTTP2Support(w)
+	//http_util.CheckHTTP2Support(w)
 	// this page currently only serves html resources
 	if r.Method == "GET" {
 		defer func() {
@@ -285,7 +284,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 				log.Fatalf("Error finding file %v : %v", wantFile, err)
 				return
 			}
-			absWantFile, _= filepath.Abs(wantFile)
+			absWantFile, _ = filepath.Abs(wantFile)
 			err = pusher.Push(absWantFile, nil)
 			if err != nil {
 				log.Printf("Error pushing file %v : %v", wantFile, err)
@@ -333,16 +332,60 @@ func ChatHomeHandler(filename string, debugEnable bool) func(http.ResponseWriter
 	return func(w http.ResponseWriter, r *http.Request) {
 		// this page currently only serves html resources
 		if r.Method == "GET" {
-			wantFile := filepath.Join(htmlDir, "chat.html")
-			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
-				w.WriteHeader(http.StatusNotFound)
-				log.Fatalf("Error finding file %v : %v", wantFile, err)
-				return
+			//wantFile := filepath.Join(htmlDir, "chat.html")
+			//if _, err := os.Stat(wantFile); os.IsNotExist(err) {
+			//	w.WriteHeader(http.StatusNotFound)
+			//	log.Fatalf("Error finding file %v : %v", wantFile, err)
+			//	return
+			//}
+
+			//w.WriteHeader(http.StatusOK)
+			//http.ServeFile(w, r, wantFile)
+
+			defer func() {
+				wantFile := filepath.Join(htmlDir, "chat.html")
+				if _, err := os.Stat(wantFile); os.IsNotExist(err) {
+					w.WriteHeader(http.StatusNotFound)
+					log.Fatalf("Error finding file %v : %v", wantFile, err)
+					return
+				}
+
+				w.WriteHeader(http.StatusOK)
+				http.ServeFile(w, r, wantFile)
+			}()
+
+			pusher, ok := w.(http.Pusher)
+			if ok {
+				// push js file
+				//wantFile := filepath.Join(jsDir, "app.js")
+				wantFile := jsDir + "chat.js"
+				if _, err := os.Stat(wantFile); os.IsNotExist(err) {
+					w.WriteHeader(http.StatusNotFound)
+					log.Fatalf("Error finding file %v : %v", wantFile, err)
+					return
+				}
+				absWantFile, _ := filepath.Abs(wantFile)
+				err := pusher.Push(absWantFile, nil)
+				if err != nil {
+					log.Printf("Error pushing file %v : %v", wantFile, err)
+					return
+				}
+
+				// push css file
+				//wantFile = filepath.Join(cssDir, "home.css")
+				wantFile = cssDir + "chat.css"
+				if _, err := os.Stat(wantFile); os.IsNotExist(err) {
+					w.WriteHeader(http.StatusNotFound)
+					log.Fatalf("Error finding file %v : %v", wantFile, err)
+					return
+				}
+				absWantFile, _ = filepath.Abs(wantFile)
+				err = pusher.Push(absWantFile, nil)
+				if err != nil {
+					log.Printf("Error pushing file %v : %v", wantFile, err)
+					return
+				}
 			}
-
-			w.WriteHeader(http.StatusOK)
-			http.ServeFile(w, r, wantFile)
-
 		} else {
 			w.WriteHeader(http.StatusBadRequest)
 			return
