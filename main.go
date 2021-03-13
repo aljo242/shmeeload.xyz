@@ -22,7 +22,7 @@ import (
 
 const (
 	// ConfigFile is the name of the user's config JSON file
-	ConfigFile string = "config.json"
+	DefaultConfigFile string = "sample/sample_config.json"
 
 	// TemplateBaseDir is where HTML template files are located to be
 	// executed and copied to the res dir
@@ -173,7 +173,7 @@ func getTLSConfig(cfg ServerConfig) (*tls.Config, error) {
 }
 
 func initServer(wg *sync.WaitGroup) (*Server, *ServerConfig) {
-	cfg, err := loadConfig(ConfigFile)
+	cfg, err := loadConfig(DefaultConfigFile)
 	if err != nil {
 		log.Fatalf("error loading config : %v", err)
 		return nil, nil
@@ -262,7 +262,7 @@ func initServer(wg *sync.WaitGroup) (*Server, *ServerConfig) {
 }
 
 func initServer2() *Server {
-	cfg, err := loadConfig(ConfigFile)
+	cfg, err := loadConfig(DefaultConfigFile)
 	if err != nil {
 		log.Fatalf("error loading config : %v", err)
 		return nil
@@ -366,5 +366,4 @@ func main() {
 	log.Printf("main: starting HTTP server...")
 	srv := initServer2()
 	srv.Run()
-
 }
