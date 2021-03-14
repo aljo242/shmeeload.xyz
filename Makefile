@@ -4,10 +4,15 @@ all: build test
 
 build:
 	cd ./web_res && tsc
+	go fmt
 	go build -o ${BINARY_NAME}
 
+analyze:
+	golint
+	go fmt
+
 test:
-	go test -v
+	go test ./... -v
 
 clean: 
 	rm -rf ./web_res/dist/*
