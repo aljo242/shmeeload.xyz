@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -15,8 +16,10 @@ import (
 
 type Server struct {
 	http.Server
-	config ServerConfig
-	wg     *sync.WaitGroup
+	config    ServerConfig
+	wg        *sync.WaitGroup
+	quit      chan struct{}
+	isRunning bool
 }
 
 func serverShutdownCallback() {
@@ -33,6 +36,8 @@ func NewServer(cfg ServerConfig, r *mux.Router) *Server {
 		// TODO handle error
 	}
 
+	quit := make(chan struct{})
+
 	srv := &Server{
 		http.Server{
 			Handler:           r,
@@ -45,11 +50,26 @@ func NewServer(cfg ServerConfig, r *mux.Router) *Server {
 		},
 		cfg,
 		&sync.WaitGroup{},
+		quit,
+		false,
 	}
 
 	srv.RegisterOnShutdown(serverShutdownCallback)
 
 	return srv
+}
+
+// Quit sends closes the server quit channel if the server is running
+// signaling the server to begin shutting down
+// if the server is not running, Quit will return an error
+func (srv *Server) Quit() error {
+	if srv.isRunning {
+		close(srv.quit)
+		srv.isRunning = !srv.isRunning
+		return nil
+	}
+
+	return errors.New("server not running; cannot shutdown")
 }
 
 func (srv *Server) Run() {
@@ -80,10 +100,13 @@ func (srv *Server) Run() {
 				log.Fatalf("ListenAndServe(): %v", err)
 			}
 		}
+
 	}()
 
-	shutdownCh := make(chan interface{})
-	getUserInput := func(ch chan<- interface{}) {
+	// once we have run ListenAdnServe*, we are officially running
+	srv.isRunning = true
+
+	getUserInput := func() {
 		var code int
 		for {
 			fmt.Printf("provide shutdown code: \n")
@@ -94,12 +117,17 @@ func (srv *Server) Run() {
 
 			fmt.Printf("invalid code.\n")
 		}
-		ch <- code
+
+		//close(srv.quit)
+		err := srv.Quit()
+		if err != nil {
+			log.Fatalf("failed to quit server: %v", err)
+		}
 	}
 
-	go getUserInput(shutdownCh)
+	go getUserInput()
 	select {
-	case <-shutdownCh:
+	case <-srv.quit:
 		if err := srv.Shutdown(context.Background()); err != nil {
 			panic(err)
 		}
@@ -110,5 +138,4 @@ func (srv *Server) Run() {
 	srv.wg.Wait()
 
 	log.Printf("main: done. exiting...")
-
 }

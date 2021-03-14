@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	// ConfigFile is the name of the user's config JSON file
+	// DefaultConfigFile is the name of the user's config JSON file
 	DefaultConfigFile string = "sample/sample_config.json"
 
 	// TemplateBaseDir is where HTML template files are located to be
