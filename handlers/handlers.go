@@ -270,6 +270,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			absWantFile, _ := filepath.Abs(wantFile)
+			log.Printf("Pushing file: %v", absWantFile)
 			err := pusher.Push(absWantFile, nil)
 			if err != nil {
 				log.Printf("Error pushing file %v : %v", wantFile, err)
@@ -285,6 +286,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			absWantFile, _ = filepath.Abs(wantFile)
+			log.Printf("Pushing file: %v", absWantFile)
 			err = pusher.Push(absWantFile, nil)
 			if err != nil {
 				log.Printf("Error pushing file %v : %v", wantFile, err)
@@ -365,6 +367,7 @@ func ChatHomeHandler(filename string, debugEnable bool) func(http.ResponseWriter
 					return
 				}
 				absWantFile, _ := filepath.Abs(wantFile)
+				log.Printf("Pushing file: %v", absWantFile)
 				err := pusher.Push(absWantFile, nil)
 				if err != nil {
 					log.Printf("Error pushing file %v : %v", wantFile, err)
@@ -380,6 +383,7 @@ func ChatHomeHandler(filename string, debugEnable bool) func(http.ResponseWriter
 					return
 				}
 				absWantFile, _ = filepath.Abs(wantFile)
+				log.Printf("Pushing file: %v", absWantFile)
 				err = pusher.Push(absWantFile, nil)
 				if err != nil {
 					log.Printf("Error pushing file %v : %v", wantFile, err)
