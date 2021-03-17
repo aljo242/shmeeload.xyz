@@ -1,33 +1,90 @@
+* {
+    box-sizing: border-box;
+}
+
 body {
-    background-color: lightblue;
+    font-family: 'Courier New', Courier, monospace;
+    background-color: #f6f7f8
 }
 
-h1 {
-    color:salmon
+/* style for the header */
+header {
+    background-color: rgb(203, 224, 231);
+    padding: 30px;
+    text-align: center;
+    font-size: 35px;
 }
 
-h3 {
-    color: salmon
+/*
+    create two columns/boxes that float next to each other
+*/
+nav {
+    float: left;
+    width: 10%;
+    height: 1000px; /* TODO REMOVE */
+    background: rgb(203, 224, 231);
+    padding: 20px;
+    text-align: center;
 }
 
-p {
-    color: honeydew
+/*
+    xstyle the list inside the nav menu
+*/ 
+nav ul {
+    list-style-type: none;
+    padding: 0;
+    text-align: center;
+
+}
+
+article {
+    float: right;
+    text-align: center;
+    padding: 20px;
+    width: 90%;
+    background-color: rgb(203, 224, 231);
+    height: 1000px; /* TODO REMOVE */
+}
+
+/* clear floats after the columns */
+section::after {
+    content: "";
+    display: table;
+    clear: both;
+}
+
+/* style the footer */
+footer {
+    background-color: #777;
+    padding: 10px;
+    text-align: center;
+}
+
+/* 
+    Responsive layout -makes two columns/boxes stack on top of each other instead of
+    next to eac hother on small screens
+*/
+@media (max-width: 600px) {
+    nav, article {
+        width: 100%;
+        height: auto;
+    }
 }
 
 a:link {
-    color: greenyellow;
+    color: rgb(255, 208, 56);
     background-color: transparent;
     text-decoration: none;
 }
 
 a:visited {
-    color: pink;
+    color: rgb(228, 54, 83);
     background-color: transparent;
     text-decoration: none;
 }
 
 a:hover {
-    color: red;
+    color: rgb(247, 0, 255);
     background-color: transparent;
     text-decoration: underline;
 }

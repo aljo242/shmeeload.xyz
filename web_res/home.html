@@ -4,30 +4,36 @@
     <meta charset='utf-8'>
     <meta http-equiv='X-UA-Compatible' content='IE=edge'>
     <title>shmeeload</title>
-    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
     <link rel="shortcut icon" href="#" />
     <link rel='stylesheet' type='text/css'  href='{{.Host}}/static/css/home.css'>
     <script src='{{.Host}}/static/js/app.js' defer></script>
-    <script type="text/javascript"> //<![CDATA[
-      var tlJsHost = ((window.location.protocol == "https:") ? "https://secure.trust-provider.com/" : "http://www.trustlogo.com/");
-      document.write(unescape("%3Cscript src='" + tlJsHost + "trustlogo/javascript/trustlogo.js' type='text/javascript'%3E%3C/script%3E"));
-    //]]></script>
-    <script language="JavaScript" type="text/javascript">
-      TrustLogo("https://www.positivessl.com/images/seals/positivessl_trust_seal_sm_124x32.png", "POSDV", "none");
-    </script>
 </head>
 <body>
-    <button id="testHomeButton">Click Me!</button>
 
-    <h3>About Me</h3>
-    <p>Something about me...</p>
+
   
-    <h3>Navigation</h3>
-    Where do you want to go?
-    <ul>
-      <li><a href="{{.Host}}/resume/home">My Resume</a></li>
-      <li><a href="{{.Host}}/shoppers/home">Shoppers</a></li>
-      <li><a href="{{.Host}}/chat/home">ChatRoom</a></li>
-      <li><a href="https://github.com/aljo242" target="_blank" rel="noopener noreferrer">Github</a></li>
-    </ul>
+    <header>this is my website</header>
+    <section>
+      <nav>
+        <ul>
+          <li><a href="{{.Host}}/resume/home">resume</a></li>
+          <li><a href="{{.Host}}/shoppers/home">shoppers</a></li>
+          <li><a href="{{.Host}}/chat/home">chatRoom</a></li>
+          <li><a href="https://github.com/aljo242" target="_blank" rel="noopener noreferrer">github</a></li>
+        </ul>
+      </nav>
+
+      <article>
+        <h1>about me</h1>
+        <p>hey its me alex</p>
+        <p>what's up?</p>
+      </article>
+    </section>
+
+
+    <footer>
+      copyright shmeeload enterprises
+      <button id="testHomeButton" style="float:right;">Click Me!</button>
+    </footer>
 </body>
