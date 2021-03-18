@@ -5,13 +5,14 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"sync"
 	"time"
 
 	"github.com/aljo242/shmeeload.xyz/handlers"
 	"github.com/gorilla/mux"
+
+	"github.com/rs/zerolog/log"
 )
 
 type Server struct {
@@ -86,18 +87,18 @@ func (srv *Server) Run() {
 				httpsHost := "https://" + hostName
 				log.Printf("redirecting all traffic to http://%v/* to %v/*", httpAddr, httpsHost)
 				if err := http.ListenAndServe(httpAddr, http.HandlerFunc(handlers.RedirectHTTPS(httpsHost, srv.config.DebugLog))); err != nil {
-					log.Fatalf("ListenAndServe error: %v", err)
+					log.Fatal().Err(err).Msg("ListenAndServe error")
 				}
 			}(srv.config.Host)
 
 			if err := srv.ListenAndServeTLS("", ""); err != http.ErrServerClosed {
 				// unexpected error
-				log.Fatalf("ListenAndServeTLS() NOT IMPLEMENTED: %v", err)
+				log.Fatal().Err(err).Msg("ListenAndServeTLS() NOT IMPLEMENTED")
 			}
 		} else {
 			if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 				// unexpected error
-				log.Fatalf("ListenAndServe(): %v", err)
+				log.Fatal().Err(err).Msg("ListenAndServe()")
 			}
 		}
 
@@ -121,7 +122,7 @@ func (srv *Server) Run() {
 		//close(srv.quit)
 		err := srv.Quit()
 		if err != nil {
-			log.Fatalf("failed to quit server: %v", err)
+			log.Fatal().Err(err).Msg("failed to quit server")
 		}
 	}
 

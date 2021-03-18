@@ -7,7 +7,6 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 
 	//"net"
@@ -19,6 +18,9 @@ import (
 	"github.com/aljo242/shmeeload.xyz/handlers"
 
 	"github.com/gorilla/mux"
+
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -37,15 +39,17 @@ var configFile string
 
 func init() {
 	flag.StringVar(&configFile, "c", DefaultConfigFile, "Full path to JSON configuration file")
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+
 }
 
 // SetupTemplates builds the template output directory, executes HTML templates,
 // and copies all web resource files to the template output directory (.js, .ts, .js.map, .css, .html)
 func SetupTemplates(cfg ServerConfig) ([]string, error) {
 	files := make([]string, 0)
-	DebugLogln(cfg.DebugLog, "setting up templates...")
+	log.Debug().Msg("setting up templates")
 
-	DebugLogln(cfg.DebugLog, "cleaning output directory...")
+	log.Debug().Msg("cleaning output directory")
 	// clean static output dir
 	err := os.RemoveAll(TemplateOutputDir)
 	if err != nil {
@@ -53,7 +57,7 @@ func SetupTemplates(cfg ServerConfig) ([]string, error) {
 			fmt.Errorf("error cleaning ouput directory %v : %w", TemplateOutputDir, err)
 	}
 
-	DebugLogln(cfg.DebugLog, "creating new output directories...")
+	log.Debug().Str("OutputDir", TemplateOutputDir).Msg("creating new output directories")
 	// Create/ensure output directory
 	if !Exists(TemplateOutputDir) {
 		err := os.Mkdir(TemplateOutputDir, 0755)
@@ -99,7 +103,7 @@ func SetupTemplates(cfg ServerConfig) ([]string, error) {
 		}
 	}
 
-	DebugLogln(cfg.DebugLog, "ensuring template base directory exists...")
+	log.Debug().Str("BaseDir", TemplateBaseDir).Msg("ensuring template base directory exists")
 	// Ensure base template directory exists
 	if !Exists(TemplateBaseDir) {
 		return nil,
@@ -117,23 +121,23 @@ func SetupTemplates(cfg ServerConfig) ([]string, error) {
 			switch filepath.Ext(path) {
 			case ".html":
 				newPath := filepath.Join(TemplateOutputDir, "html", filepath.Base(path))
-				DebugPrintln(cfg.DebugLog, "\t"+path+" -> "+newPath)
+				log.Debug().Str("fromPath", path).Str("toPath", newPath).Msg("moving static web resources")
 				ExecuteTemplateHTML(cfg, path, newPath)
 			case ".js":
 				newPath := filepath.Join(TemplateOutputDir, "js", filepath.Base(path))
-				DebugPrintln(cfg.DebugLog, "\t"+path+" -> "+newPath)
+				log.Debug().Str("fromPath", path).Str("toPath", newPath).Msg("moving static web resources")
 				CopyFile(path, newPath)
 			case ".map":
 				newPath := filepath.Join(TemplateOutputDir, "js", filepath.Base(path))
-				DebugPrintln(cfg.DebugLog, "\t"+path+" -> "+newPath)
+				log.Debug().Str("fromPath", path).Str("toPath", newPath).Msg("moving static web resources")
 				CopyFile(path, newPath)
 			case ".css":
 				newPath := filepath.Join(TemplateOutputDir, "css", filepath.Base(path))
-				DebugPrintln(cfg.DebugLog, "\t"+path+" -> "+newPath)
+				log.Debug().Str("fromPath", path).Str("toPath", newPath).Msg("moving static web resources")
 				CopyFile(path, newPath)
 			case ".ts":
 				newPath := filepath.Join(TemplateOutputDir, "src", filepath.Base(path))
-				DebugPrintln(cfg.DebugLog, "\t"+path+" -> "+newPath)
+				log.Debug().Str("fromPath", path).Str("toPath", newPath).Msg("moving static web resources")
 				CopyFile(path, newPath)
 			}
 
@@ -144,7 +148,7 @@ func SetupTemplates(cfg ServerConfig) ([]string, error) {
 			fmt.Errorf("error walking %v : %w", TemplateBaseDir, err)
 	}
 
-	DebugLogln(cfg.DebugLog, "template setup complete.")
+	log.Debug().Msg("template setup complete.")
 	return files, nil
 }
 
@@ -182,7 +186,7 @@ func getTLSConfig(cfg ServerConfig) (*tls.Config, error) {
 func initServer(wg *sync.WaitGroup) (*Server, *ServerConfig) {
 	cfg, err := loadConfig(configFile)
 	if err != nil {
-		log.Fatalf("error loading config : %v", err)
+		log.Error()
 		return nil, nil
 	}
 
@@ -193,13 +197,13 @@ func initServer(wg *sync.WaitGroup) (*Server, *ServerConfig) {
 
 		h, err := ip_util.HostInfo()
 		if err != nil {
-			log.Fatalf("error creating Host Struct : %v", err)
+			log.Fatal().Err(err).Msg("error creating Host Struct")
 			return nil, nil
 		}
 
 		hostIP, err = ip_util.SelectHost(h.InternalIPs)
 		if err != nil {
-			log.Fatalf("error chosing host IP : %v", err)
+			log.Fatal().Err(err).Msg("error chosing host IP")
 			return nil, nil
 		}
 	} else {
@@ -208,7 +212,7 @@ func initServer(wg *sync.WaitGroup) (*Server, *ServerConfig) {
 
 	_, err = SetupTemplates(cfg)
 	if err != nil {
-		log.Fatalf("error setting up templates: %v", err)
+		log.Fatal().Err(err).Msg("error setting up templates")
 		return nil, nil
 	}
 
@@ -248,18 +252,18 @@ func initServer(wg *sync.WaitGroup) (*Server, *ServerConfig) {
 				httpsHost := "https://" + hostName
 				log.Printf("redirecting all traffic to http://%v/* to %v/*", httpAddr, httpsHost)
 				if err := http.ListenAndServe(httpAddr, http.HandlerFunc(handlers.RedirectHTTPS(httpsHost, cfg.DebugLog))); err != nil {
-					log.Fatalf("ListenAndServe error: %v", err)
+					log.Fatal().Err(err).Msg("ListenAndServe error")
 				}
 			}(cfg.Host)
 
 			if err = srv.ListenAndServeTLS("", ""); err != http.ErrServerClosed {
 				// unexpected error
-				log.Fatalf("ListenAndServeTLS() NOT IMPLEMENTED: %v", err)
+				log.Fatal().Err(err).Msg("ListenAndServeTLS() NOT IMPLEMENTED")
 			}
 		} else {
 			if err = srv.ListenAndServe(); err != http.ErrServerClosed {
 				// unexpected error
-				log.Fatalf("ListenAndServe(): %v", err)
+				log.Fatal().Err(err).Msg("ListenAndServe()")
 			}
 		}
 	}()
@@ -272,7 +276,7 @@ func initServer2() *Server {
 	log.Printf("loading configuration in file: %v", configFile)
 	cfg, err := loadConfig(configFile)
 	if err != nil {
-		log.Fatalf("error loading config : %v", err)
+		log.Fatal().Err(err).Msg("error loading config")
 		return nil
 	}
 
@@ -283,13 +287,13 @@ func initServer2() *Server {
 
 		h, err := ip_util.HostInfo()
 		if err != nil {
-			log.Fatalf("error creating Host Struct : %v", err)
+			log.Fatal().Err(err).Msg("error creating Host Struct")
 			return nil
 		}
 
 		hostIP, err = ip_util.SelectHost(h.InternalIPs)
 		if err != nil {
-			log.Fatalf("error chosing host IP : %v", err)
+			log.Fatal().Err(err).Msg("error chosing host IP")
 			return nil
 		}
 	} else {
@@ -298,7 +302,7 @@ func initServer2() *Server {
 
 	_, err = SetupTemplates(cfg)
 	if err != nil {
-		log.Fatalf("error setting up templates: %v", err)
+		log.Fatal().Err(err).Msg("error setting up templates")
 		return nil
 	}
 
