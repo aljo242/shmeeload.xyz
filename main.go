@@ -38,7 +38,6 @@ var configFile string
 
 func init() {
 	flag.StringVar(&configFile, "c", DefaultConfigFile, "Full path to JSON configuration file")
-	setupLogger()
 }
 
 // SetupTemplates builds the template output directory, executes HTML templates,
@@ -187,6 +186,7 @@ func initServer(wg *sync.WaitGroup) (*Server, *ServerConfig) {
 		log.Error()
 		return nil, nil
 	}
+	setupLogger(cfg)
 
 	cfg.Print()
 
@@ -277,6 +277,7 @@ func initServer2() *Server {
 		log.Fatal().Err(err).Msg("error loading config")
 		return nil
 	}
+	setupLogger(cfg)
 
 	cfg.Print()
 
