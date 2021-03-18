@@ -19,7 +19,6 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -39,8 +38,7 @@ var configFile string
 
 func init() {
 	flag.StringVar(&configFile, "c", DefaultConfigFile, "Full path to JSON configuration file")
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-
+	setupLogger()
 }
 
 // SetupTemplates builds the template output directory, executes HTML templates,

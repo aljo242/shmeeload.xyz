@@ -1,20 +1,8 @@
 package main
 
-import (
-	"fmt"
-	"log"
-)
+import "github.com/rs/zerolog"
 
-// DebugLogln is a simple utility for conditional logging of bonus info
-func DebugLogln(toggle bool, msg string) {
-	if toggle {
-		log.Println(msg)
-	}
-}
+func setupLogger() {
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
-// DebugPrintln is a simple utility for conditional logging of bonus info
-func DebugPrintln(toggle bool, msg string) {
-	if toggle {
-		fmt.Println(msg)
-	}
 }
