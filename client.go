@@ -2,11 +2,11 @@ package main
 
 import (
 	"bytes"
-	"log"
 	"net/http"
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -128,7 +128,7 @@ func serveWs(hub *Hub) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
-			log.Println(err)
+			log.Error().Err(err).Msg("Error upgrading to websocket")
 			return
 		}
 
