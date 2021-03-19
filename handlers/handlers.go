@@ -69,7 +69,7 @@ func romanGet(w http.ResponseWriter, r *http.Request) {
 // RunRomanServer runs our roman numeral dummy server
 func RunRomanServer() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "GET" {
+		if r.Method == http.MethodGet  {
 			romanGet(w, r) // pass onto Get sub-handler
 		} else {
 			w.WriteHeader(http.StatusBadRequest)
@@ -130,7 +130,7 @@ func ScriptsHandler(scriptName string, debugEnable bool) func(http.ResponseWrite
 	return func(w http.ResponseWriter, r *http.Request) {
 		filename := filepath.Base(r.URL.Path)
 		log.Debug().Str("Handler", "ScriptsHandler").Str("Filename", filename).Msg("incoming request")
-		if r.Method == "GET" {
+		if r.Method == http.MethodGet  {
 			wantFile := filepath.Join(jsDir, filename)
 			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
 				w.WriteHeader(http.StatusNotFound)
@@ -157,7 +157,7 @@ func CSSHandler(filename string, debugEnable bool) func(http.ResponseWriter, *ht
 		filename := filepath.Base(r.URL.Path)
 		log.Debug().Str("Handler", "CSSHandler").Str("Filename", filename).Msg("incoming request")
 
-		if r.Method == "GET" {
+		if r.Method == http.MethodGet  {
 			wantFile := filepath.Join(cssDir, filename)
 			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
 				w.WriteHeader(http.StatusNotFound)
@@ -182,7 +182,7 @@ func HTMLHandler(scriptName string, debugEnable bool) func(http.ResponseWriter, 
 		filename := filepath.Base(r.URL.Path)
 		log.Debug().Str("Handler", "HTMLHandler").Str("Filename", filename).Msg("incoming request")
 
-		if r.Method == "GET" {
+		if r.Method == http.MethodGet  {
 			wantFile := filepath.Join(jsDir, filename)
 			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
 				w.WriteHeader(http.StatusNotFound)
@@ -206,7 +206,7 @@ func TypeScriptHandler(scriptName string, debugEnable bool) func(http.ResponseWr
 		filename := filepath.Base(r.URL.Path)
 		log.Debug().Str("Handler", "TypeScriptHandler").Str("Filename", filename).Msg("incoming request")
 
-		if r.Method == "GET" {
+		if r.Method == http.MethodGet {
 			wantFile := filepath.Join(tsDir, filename)
 			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
 				w.WriteHeader(http.StatusNotFound)
@@ -230,7 +230,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	// this page currently only serves html resources
 	log.Debug().Str("Handler", "HomeHandler").Msg("incoming request")
 
-	if r.Method == "GET" {
+	if r.Method == http.MethodGet {
 		defer func() {
 			wantFile := filepath.Join(htmlDir, "home.html")
 			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
@@ -308,7 +308,7 @@ func ChatHomeHandler(filename string, debugEnable bool) func(http.ResponseWriter
 		// this page currently only serves html resources
 		log.Debug().Str("Handler", "ChatHomeHandler").Msg("incoming request")
 
-		if r.Method == "GET" {
+		if r.Method == http.MethodGet  {
 			//wantFile := filepath.Join(htmlDir, "chat.html")
 			//if _, err := os.Stat(wantFile); os.IsNotExist(err) {
 			//	w.WriteHeader(http.StatusNotFound)
@@ -379,7 +379,7 @@ func ResumeHomeHandler(debugEnable bool) func(http.ResponseWriter, *http.Request
 		filename := filepath.Base(r.URL.Path)
 		log.Debug().Str("Handler", "ChatHomeHandler").Str("Filename", filename).Msg("incoming request")
 
-		if r.Method == "GET" {
+		if r.Method == http.MethodGet  {
 			wantFile := filepath.Join(htmlDir, "resumeHome.html")
 			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
 				w.WriteHeader(http.StatusNotFound)
