@@ -46,6 +46,18 @@ article {
     height: 1000px; /* TODO REMOVE */
 }
 
+article ul {
+    list-style-type: none;
+    padding: 0;
+    text-align: center;
+
+}
+
+article h2 {
+    text-decoration: peachpuff;
+    font-weight: normal;
+}
+
 p {
     background-color: aliceblue;
     text-align: left;
