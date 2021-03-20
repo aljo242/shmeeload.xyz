@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/aljo242/http_util"
 	"github.com/aljo242/ip_util"
 	"github.com/aljo242/shmeeload.xyz/handlers"
 
@@ -249,7 +250,7 @@ func initServer(wg *sync.WaitGroup) (*Server, *ServerConfig) {
 				httpAddr := hostIP + ":80"
 				httpsHost := "https://" + hostName
 				log.Printf("redirecting all traffic to http://%v/* to %v/*", httpAddr, httpsHost)
-				if err := http.ListenAndServe(httpAddr, http.HandlerFunc(handlers.RedirectHTTPS(httpsHost, cfg.DebugLog))); err != nil {
+				if err := http.ListenAndServe(httpAddr, http.HandlerFunc(http_util.RedirectHTTPS(httpsHost))); err != nil {
 					log.Fatal().Err(err).Msg("ListenAndServe error")
 				}
 			}(cfg.Host)

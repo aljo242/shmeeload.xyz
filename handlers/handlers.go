@@ -10,7 +10,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aljo242/http_util"
 	"github.com/aljo242/ip_util"
+
 	"github.com/aljo242/shmeeload.xyz/romanNumerals"
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
@@ -292,14 +294,6 @@ func RedirectHome(host string, debugEnable bool) func(http.ResponseWriter, *http
 	}
 }
 
-// RedirectHTTPS can redirect all http traffic to corresponding https addresses
-func RedirectHTTPS(httpsHost string, debugEnable bool) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		log.Debug().Str("Handler", "RedirectHTTPS").Str("Redirect", httpsHost+r.RequestURI).Msg("incoming request")
-		http.Redirect(w, r, httpsHost+r.RequestURI, http.StatusMovedPermanently)
-	}
-}
-
 // ChatHomeHandler is the route for the chat home where users can get assigned unique identifiers
 func ChatHomeHandler(filename string, debugEnable bool) func(http.ResponseWriter, *http.Request) {
 
@@ -363,6 +357,13 @@ func ChatHomeHandler(filename string, debugEnable bool) func(http.ResponseWriter
 					log.Fatal().Err(err).Str("Filename", wantFile).Msg("Error pushing file")
 					return
 				}
+			}
+
+			wantFile := cssDir + "chat.css"
+			chatfilepath, _ := filepath.Abs(wantFile)
+			err := http_util.PushFiles(w, chatfilepath)
+			if err != nil {
+				log.Fatal().Err(err).Msg("Error pushing files")
 			}
 		} else {
 			w.WriteHeader(http.StatusBadRequest)

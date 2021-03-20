@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aljo242/shmeeload.xyz/handlers"
+	"github.com/aljo242/http_util"
 	"github.com/gorilla/mux"
 
 	"github.com/rs/zerolog/log"
@@ -86,7 +86,7 @@ func (srv *Server) Run() {
 				httpAddr := srv.config.IP + ":80"
 				httpsHost := "https://" + hostName
 				log.Printf("redirecting all traffic to http://%v/* to %v/*", httpAddr, httpsHost)
-				if err := http.ListenAndServe(httpAddr, http.HandlerFunc(handlers.RedirectHTTPS(httpsHost, srv.config.DebugLog))); err != nil {
+				if err := http.ListenAndServe(httpAddr, http.HandlerFunc(http_util.RedirectHTTPS(httpsHost))); err != nil {
 					log.Fatal().Err(err).Msg("ListenAndServe error")
 				}
 			}(srv.config.Host)
