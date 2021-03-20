@@ -14,7 +14,6 @@ import (
 	"github.com/aljo242/shmeeload.xyz/romanNumerals"
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
-
 )
 
 const (
@@ -69,7 +68,7 @@ func romanGet(w http.ResponseWriter, r *http.Request) {
 // RunRomanServer runs our roman numeral dummy server
 func RunRomanServer() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet  {
+		if r.Method == http.MethodGet {
 			romanGet(w, r) // pass onto Get sub-handler
 		} else {
 			w.WriteHeader(http.StatusBadRequest)
@@ -130,7 +129,7 @@ func ScriptsHandler(scriptName string, debugEnable bool) func(http.ResponseWrite
 	return func(w http.ResponseWriter, r *http.Request) {
 		filename := filepath.Base(r.URL.Path)
 		log.Debug().Str("Handler", "ScriptsHandler").Str("Filename", filename).Msg("incoming request")
-		if r.Method == http.MethodGet  {
+		if r.Method == http.MethodGet {
 			wantFile := filepath.Join(jsDir, filename)
 			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
 				w.WriteHeader(http.StatusNotFound)
@@ -157,7 +156,7 @@ func CSSHandler(filename string, debugEnable bool) func(http.ResponseWriter, *ht
 		filename := filepath.Base(r.URL.Path)
 		log.Debug().Str("Handler", "CSSHandler").Str("Filename", filename).Msg("incoming request")
 
-		if r.Method == http.MethodGet  {
+		if r.Method == http.MethodGet {
 			wantFile := filepath.Join(cssDir, filename)
 			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
 				w.WriteHeader(http.StatusNotFound)
@@ -182,7 +181,7 @@ func HTMLHandler(scriptName string, debugEnable bool) func(http.ResponseWriter, 
 		filename := filepath.Base(r.URL.Path)
 		log.Debug().Str("Handler", "HTMLHandler").Str("Filename", filename).Msg("incoming request")
 
-		if r.Method == http.MethodGet  {
+		if r.Method == http.MethodGet {
 			wantFile := filepath.Join(jsDir, filename)
 			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
 				w.WriteHeader(http.StatusNotFound)
@@ -308,7 +307,7 @@ func ChatHomeHandler(filename string, debugEnable bool) func(http.ResponseWriter
 		// this page currently only serves html resources
 		log.Debug().Str("Handler", "ChatHomeHandler").Msg("incoming request")
 
-		if r.Method == http.MethodGet  {
+		if r.Method == http.MethodGet {
 			//wantFile := filepath.Join(htmlDir, "chat.html")
 			//if _, err := os.Stat(wantFile); os.IsNotExist(err) {
 			//	w.WriteHeader(http.StatusNotFound)
@@ -374,12 +373,12 @@ func ChatHomeHandler(filename string, debugEnable bool) func(http.ResponseWriter
 
 // ResumeHomeHandler takes a script name and
 func ResumeHomeHandler(debugEnable bool) func(http.ResponseWriter, *http.Request) {
-	
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		filename := filepath.Base(r.URL.Path)
-		log.Debug().Str("Handler", "ChatHomeHandler").Str("Filename", filename).Msg("incoming request")
+		log.Debug().Str("Handler", "ResumeHomeHandler").Str("Filename", filename).Msg("incoming request")
 
-		if r.Method == http.MethodGet  {
+		if r.Method == http.MethodGet {
 			wantFile := filepath.Join(htmlDir, "resumeHome.html")
 			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
 				w.WriteHeader(http.StatusNotFound)
