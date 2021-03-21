@@ -4,15 +4,17 @@
 
 body {
     font-family: 'Courier New', Courier, monospace;
-    background-color: aliceblue
+    background-color: aliceblue;  
+    /*background-color: rgb(203, 224, 231); */
+
 }
 
 /* style for the header */
 header {
     background-color: rgb(203, 224, 231);
-    padding: 30px;
+    /*padding: 30px;*/
     text-align: center;
-    font-size: 35px;
+    font-size: 30px;
 }
 
 /*
@@ -21,9 +23,9 @@ header {
 nav {
     float: left;
     width: 10%;
-    height: 1000px; /* TODO REMOVE */
+    min-height: 100vh;
+    position: fixed;
     background: rgb(203, 224, 231);
-    padding: 20px;
     text-align: center;
 }
 
@@ -32,9 +34,12 @@ nav {
 */ 
 nav ul {
     list-style-type: none;
-    padding: 0;
-    text-align: center;
+    text-align: left;
+}
 
+nav li {
+    padding-top: 50px;
+    display: block;
 }
 
 article {
@@ -43,7 +48,7 @@ article {
     padding: 20px;
     width: 90%;
     background-color: rgb(203, 224, 231);
-    height: 1000px; /* TODO REMOVE */
+    min-height: 100vh;
 }
 
 /* clear floats after the columns */
@@ -55,7 +60,7 @@ section::after {
 
 /* style the footer */
 footer {
-    background-color: #777;
+    background-color: aliceblue;
     padding: 10px;
     text-align: center;
 }
@@ -72,19 +77,19 @@ footer {
 }
 
 a:link {
-    color: rgb(255, 208, 56);
+    color: rgb(247, 0, 255);
     background-color: transparent;
     text-decoration: none;
 }
 
 a:visited {
-    color: rgb(228, 54, 83);
+    color: rgb(247, 0, 255);
     background-color: transparent;
     text-decoration: none;
 }
 
 a:hover {
-    color: rgb(247, 0, 255);
+    color: rgb(255, 208, 56);
     background-color: transparent;
     text-decoration: underline;
 }
