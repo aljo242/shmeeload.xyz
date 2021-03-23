@@ -1,6 +1,6 @@
 # shmeeload.xyz
 
-![CI](https://github.com/aljo242/shmeeload.xyz/workflows/go.yml/badge.svg)
+![CI](https://github.com/aljo242/shmeeload.xyz/actions/workflows/go.yml/badge.svg)
 
 This is my personal website.
 
