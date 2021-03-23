@@ -1,4 +1,4 @@
-name: Go Master Build
+name: CI
 
 on:
   push:
