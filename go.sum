@@ -1,9 +1,5 @@
-github.com/aljo242/http_util v0.0.0-20210314005550-d24934bc6d4b h1:Q1nRowrxFO//0QOO5bocZvRQOee/DELhC/5tg1ESpJc=
-github.com/aljo242/http_util v0.0.0-20210314005550-d24934bc6d4b/go.mod h1:Cl0YkZbeJx2xdqS12vR9pKKBe6tvVd0CJbPedq1+45o=
 github.com/aljo242/http_util v0.0.0-20210320030951-0c1ccc38d1de h1:sL3TNWR57n6nmp6UhcFBuMp/ZY5SZm5S/SWv51byaXk=
 github.com/aljo242/http_util v0.0.0-20210320030951-0c1ccc38d1de/go.mod h1:F+xlICqyhTsniGEg5FYfemtcajU5ZRfE5T6fdqkCqT0=
-github.com/aljo242/ip_util v0.0.0-20210312012915-afbfc74e1355 h1:U9z+ShhRaLrdW8rIHYxOk13qADAJlaAYoZJuUtofymA=
-github.com/aljo242/ip_util v0.0.0-20210312012915-afbfc74e1355/go.mod h1:dALxI4OsvNa/Tb38hT1xxX+N7kCSoZia934V1xXjjIY=
 github.com/aljo242/ip_util v0.0.0-20210312014041-edb7b02403a5 h1:Zoct/GLnnnKRf3TsJBxM1TjA9x3nMRPfFB+0q8GlA5c=
 github.com/aljo242/ip_util v0.0.0-20210312014041-edb7b02403a5/go.mod h1:dALxI4OsvNa/Tb38hT1xxX+N7kCSoZia934V1xXjjIY=
 github.com/coreos/go-systemd v0.0.0-20190321100706-95778dfbb74e/go.mod h1:F5haX7vjVVG0kc13fIWeqUViNPyEJxv/OmvnBo0Yme4=

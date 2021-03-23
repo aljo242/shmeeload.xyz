@@ -1,6 +1,6 @@
 BINARY_NAME = server
 
-all: build test
+all: analyze build test 
 
 build:
 	cd ./web_res && tsc
@@ -9,10 +9,12 @@ build:
 
 analyze:
 	golint
+	go vet
 	go fmt
 
 test:
-	go test ./... -v
+	go test ./... -v -race -coverprofile=coverage.out
+	go tool cover -html coverage.out -o coverage.html
 
 clean: 
 	rm -rf ./web_res/dist/*
