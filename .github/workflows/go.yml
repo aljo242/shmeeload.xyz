@@ -1,4 +1,4 @@
-name: Go
+name: Go Master Build
 
 on:
   push:
@@ -23,3 +23,5 @@ jobs:
 
     - name: Test
       run: make test
+      
+      
