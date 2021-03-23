@@ -8,19 +8,24 @@ on:
 
 jobs:
 
-  build:
+  build-and-test:
+    strategy: 
+      matrix:
+        go-version: [1.15.x, 1.16.x]
+  
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-
     - name: Set up Go
       uses: actions/setup-go@v2
       with:
-        go-version: 1.16
+        go-version: ${{ matrix.go-version }}
+    
+    - name: Checkout Code
+      uses: actions/checkout@v2
 
     - name: Build
       run: make build
-
+      
     - name: Test
       run: make test
       
