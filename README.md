@@ -1,7 +1,6 @@
 # shmeeload.xyz
 
-![example event parameter](https://github.com/github/aljo242/shmeeload.xyz/workflows/go.yml/badge.svg?event=pull_request)
-
+![example event parameter](https://github.com/github/aljo242/shmeeload.xyz/.github/workflows/go.yml/badge.svg?event=pull_request)
 
 This is my personal website.
 
