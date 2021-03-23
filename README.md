@@ -2,7 +2,7 @@
 
 ⚠️ _*lots of development going on.*_ ⚠️
 
-![CI](https://github.com/aljo242/shmeeload.xyz/actions/workflows/go.yml/badge.svg)
+![CI](https://github.com/aljo242/shmeeload.xyz/actions/workflows/go.yml/badge.svg) ![go report](https://goreportcard.com/badge/github.com/aljo242/shmeeload.xzy)
 
 This is my personal website.
 
