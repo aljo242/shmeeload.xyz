@@ -134,7 +134,16 @@ func ImageHandler() func(http.ResponseWriter, *http.Request) {
 				return
 			}
 
-			w.Header().Set("Content-Type", "image/x-icon")
+			switch filepath.Ext(filename) {
+			case ".jpg", ".jpeg":
+				w.Header().Set("Content-Type", "image/jpeg")
+			case ".png":
+				w.Header().Set("Content-Type", "image/png")
+			case ".gif":
+				w.Header().Set("Content-Type", "image/gif")
+			case ".ico":
+				w.Header().Set("Content-Type", "image/x-icon")
+			}
 			http.ServeFile(w, r, wantFile)
 
 		} else {
