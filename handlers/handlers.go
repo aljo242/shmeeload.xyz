@@ -1,20 +1,11 @@
 package handlers
 
 import (
-	"fmt"
-	"html"
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
-	"strings"
-	"time"
 
 	"github.com/aljo242/http_util"
-	"github.com/aljo242/ip_util"
-
-	"github.com/aljo242/shmeeload.xyz/romanNumerals"
-	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
 )
 
@@ -23,108 +14,8 @@ const (
 	jsDir   string = "./static/js/"
 	cssDir  string = "./static/css/"
 	tsDir   string = "./static/src/"
+	imgDir  string = "./static/img/"
 )
-
-var (
-	port string = "80"
-)
-
-type webServer struct {
-	name        string
-	author      string
-	connections int
-}
-
-func (srv webServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "This is a Simple HTTP Web Server!")
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	//w.Header().Set("Name", srv.name)
-	//w.Header().Set("Author", srv.author)
-}
-
-func romanGet(w http.ResponseWriter, r *http.Request) {
-	urlPathElements := strings.Split(r.URL.Path, "/")
-
-	log.Debug().Str("URL", r.URL.Path).Msg("incominng request to romanGet")
-
-	if urlPathElements[1] == "roman_number" {
-		number, err := strconv.Atoi(strings.TrimSpace(urlPathElements[2]))
-		if err != nil {
-			log.Fatal().Err(err).Msg("Error getting integer from URL string")
-			return
-		}
-
-		if number == 0 || number > 10 {
-			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte("404 - Not Found"))
-		} else {
-			fmt.Fprintf(w, "%v", html.EscapeString(romanNumerals.Numerals[number]))
-		}
-
-	} else {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("400 - Bad Request"))
-	}
-}
-
-// RunRomanServer runs our roman numeral dummy server
-func RunRomanServer() {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet {
-			romanGet(w, r) // pass onto Get sub-handler
-		} else {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("400 - Bad Request"))
-		}
-	})
-
-	s := &http.Server{
-		Addr:           ":8000",
-		ReadTimeout:    15 * time.Second,
-		WriteTimeout:   15 * time.Second,
-		MaxHeaderBytes: 1 << 20,
-	}
-	s.ListenAndServe()
-}
-
-// RunDemoServer runs a very basic server with IP utils
-func RunDemoServer() {
-	h, err := ip_util.HostInfo()
-	if err != nil {
-		log.Fatal().Err(err).Msg("Error creating host struct")
-		return
-	}
-
-	hostIP, err := ip_util.SelectHost(h.InternalIPs)
-	if err != nil {
-		log.Fatal().Err(err).Msg("Error choosing host IP")
-		return
-	}
-
-	addr := hostIP + ":" + port
-	web := webServer{
-		name:        "Demo Web Server",
-		author:      "Cozart Shmoopler",
-		connections: 1,
-	}
-
-	log.Printf("main: serving to %v...\n", addr)
-
-	err = http.ListenAndServe(addr, web)
-	if err != nil {
-		log.Fatal().Err(err).Msg("Error starting the HTTP server")
-		return
-	}
-}
-
-// ArticleHandler handles our Gorilla Server Handler
-func ArticleHandler(w http.ResponseWriter, r *http.Request) {
-	// mux.Vars returns all path parameters as a map
-	vars := mux.Vars(r)
-	w.WriteHeader(http.StatusOK) // TODO do not accept all request
-	fmt.Fprintf(w, "Category is: %v\n", vars["category"])
-	fmt.Fprintf(w, "ID is %v\n", vars["id"])
-}
 
 // ScriptsHandler takes a script name and
 func ScriptsHandler(scriptName string, debugEnable bool) func(http.ResponseWriter, *http.Request) {

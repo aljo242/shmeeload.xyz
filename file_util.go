@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+
+	"github.com/rs/zerolog/log"
 )
 
 // Exists is a basic file util that says if a dir or file exists
@@ -14,17 +17,30 @@ func Exists(path string) bool {
 
 // CopyFile copies filename src to dst
 func CopyFile(src, dst string) error {
-	in, err := os.Open(src)
+	filePath := filepath.Clean(src)
+	in, err := os.Open(filePath)
 	if err != nil {
 		return fmt.Errorf("error opening file: %v : %w", src, err)
 	}
-	defer in.Close()
+	defer func() {
+		err := in.Close()
+		if err != nil {
+			log.Error().Err(err).Str("filename", filePath).Msg("error closing the file")
+		}
+	}()
 
-	out, err := os.Create(dst)
+	// DST FILE
+	filePath = filepath.Clean(dst)
+	out, err := os.Create(filePath)
 	if err != nil {
 		return fmt.Errorf("error creating file: %v : %w", src, err)
 	}
-	defer out.Close()
+	defer func() {
+		err := out.Close()
+		if err != nil {
+			log.Error().Err(err).Str("filename", filePath).Msg("error closing the file")
+		}
+	}()
 
 	if _, err = io.Copy(out, in); err != nil {
 		return fmt.Errorf("error copying %v to %v : %w", src, dst, err)
