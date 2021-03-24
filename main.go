@@ -94,6 +94,15 @@ func SetupTemplates(cfg ServerConfig) ([]string, error) {
 		}
 	}
 
+	imgOutputDir := filepath.Join(TemplateOutputDir, "img")
+	if !Exists(imgOutputDir) {
+		err := os.Mkdir(imgOutputDir, 0750)
+		if err != nil {
+			return nil,
+				fmt.Errorf("error creating directory %v : %w", imgOutputDir, err)
+		}
+	}
+
 	log.Debug().Str("BaseDir", TemplateBaseDir).Msg("ensuring template base directory exists")
 	// Ensure base template directory exists
 	if !Exists(TemplateBaseDir) {
@@ -123,23 +132,23 @@ func SetupTemplates(cfg ServerConfig) ([]string, error) {
 
 			switch filepath.Ext(path) {
 			case ".html":
-				newPath := filepath.Join(TemplateOutputDir, "html", filepath.Base(path))
+				newPath := filepath.Join(htmlOutputDir, filepath.Base(path))
 				log.Debug().Str("fromPath", path).Str("toPath", newPath).Msg("moving static web resources")
 				handleExecuteTemlateErr(ExecuteTemplateHTML(cfg, path, newPath))
-			case ".js":
-				newPath := filepath.Join(TemplateOutputDir, "js", filepath.Base(path))
-				log.Debug().Str("fromPath", path).Str("toPath", newPath).Msg("moving static web resources")
-				handleCopyFileErr(CopyFile(path, newPath))
-			case ".map":
-				newPath := filepath.Join(TemplateOutputDir, "js", filepath.Base(path))
+			case ".js", ".map":
+				newPath := filepath.Join(jsOutputDir, filepath.Base(path))
 				log.Debug().Str("fromPath", path).Str("toPath", newPath).Msg("moving static web resources")
 				handleCopyFileErr(CopyFile(path, newPath))
 			case ".css":
-				newPath := filepath.Join(TemplateOutputDir, "css", filepath.Base(path))
+				newPath := filepath.Join(cssOutputDir, filepath.Base(path))
 				log.Debug().Str("fromPath", path).Str("toPath", newPath).Msg("moving static web resources")
 				handleCopyFileErr(CopyFile(path, newPath))
 			case ".ts":
-				newPath := filepath.Join(TemplateOutputDir, "src", filepath.Base(path))
+				newPath := filepath.Join(tsOutputDir, filepath.Base(path))
+				log.Debug().Str("fromPath", path).Str("toPath", newPath).Msg("moving static web resources")
+				handleCopyFileErr(CopyFile(path, newPath))
+			case ".ico", ".png", ".jpg", ".svg", ".gif":
+				newPath := filepath.Join(imgOutputDir, filepath.Base(path))
 				log.Debug().Str("fromPath", path).Str("toPath", newPath).Msg("moving static web resources")
 				handleCopyFileErr(CopyFile(path, newPath))
 			}
@@ -206,6 +215,7 @@ func initServer() *Server {
 	r.HandleFunc("/static/css/{filename}", handlers.CSSHandler("Joe", cfg.DebugLog))
 	r.HandleFunc("/static/html/{filename}", handlers.HTMLHandler("Joe", cfg.DebugLog))
 	r.HandleFunc("/static/src/{filename}", handlers.TypeScriptHandler("", cfg.DebugLog))
+	r.HandleFunc("/static/img/{filename}", handlers.ImageHandler())
 	r.HandleFunc("/chat/home", handlers.ChatHomeHandler("", cfg.DebugLog))
 	//r.HandleFunc("/chat/{name}", handlers.ChatHomeHandler("", cfg.DebugLog))
 	r.HandleFunc("/chat/ws", serveWs(hub))

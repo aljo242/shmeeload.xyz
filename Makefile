@@ -14,7 +14,7 @@ analyze:
 	gosec ./...
 
 test:
-	go test ./... -v -race -coverprofile=coverage.out
+	go test -v -race -coverprofile=coverage.out
 	go tool cover -html coverage.out -o coverage.html
 
 clean: 
