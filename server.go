@@ -3,9 +3,12 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -15,6 +18,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// Server ...
 type Server struct {
 	http.Server
 	config    ServerConfig
@@ -28,8 +32,40 @@ func serverShutdownCallback() {
 	log.Printf("shutting down server...")
 }
 
+func getTLSConfig(cfg ServerConfig) (*tls.Config, error) {
+	cer, err := tls.LoadX509KeyPair(cfg.CertFile, cfg.KeyFile)
+	if err != nil {
+		return &tls.Config{MinVersion: tls.VersionTLS12}, fmt.Errorf("error loading key pair (%v, %v) : %w", cfg.CertFile, cfg.KeyFile, err)
+	}
+
+	rootCAPool := x509.NewCertPool()
+
+	// read rootCA file into byte
+	f, err := os.Open(cfg.RootCA)
+	if err != nil {
+		return &tls.Config{MinVersion: tls.VersionTLS12}, fmt.Errorf("error opening Root CA file %v : %w", cfg.RootCA, err)
+	}
+
+	b, err := ioutil.ReadAll(f)
+	if err != nil {
+		return &tls.Config{MinVersion: tls.VersionTLS12}, fmt.Errorf("error reading Root CA file %v : %w", cfg.RootCA, err)
+	}
+
+	ok := rootCAPool.AppendCertsFromPEM(b)
+	if !ok {
+		return &tls.Config{MinVersion: tls.VersionTLS12}, fmt.Errorf("error appending Root CA cert %v : %w", cfg.RootCA, err)
+	}
+
+	return &tls.Config{
+		Certificates: []tls.Certificate{cer},
+		RootCAs:      rootCAPool,
+		MinVersion:   tls.VersionTLS12,
+	}, nil
+}
+
+// NewServer ...
 func NewServer(cfg ServerConfig, r *mux.Router) *Server {
-	tlsCfg := &tls.Config{}
+	tlsCfg := &tls.Config{MinVersion: tls.VersionTLS12}
 	addr := cfg.IP + ":" + cfg.Port
 
 	if cfg.HTTPS {
@@ -73,6 +109,7 @@ func (srv *Server) Quit() error {
 	return errors.New("server not running; cannot shutdown")
 }
 
+// Run ...
 func (srv *Server) Run() {
 
 	srv.wg.Add(1)
@@ -111,7 +148,10 @@ func (srv *Server) Run() {
 		var code int
 		for {
 			fmt.Printf("provide shutdown code: \n")
-			fmt.Scanln(&code)
+			_, err := fmt.Scanln(&code)
+			if err != nil {
+				fmt.Printf("error getting input: %v", err)
+			}
 			if code == srv.config.ShutdownCode {
 				break
 			}

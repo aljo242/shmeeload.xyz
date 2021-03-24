@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
+
+	"github.com/rs/zerolog/log"
 )
 
 // ServerConfig is the general struct holds parsed JSON config info
@@ -23,12 +26,18 @@ type ServerConfig struct {
 
 func loadConfig(filename string) (ServerConfig, error) {
 	cfg := ServerConfig{}
-	cfgFile, err := os.Open(filename)
-	defer cfgFile.Close()
+	filePath := filepath.Clean(filename)
+	cfgFile, err := os.Open(filePath)
 	if err != nil {
 		return ServerConfig{},
 			fmt.Errorf("error opening config file %v : %w", filename, err)
 	}
+	defer func() {
+		err := cfgFile.Close()
+		if err != nil {
+			log.Error().Err(err).Str("filename", filePath).Msg("error closing the file")
+		}
+	}()
 
 	jsonParser := json.NewDecoder(cfgFile)
 	err = jsonParser.Decode(&cfg)
