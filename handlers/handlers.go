@@ -31,6 +31,7 @@ func ScriptsHandler(scriptName string, debugEnable bool) func(http.ResponseWrite
 			}
 
 			//w.WriteHeader(http.StatusOK)
+			w.Header().Set("Content-Type", "text/plain; charset=UTF-8")
 			http.ServeFile(w, r, wantFile)
 			//if debugEnable {
 			//	http.ServeFile(w, r, filepath.Join(jsDir, "../src/app.ts"))
@@ -53,7 +54,7 @@ func CSSHandler(filename string, debugEnable bool) func(http.ResponseWriter, *ht
 			wantFile := filepath.Join(cssDir, filename)
 			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
 				w.WriteHeader(http.StatusNotFound)
-				log.Fatal().Err(err).Str("Filename", wantFile).Msg("Error finding file")
+				log.Debug().Err(err).Str("Filename", wantFile).Msg("Error finding file")
 				return
 			}
 
@@ -75,14 +76,15 @@ func HTMLHandler(scriptName string, debugEnable bool) func(http.ResponseWriter, 
 		log.Debug().Str("Handler", "HTMLHandler").Str("Filename", filename).Msg("incoming request")
 
 		if r.Method == http.MethodGet {
-			wantFile := filepath.Join(jsDir, filename)
+			wantFile := filepath.Join(htmlDir, filename)
 			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
 				w.WriteHeader(http.StatusNotFound)
-				log.Fatal().Err(err).Str("Filename", wantFile).Msg("Error finding file")
+				log.Debug().Err(err).Str("Filename", wantFile).Msg("Error finding file")
 				return
 			}
 
 			//w.WriteHeader(http.StatusOK)
+			w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 			http.ServeFile(w, r, wantFile)
 
 		} else {
@@ -92,7 +94,7 @@ func HTMLHandler(scriptName string, debugEnable bool) func(http.ResponseWriter, 
 	}
 }
 
-// TypeScriptHandler takes a script name and
+// TypeScriptHandler takes a script name and returns a HandleFunc
 func TypeScriptHandler(scriptName string, debugEnable bool) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		filename := filepath.Base(r.URL.Path)
@@ -102,11 +104,46 @@ func TypeScriptHandler(scriptName string, debugEnable bool) func(http.ResponseWr
 			wantFile := filepath.Join(tsDir, filename)
 			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
 				w.WriteHeader(http.StatusNotFound)
-				log.Fatal().Err(err).Str("Filename", wantFile).Msg("Error finding file")
+				log.Debug().Err(err).Str("Filename", wantFile).Msg("Error finding file")
 				return
 			}
 
 			//w.WriteHeader(http.StatusOK)
+			w.Header().Set("Content-Type", "text/plain; charset=UTF-8")
+			http.ServeFile(w, r, wantFile)
+
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+	}
+}
+
+// ImageHandler returns a HandleFunc to serve image files
+func ImageHandler() func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		filename := filepath.Base(r.URL.Path)
+
+		if r.Method == http.MethodGet {
+			wantFile := filepath.Join(imgDir, filename)
+			log.Debug().Str("Handler", "ImageHandler").Str("Filename", wantFile).Msg("incoming request")
+
+			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
+				w.WriteHeader(http.StatusNotFound)
+				log.Debug().Err(err).Str("Filename", wantFile).Msg("Error finding file")
+				return
+			}
+
+			switch filepath.Ext(filename) {
+			case ".jpg", ".jpeg":
+				w.Header().Set("Content-Type", "image/jpeg")
+			case ".png":
+				w.Header().Set("Content-Type", "image/png")
+			case ".gif":
+				w.Header().Set("Content-Type", "image/gif")
+			case ".ico":
+				w.Header().Set("Content-Type", "image/x-icon")
+			}
 			http.ServeFile(w, r, wantFile)
 
 		} else {
@@ -127,7 +164,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 			wantFile := filepath.Join(htmlDir, "home.html")
 			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
 				w.WriteHeader(http.StatusNotFound)
-				log.Fatal().Err(err).Str("Filename", wantFile).Msg("Error finding file")
+				log.Debug().Err(err).Str("Filename", wantFile).Msg("Error finding file")
 				return
 			}
 
@@ -149,7 +186,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 			log.Debug().Str("file", absWantFile).Msg("pushing file")
 			err := pusher.Push(absWantFile, nil)
 			if err != nil {
-				log.Fatal().Err(err).Str("Filename", wantFile).Msg("Error pushing file")
+				log.Debug().Err(err).Str("Filename", wantFile).Msg("Error pushing file")
 				return
 			}
 
@@ -165,7 +202,23 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 			log.Debug().Str("file", absWantFile).Msg("pushing file")
 			err = pusher.Push(absWantFile, nil)
 			if err != nil {
-				log.Fatal().Err(err).Str("Filename", wantFile).Msg("Error pushing file")
+				log.Debug().Err(err).Str("Filename", wantFile).Msg("Error pushing file")
+				return
+			}
+
+			// push favicon
+			//wantFile = filepath.Join(imgDir, "favicon.ico")
+			wantFile = imgDir + "favicon.ico"
+			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
+				w.WriteHeader(http.StatusNotFound)
+				log.Fatal().Err(err).Str("Filename", wantFile).Msg("Error finding file")
+				return
+			}
+			absWantFile, _ = filepath.Abs(wantFile)
+			log.Debug().Str("file", absWantFile).Msg("pushing file")
+			err = pusher.Push(absWantFile, nil)
+			if err != nil {
+				log.Debug().Err(err).Str("Filename", wantFile).Msg("Error pushing file")
 				return
 			}
 		}
