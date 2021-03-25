@@ -264,7 +264,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 
 			// push favicon
 			//wantFile = filepath.Join(imgDir, "favicon.ico")
-			wantFile = imgDir + "favicon.ico"
+			wantFile = imgDir + "1favicon.ico"
 			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
 				w.WriteHeader(http.StatusNotFound)
 				log.Fatal().Err(err).Str("Filename", wantFile).Msg("Error finding file")
