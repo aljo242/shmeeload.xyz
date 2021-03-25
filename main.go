@@ -240,5 +240,6 @@ func main() {
 	//runGorillaServer()
 	log.Printf("main: starting HTTP server...")
 	srv := initServer()
-	srv.Run()
+	running := make(chan struct{})
+	srv.Run(running)
 }
