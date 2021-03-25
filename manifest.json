@@ -1,0 +1,10 @@
+{
+    "short_name": "shmeeload",
+    "name": "shmeeload: where dreams become stars",
+    "icons": [
+        {
+            "src": "./static/img/1icon-192.png"
+        }
+    ]
+
+}
