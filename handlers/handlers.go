@@ -228,55 +228,15 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 			http.ServeFile(w, r, wantFile)
 		}()
 
-		pusher, ok := w.(http.Pusher)
-		if ok {
-			// push js file
-			//wantFile := filepath.Join(jsDir, "app.js")
-			wantFile := jsDir + "app.js"
-			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
-				w.WriteHeader(http.StatusNotFound)
-				log.Fatal().Err(err).Str("Filename", wantFile).Msg("Error finding file")
-				return
-			}
-			absWantFile, _ := filepath.Abs(wantFile)
-			log.Debug().Str("file", absWantFile).Msg("pushing file")
-			err := pusher.Push(absWantFile, nil)
-			if err != nil {
-				log.Debug().Err(err).Str("Filename", wantFile).Msg("Error pushing file")
-				return
-			}
-
-			// push css file
-			//wantFile = filepath.Join(cssDir, "home.css")
-			wantFile = cssDir + "home.css"
-			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
-				w.WriteHeader(http.StatusNotFound)
-				log.Fatal().Err(err).Str("Filename", wantFile).Msg("Error finding file")
-				return
-			}
-			absWantFile, _ = filepath.Abs(wantFile)
-			log.Debug().Str("file", absWantFile).Msg("pushing file")
-			err = pusher.Push(absWantFile, nil)
-			if err != nil {
-				log.Debug().Err(err).Str("Filename", wantFile).Msg("Error pushing file")
-				return
-			}
-
-			// push favicon
-			//wantFile = filepath.Join(imgDir, "favicon.ico")
-			wantFile = imgDir + "1favicon.ico"
-			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
-				w.WriteHeader(http.StatusNotFound)
-				log.Fatal().Err(err).Str("Filename", wantFile).Msg("Error finding file")
-				return
-			}
-			absWantFile, _ = filepath.Abs(wantFile)
-			log.Debug().Str("file", absWantFile).Msg("pushing file")
-			err = pusher.Push(absWantFile, nil)
-			if err != nil {
-				log.Debug().Err(err).Str("Filename", wantFile).Msg("Error pushing file")
-				return
-			}
+		wantFile := cssDir + "chat.css"
+		chatFilepath, _ := filepath.Abs(wantFile)
+		wantFile = jsDir + "chat.js"
+		jsFilepath, _ := filepath.Abs(wantFile)
+		wantFile = imgDir + "1favicon.ico"
+		faviconFilepath, _ := filepath.Abs(wantFile)
+		err := http_util.PushFiles(w, chatFilepath, jsFilepath, faviconFilepath)
+		if err != nil {
+			log.Error().Err(err).Msg("Error pushing files")
 		}
 
 	} else {
@@ -314,48 +274,11 @@ func ChatHomeHandler(filename string, debugEnable bool) func(http.ResponseWriter
 				http.ServeFile(w, r, wantFile)
 			}()
 
-			pusher, ok := w.(http.Pusher)
-			if ok {
-				// push js file
-				//wantFile := filepath.Join(jsDir, "app.js")
-				wantFile := jsDir + "chat.js"
-				if _, err := os.Stat(wantFile); os.IsNotExist(err) {
-					w.WriteHeader(http.StatusNotFound)
-					log.Fatal().Err(err).Str("Filename", wantFile).Msg("Error finding file")
-					return
-				}
-				absWantFile, _ := filepath.Abs(wantFile)
-				log.Debug().Str("file", absWantFile).Msg("pushing file")
-				err := pusher.Push(absWantFile, nil)
-				if err != nil {
-					log.Fatal().Err(err).Str("Filename", wantFile).Msg("Error pushing file")
-					return
-				}
-
-				// push css file
-				//wantFile = filepath.Join(cssDir, "home.css")
-				wantFile = cssDir + "chat.css"
-				if _, err := os.Stat(wantFile); os.IsNotExist(err) {
-					w.WriteHeader(http.StatusNotFound)
-					log.Fatal().Err(err).Str("Filename", wantFile).Msg("Error finding file")
-					return
-				}
-				absWantFile, _ = filepath.Abs(wantFile)
-				log.Debug().Str("file", absWantFile).Msg("pushing file")
-				err = pusher.Push(absWantFile, nil)
-				if err != nil {
-					log.Fatal().Err(err).Str("Filename", wantFile).Msg("Error pushing file")
-					return
-				}
-			}
-
 			wantFile := cssDir + "chat.css"
 			chatFilepath, _ := filepath.Abs(wantFile)
 			wantFile = jsDir + "chat.js"
 			jsFilepath, _ := filepath.Abs(wantFile)
-			wantFile = imgDir + "1favicon.ico"
-			faviconFilepath, _ := filepath.Abs(wantFile)
-			err := http_util.PushFiles(w, chatFilepath, jsFilepath, faviconFilepath)
+			err := http_util.PushFiles(w, chatFilepath, jsFilepath)
 			if err != nil {
 				log.Error().Err(err).Msg("Error pushing files")
 			}
