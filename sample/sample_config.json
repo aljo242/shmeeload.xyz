@@ -6,6 +6,5 @@
     "secure": false,
     "debugLog": true,
     "shutdownCode": 10101,
-    "certFile": "/home/shmoop/certs/out/localhost.crt",
-    "keyFile": "/home/shmoop/certs/out/localhost.key"
+    "userShutdown": true
 }
