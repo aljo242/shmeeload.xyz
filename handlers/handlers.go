@@ -37,6 +37,7 @@ func ScriptsHandler(scriptName string, debugEnable bool) func(http.ResponseWrite
 			case ".js.map":
 				w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 			}
+			w.Header().Set("Cache-Control", "max-age=31536000")
 			http.ServeFile(w, r, wantFile)
 
 		} else {
@@ -61,7 +62,7 @@ func CSSHandler(filename string, debugEnable bool) func(http.ResponseWriter, *ht
 			}
 
 			w.Header().Set("Content-Type", "text/css; charset=UTF-8")
-			//w.WriteHeader(http.StatusOK)
+			w.Header().Set("Cache-Control", "max-age=31536000")
 			http.ServeFile(w, r, wantFile)
 
 		} else {
@@ -87,6 +88,7 @@ func HTMLHandler(scriptName string, debugEnable bool) func(http.ResponseWriter, 
 
 			//w.WriteHeader(http.StatusOK)
 			w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+			w.Header().Set("Cache-Control", "max-age=31536000")
 			http.ServeFile(w, r, wantFile)
 
 		} else {
@@ -112,6 +114,7 @@ func TypeScriptHandler(scriptName string, debugEnable bool) func(http.ResponseWr
 
 			//w.WriteHeader(http.StatusOK)
 			w.Header().Set("Content-Type", "text/plain; charset=UTF-8")
+			w.Header().Set("Cache-Control", "max-age=31536000")
 			http.ServeFile(w, r, wantFile)
 
 		} else {
@@ -137,6 +140,7 @@ func ManifestHandler() func(http.ResponseWriter, *http.Request) {
 
 			//w.WriteHeader(http.StatusOK)
 			w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+			w.Header().Set("Cache-Control", "max-age=31536000")
 			http.ServeFile(w, r, wantFile)
 
 		} else {
@@ -165,6 +169,7 @@ func ServiceWorkerHandler() func(http.ResponseWriter, *http.Request) {
 			case ".js.map":
 				w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 			}
+			w.Header().Set("Cache-Control", "max-age=31536000")
 			http.ServeFile(w, r, wantFile)
 
 		} else {
@@ -199,6 +204,7 @@ func ImageHandler() func(http.ResponseWriter, *http.Request) {
 			case ".ico":
 				w.Header().Set("Content-Type", "image/x-icon")
 			}
+			w.Header().Set("Cache-Control", "max-age=31536000")
 			http.ServeFile(w, r, wantFile)
 
 		} else {
@@ -225,6 +231,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 
 			//w.WriteHeader(http.StatusOK)
 			w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+			w.Header().Set("Cache-Control", "max-age=31536000")
 			http.ServeFile(w, r, wantFile)
 		}()
 
@@ -271,6 +278,7 @@ func ChatHomeHandler(filename string, debugEnable bool) func(http.ResponseWriter
 				}
 
 				w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+				w.Header().Set("Cache-Control", "max-age=31536000")
 				http.ServeFile(w, r, wantFile)
 			}()
 
