@@ -43,10 +43,10 @@ ifneq ("$(wildcard coverage.out)", "")
 	rm coverage.out
 endif
 ifneq ("$(wildcard serviceWorker.js)", "")
-	rm serviceWorker.js 
+	rm -f serviceWorker.js 
 endif
 ifneq ("$(wildcard serviceWorker.js.map)", "")
-	rm serviceWorker.js.map
+	rm -f serviceWorker.js.map
 endif
 	sudo rm -rf static/
 	go clean

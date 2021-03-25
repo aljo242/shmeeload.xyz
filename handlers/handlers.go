@@ -350,10 +350,14 @@ func ChatHomeHandler(filename string, debugEnable bool) func(http.ResponseWriter
 			}
 
 			wantFile := cssDir + "chat.css"
-			chatfilepath, _ := filepath.Abs(wantFile)
-			err := http_util.PushFiles(w, chatfilepath)
+			chatFilepath, _ := filepath.Abs(wantFile)
+			wantFile = jsDir + "chat.js"
+			jsFilepath, _ := filepath.Abs(wantFile)
+			wantFile = imgDir + "1favicon.ico"
+			faviconFilepath, _ := filepath.Abs(wantFile)
+			err := http_util.PushFiles(w, chatFilepath, jsFilepath, faviconFilepath)
 			if err != nil {
-				log.Fatal().Err(err).Msg("Error pushing files")
+				log.Error().Err(err).Msg("Error pushing files")
 			}
 		} else {
 			w.WriteHeader(http.StatusBadRequest)
