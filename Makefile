@@ -40,7 +40,7 @@ ifneq ("$(wildcard coverage.html)", "")
 	rm coverage.html
 endif
 ifneq ("$(wildcard coverage.out)", "")
-	rm coverage.html
+	rm coverage.out
 endif
 ifneq ("$(wildcard serviceWorker.js)", "")
 	rm serviceWorker.js 
