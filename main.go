@@ -216,6 +216,7 @@ func initServer() *Server {
 	r.HandleFunc("/static/html/{filename}", handlers.HTMLHandler("Joe", cfg.DebugLog))
 	r.HandleFunc("/static/src/{filename}", handlers.TypeScriptHandler("", cfg.DebugLog))
 	r.HandleFunc("/static/img/{filename}", handlers.ImageHandler())
+	r.HandleFunc("/manifest.json", handlers.ManifestHandler())
 	r.HandleFunc("/chat/home", handlers.ChatHomeHandler("", cfg.DebugLog))
 	//r.HandleFunc("/chat/{name}", handlers.ChatHomeHandler("", cfg.DebugLog))
 	r.HandleFunc("/chat/ws", serveWs(hub))

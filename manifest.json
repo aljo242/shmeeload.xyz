@@ -5,44 +5,47 @@
         {
             "src": "./static/img/1icon-192.png",
             "type": "image/png",
-            "sizes": "192x192"
+            "sizes": "192x192",
+            "purpose": "any maskable"
         },
         {
             "src": "./static/img/1icon-512.png",
             "type": "image/png",
-            "sizes": "512x512"
+            "sizes": "512x512",
+            "purpose": "any maskable"
         }
     ],
-    "start_url": "?/source=pwa",
+    "start_url": "/home",
     "background_color": "#3367D6",
-    "display": "standalone",
+    "display": "minimal-ui",
     "scope": "/",
     "theme_color": "#3367D6",
+    "prefer_related_applications": false, 
     "shortcuts": [
         {
-            "name": "How's weather today?",
-            "short_name": "Today",
-            "description": "View weather information for today",
-            "url": "/today?source=pwa",
-            "icons": [{ "src": "/images/today.png", "sizes": "192x192" }]
+            "name": "shmee home",
+            "short_name": "shmee home",
+            "description": "welcome home",
+            "url": "/home",
+            "icons": [{ "src": "/images/home.png", "sizes": "192x192" }]
           },
           {
-            "name": "How's weather tomorrow?",
-            "short_name": "Tomorrow",
-            "description": "View weather information for tomorrow",
-            "url": "/tomorrow?source=pwa",
-            "icons": [{ "src": "/images/tomorrow.png", "sizes": "192x192" }]
+            "name": "shmee chat",
+            "short_name": "shmee chat",
+            "description": "chat with friends!",
+            "url": "/chat/home",
+            "icons": [{ "src": "/images/chat.png", "sizes": "192x192" }]
           }
     ],
     "description": "shmeeload is life",
     "screenshots": [
         {
-          "src": "/images/screenshot1.png",
+          "src": "/static/img/screenshot1.png",
           "type": "image/png",
           "sizes": "540x720"
         },
         {
-          "src": "/images/screenshot2.jpg",
+          "src": "/static/img/screenshot2.png",
           "type": "image/jpg",
           "sizes": "540x720"
         }

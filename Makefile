@@ -32,6 +32,7 @@ endif
 clean: 
 	rm -rf ./web_res/dist/*
 	rm ${BINARY_NAME}
+	rm coverage.html coverage.out
 	sudo rm -rf static/
 	go clean
 

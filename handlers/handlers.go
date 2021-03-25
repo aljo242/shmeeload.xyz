@@ -15,6 +15,7 @@ const (
 	cssDir  string = "./static/css/"
 	tsDir   string = "./static/src/"
 	imgDir  string = "./static/img/"
+	rootDir string = "./"
 )
 
 // ScriptsHandler takes a script name and
@@ -31,7 +32,7 @@ func ScriptsHandler(scriptName string, debugEnable bool) func(http.ResponseWrite
 			}
 
 			//w.WriteHeader(http.StatusOK)
-			w.Header().Set("Content-Type", "text/plain; charset=UTF-8")
+			w.Header().Set("Content-Type", "application/javascript; charset=UTF-8")
 			http.ServeFile(w, r, wantFile)
 			//if debugEnable {
 			//	http.ServeFile(w, r, filepath.Join(jsDir, "../src/app.ts"))
@@ -110,6 +111,31 @@ func TypeScriptHandler(scriptName string, debugEnable bool) func(http.ResponseWr
 
 			//w.WriteHeader(http.StatusOK)
 			w.Header().Set("Content-Type", "text/plain; charset=UTF-8")
+			http.ServeFile(w, r, wantFile)
+
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+	}
+}
+
+// ManifestHandler takes a script name and returns a HandleFunc
+func ManifestHandler() func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		filename := filepath.Base(r.URL.Path)
+
+		if r.Method == http.MethodGet {
+			log.Debug().Str("Handler", "ManifestHandler").Str("Filename", filename).Msg("incoming request")
+			wantFile := filepath.Join(rootDir, filename)
+			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
+				w.WriteHeader(http.StatusNotFound)
+				log.Debug().Err(err).Str("Filename", wantFile).Msg("Error finding file")
+				return
+			}
+
+			//w.WriteHeader(http.StatusOK)
+			w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 			http.ServeFile(w, r, wantFile)
 
 		} else {
