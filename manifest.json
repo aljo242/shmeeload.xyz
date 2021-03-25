@@ -1,0 +1,54 @@
+{
+    "short_name": "shmeeload",
+    "name": "shmeeload: where dreams become stars",
+    "icons": [
+        {
+            "src": "./static/img/1icon-192.png",
+            "type": "image/png",
+            "sizes": "192x192",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "./static/img/1icon-512.png",
+            "type": "image/png",
+            "sizes": "512x512",
+            "purpose": "any maskable"
+        }
+    ],
+    "start_url": "/home",
+    "background_color": "#3367D6",
+    "display": "minimal-ui",
+    "scope": "/",
+    "theme_color": "#3367D6",
+    "prefer_related_applications": false, 
+    "shortcuts": [
+        {
+            "name": "shmee home",
+            "short_name": "shmee home",
+            "description": "welcome home",
+            "url": "/home",
+            "icons": [{ "src": "/images/home.png", "sizes": "192x192" }]
+          },
+          {
+            "name": "shmee chat",
+            "short_name": "shmee chat",
+            "description": "chat with friends!",
+            "url": "/chat/home",
+            "icons": [{ "src": "/images/chat.png", "sizes": "192x192" }]
+          }
+    ],
+    "description": "shmeeload is life",
+    "screenshots": [
+        {
+          "src": "/static/img/screenshot1.png",
+          "type": "image/png",
+          "sizes": "540x720"
+        },
+        {
+          "src": "/static/img/screenshot2.png",
+          "type": "image/jpg",
+          "sizes": "540x720"
+        }
+      ]
+
+}

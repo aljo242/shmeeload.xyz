@@ -30,8 +30,24 @@ endif
 
 .PHONY: clean
 clean: 
+ifneq ("$(wildcard ./web_res/dist/)", "")
 	rm -rf ./web_res/dist/*
+endif
+ifneq ("$(wildcard ${BINARY_NAME})", "")
 	rm ${BINARY_NAME}
+endif
+ifneq ("$(wildcard coverage.html)", "")
+	rm coverage.html
+endif
+ifneq ("$(wildcard coverage.out)", "")
+	rm coverage.html
+endif
+ifneq ("$(wildcard serviceWorker.js)", "")
+	rm serviceWorker.js 
+endif
+ifneq ("$(wildcard serviceWorker.js.map)", "")
+	rm serviceWorker.js.map
+endif
 	sudo rm -rf static/
 	go clean
 
