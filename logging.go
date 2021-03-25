@@ -1,11 +1,12 @@
 package main
 
 import (
+	"github.com/aljo242/http_util"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
-func setupLogger(cfg ServerConfig) {
+func setupLogger(cfg http_util.ServerConfig) {
 	//zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
 	if cfg.DebugLog {

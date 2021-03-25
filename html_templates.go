@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"text/template"
 
+	"github.com/aljo242/http_util"
 	"github.com/rs/zerolog/log"
 )
 
@@ -16,7 +17,7 @@ type htmlTemplateInfo struct {
 
 // ExecuteTemplateHTML is a util func for executing an html template
 // at path and saving the new file to newPath
-func ExecuteTemplateHTML(cfg ServerConfig, path, newPath string) error {
+func ExecuteTemplateHTML(cfg http_util.ServerConfig, path, newPath string) error {
 	filePath := filepath.Clean(newPath)
 	newFile, err := os.Create(filePath)
 	if err != nil {

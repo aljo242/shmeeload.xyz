@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/aljo242/http_util"
 	"github.com/aljo242/ip_util"
 	"github.com/aljo242/shmeeload.xyz/handlers"
 
@@ -36,7 +37,7 @@ func init() {
 
 // SetupTemplates builds the template output directory, executes HTML templates,
 // and copies all web resource files to the template output directory (.js, .ts, .js.map, .css, .html)
-func SetupTemplates(cfg ServerConfig) ([]string, error) {
+func SetupTemplates(cfg http_util.ServerConfig) ([]string, error) {
 	files := make([]string, 0)
 	log.Debug().Msg("setting up templates")
 
@@ -167,9 +168,9 @@ func SetupTemplates(cfg ServerConfig) ([]string, error) {
 	return files, nil
 }
 
-func initServer() *Server {
+func initServer() *http_util.Server {
 	log.Printf("loading configuration in file: %v", configFile)
-	cfg, err := loadConfig(configFile)
+	cfg, err := http_util.LoadConfig(configFile)
 	if err != nil {
 		log.Fatal().Err(err).Msg("error loading config")
 		return nil
@@ -229,7 +230,7 @@ func initServer() *Server {
 
 	fmt.Printf("\n")
 	log.Printf("starting Server at: %v...", addr)
-	srv := NewServer(cfg, r)
+	srv := http_util.NewServer(cfg, r)
 
 	return srv
 }
