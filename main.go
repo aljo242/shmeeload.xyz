@@ -137,6 +137,9 @@ func SetupTemplates(cfg ServerConfig) ([]string, error) {
 				handleExecuteTemlateErr(ExecuteTemplateHTML(cfg, path, newPath))
 			case ".js", ".map":
 				newPath := filepath.Join(jsOutputDir, filepath.Base(path))
+				if filepath.Base(path) == "serviceWorker.js" || filepath.Base(path) == "serviceWorker.js.map" {
+					newPath = filepath.Join("./", filepath.Base(path))
+				}
 				log.Debug().Str("fromPath", path).Str("toPath", newPath).Msg("moving static web resources")
 				handleCopyFileErr(CopyFile(path, newPath))
 			case ".css":
@@ -217,6 +220,8 @@ func initServer() *Server {
 	r.HandleFunc("/static/src/{filename}", handlers.TypeScriptHandler("", cfg.DebugLog))
 	r.HandleFunc("/static/img/{filename}", handlers.ImageHandler())
 	r.HandleFunc("/manifest.json", handlers.ManifestHandler())
+	r.HandleFunc("/serviceWorker.js", handlers.ServiceWorkerHandler())
+	r.HandleFunc("/serviceWorker.js.map", handlers.ServiceWorkerHandler())
 	r.HandleFunc("/chat/home", handlers.ChatHomeHandler("", cfg.DebugLog))
 	//r.HandleFunc("/chat/{name}", handlers.ChatHomeHandler("", cfg.DebugLog))
 	r.HandleFunc("/chat/ws", serveWs(hub))

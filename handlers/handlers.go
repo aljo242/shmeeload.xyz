@@ -27,16 +27,17 @@ func ScriptsHandler(scriptName string, debugEnable bool) func(http.ResponseWrite
 			wantFile := filepath.Join(jsDir, filename)
 			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
 				w.WriteHeader(http.StatusNotFound)
-				log.Fatal().Err(err).Str("Filename", wantFile).Msg("Error finding file")
+				log.Debug().Err(err).Str("Filename", wantFile).Msg("Error finding file")
 				return
 			}
 
-			//w.WriteHeader(http.StatusOK)
-			w.Header().Set("Content-Type", "application/javascript; charset=UTF-8")
+			switch filepath.Ext(wantFile) {
+			case ".js":
+				w.Header().Set("Content-Type", "application/javascript; charset=UTF-8")
+			case ".js.map":
+				w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+			}
 			http.ServeFile(w, r, wantFile)
-			//if debugEnable {
-			//	http.ServeFile(w, r, filepath.Join(jsDir, "../src/app.ts"))
-			//}
 
 		} else {
 			w.WriteHeader(http.StatusBadRequest)
@@ -120,7 +121,7 @@ func TypeScriptHandler(scriptName string, debugEnable bool) func(http.ResponseWr
 	}
 }
 
-// ManifestHandler takes a script name and returns a HandleFunc
+// ManifestHandler serves manifest.json
 func ManifestHandler() func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		filename := filepath.Base(r.URL.Path)
@@ -145,6 +146,34 @@ func ManifestHandler() func(http.ResponseWriter, *http.Request) {
 	}
 }
 
+// ServiceWorkerHandler serves serviceWorker.js
+func ServiceWorkerHandler() func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		filename := filepath.Base(r.URL.Path)
+
+		if r.Method == http.MethodGet {
+			log.Debug().Str("Handler", "ServiceWorkerHandler").Str("Filename", filename).Msg("incoming request")
+			wantFile := filepath.Join(rootDir, filename)
+			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
+				w.WriteHeader(http.StatusNotFound)
+				log.Debug().Err(err).Str("Filename", wantFile).Msg("Error finding file")
+				return
+			}
+			switch filepath.Ext(wantFile) {
+			case ".js":
+				w.Header().Set("Content-Type", "application/javascript; charset=UTF-8")
+			case ".js.map":
+				w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+			}
+			http.ServeFile(w, r, wantFile)
+
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+	}
+}
+
 // ImageHandler returns a HandleFunc to serve image files
 func ImageHandler() func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -160,7 +189,7 @@ func ImageHandler() func(http.ResponseWriter, *http.Request) {
 				return
 			}
 
-			switch filepath.Ext(filename) {
+			switch filepath.Ext(wantFile) {
 			case ".jpg", ".jpeg":
 				w.Header().Set("Content-Type", "image/jpeg")
 			case ".png":
@@ -195,6 +224,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			//w.WriteHeader(http.StatusOK)
+			w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 			http.ServeFile(w, r, wantFile)
 		}()
 
@@ -272,16 +302,6 @@ func ChatHomeHandler(filename string, debugEnable bool) func(http.ResponseWriter
 		log.Debug().Str("Handler", "ChatHomeHandler").Msg("incoming request")
 
 		if r.Method == http.MethodGet {
-			//wantFile := filepath.Join(htmlDir, "chat.html")
-			//if _, err := os.Stat(wantFile); os.IsNotExist(err) {
-			//	w.WriteHeader(http.StatusNotFound)
-			//	log.Fatalf("Error finding file %v : %v", wantFile, err)
-			//	return
-			//}
-
-			//w.WriteHeader(http.StatusOK)
-			//http.ServeFile(w, r, wantFile)
-
 			defer func() {
 				wantFile := filepath.Join(htmlDir, "chat.html")
 				if _, err := os.Stat(wantFile); os.IsNotExist(err) {
@@ -290,7 +310,7 @@ func ChatHomeHandler(filename string, debugEnable bool) func(http.ResponseWriter
 					return
 				}
 
-				//w.WriteHeader(http.StatusOK)
+				w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 				http.ServeFile(w, r, wantFile)
 			}()
 
