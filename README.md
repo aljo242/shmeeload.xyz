@@ -12,5 +12,5 @@ Server backend written using Go and the gorilla/mux and gorilla/websockets packa
 * HTTPS supported
 * TypeScript -> JavaScript pipeline for browser scripting
 * WebSockets for shmeechat
-* uses my http utils repo for major functionality (https://github.com/aljo242/htt_util.git)
+* uses my http utils repo for major functionality (https://github.com/aljo242/http_util.git)
 
