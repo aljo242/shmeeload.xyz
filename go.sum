@@ -1,7 +1,3 @@
-github.com/aljo242/http_util v0.0.0-20210320030951-0c1ccc38d1de h1:sL3TNWR57n6nmp6UhcFBuMp/ZY5SZm5S/SWv51byaXk=
-github.com/aljo242/http_util v0.0.0-20210320030951-0c1ccc38d1de/go.mod h1:F+xlICqyhTsniGEg5FYfemtcajU5ZRfE5T6fdqkCqT0=
-github.com/aljo242/http_util v0.0.0-20210325231128-c5cb9aee880d h1:7kUneXpvozjCfq7XbsQHq3qTRt348gdONTzQwlTBnd4=
-github.com/aljo242/http_util v0.0.0-20210325231128-c5cb9aee880d/go.mod h1:zae2cVqtPvAyZEq8O54riXhjlulsqXLNXXDAHZz0X70=
 github.com/aljo242/http_util v0.0.0-20210325235225-5fa61f06c4e8 h1:ZID5Pvutxp/gyiUAw9ULyECL00bFNEgyjKcjxzaxGD4=
 github.com/aljo242/http_util v0.0.0-20210325235225-5fa61f06c4e8/go.mod h1:zae2cVqtPvAyZEq8O54riXhjlulsqXLNXXDAHZz0X70=
 github.com/aljo242/ip_util v0.0.0-20210312014041-edb7b02403a5 h1:Zoct/GLnnnKRf3TsJBxM1TjA9x3nMRPfFB+0q8GlA5c=
