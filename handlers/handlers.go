@@ -218,9 +218,9 @@ func ImageHandler() func(http.ResponseWriter, *http.Request) {
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	//http_util.CheckHTTP2Support(w)
 	// this page currently only serves html resources
-	log.Debug().Str("Handler", "HomeHandler").Msg("incoming request")
 
 	if r.Method == http.MethodGet {
+		log.Debug().Str("Handler", "HomeHandler").Msg("incoming request")
 		defer func() {
 			wantFile := filepath.Join(htmlDir, "home.html")
 			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
