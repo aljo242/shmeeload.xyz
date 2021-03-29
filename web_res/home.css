@@ -22,7 +22,8 @@ header {
 */
 nav {
     float: left;
-    width: 10%;
+    width: 15%;
+    width: 15%;
     min-height: 100vh;
     position: fixed;
     background: rgb(203, 224, 231);
@@ -32,7 +33,7 @@ nav {
 /*
     xstyle the list inside the nav menu
 */ 
-nav ul {
+ul {
     list-style-type: none;
     text-align: left;
 }
@@ -46,10 +47,11 @@ article {
     float: right;
     text-align: center;
     padding: 20px;
-    width: 90%;
+    width: 85%;
     background-color: rgb(203, 224, 231);
     min-height: 100vh;
 }
+
 
 /* clear floats after the columns */
 section::after {
@@ -60,9 +62,7 @@ section::after {
 
 /* style the footer */
 footer {
-    background-color: aliceblue;
-    padding: 10px;
-    text-align: center;
+    text-align: left;
 }
 
 /* 
