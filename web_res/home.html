@@ -30,16 +30,17 @@
     
     <script src="{{.Host}}/static/js/app.js" defer></script>
 </head>
-<body>
+<body style="background-image: url('{{.Host}}/static/img/horse.jpg');">
 
   <section class="viewContainer scroll">
     <nav>
       <header>alex johnson</header>
       <ul>
-        <li><a href="https://www.gameinformer.com/">resume</a></li>
-        <li><a href="https://www.gameinformer.com/">shoppers</a></li>
-        <li><a href="https://www.gameinformer.com/">chatRoom</a></li>
+        <li><a href="{{.Host}}/resume/home">resume</a></li>
+        <li><a href="{{.Host}}/tunes/home">tunes</a></li>
         <li><a href="https://github.com/aljo242" target="_blank" rel="noopener noreferrer">github</a></li>
+        <li><a href="{{.Host}}/chat/home">chat</a></li>
+        <li><a href="{{.Host}}/shop/home">shoppers</a></li>
       </ul>
 
       <footer id="nav_footer">
