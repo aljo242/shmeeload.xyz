@@ -4,14 +4,33 @@
 
 body {
     font-family: 'Courier New', Courier, monospace;
-    background-color: aliceblue;  
+    background-color: #101010;  
+
     /*background-color: rgb(203, 224, 231); */
 
+    position: fixed;
+    width: 99%;
+    height: 99%;
 }
+
+.viewContainer {
+    background-color: aliceblue;  
+
+    /* Hide scrollbar for IE, Edge and Firefox */
+    /*(-ms-overflow-style: none;  /* IE and Edge */
+   /* scrollbar-width: none;  /* Firefox */
+}
+
+.viewContainer::-webkit-scrollbar {
+    /*display: none;*/
+}
+  
 
 /* style for the header */
 header {
     background-color: rgb(203, 224, 231);
+    background: pink;
+
     /*padding: 30px;*/
     text-align: center;
     font-size: 30px;
@@ -24,17 +43,20 @@ nav {
     float: left;
     width: 10%;
     min-height: 100vh;
-    position: sticky;
+    position: fixed;
     background: rgb(203, 224, 231);
-    padding: 20px;
+    background: greenyellow;
     text-align: center;
 }
 
 /*
     xstyle the list inside the nav menu
 */ 
-nav ul {
+ul {
     list-style-type: none;
+}
+
+nav ul {
     text-align: left;
 }
 
@@ -43,31 +65,54 @@ nav li {
     display: block;
 }
 
+.scroll {
+    height: 100%;
+    overflow:scroll; 
+    /* Hide scrollbar for IE, Edge and Firefox */
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+.scroll::-webkit-scrollbar {
+    display: none;
+}
+
 article {
+    position: relative;
+}
+
+.mainArticleBody {
     float: right;
     text-align: center;
-    padding: 20px;
+    /* padding: 20px; */
     width: 90%;
     background-color: rgb(203, 224, 231);
-    height: 1000px; /* TODO REMOVE */
+    background-color: khaki;
+
 }
 
-article ul {
-    list-style-type: none;
-    padding: 0;
+.mainArticleBody h2 {
+    font-size: medium;
+}
+
+.mainArticleBody::-webkit-scrollbar {
+    /*display: none;*/
+}
+
+.mainArticleBody ul {
     text-align: center;
-
 }
 
-article h2 {
-    text-decoration: peachpuff;
-    font-weight: normal;
+.mainArticleBody li {
+    padding: 0;
+    margin: 0;
 }
 
-p {
-    background-color: aliceblue;
-    text-align: left;
+#bonus_button {
+    padding-top: 10px;
 }
+
+
 
 /* clear floats after the columns */
 section::after {
@@ -77,10 +122,8 @@ section::after {
 }
 
 /* style the footer */
-footer {
-    background-color: aliceblue;  
-    padding: 10px;
-    text-align: center;
+#nav_footer {
+    padding-top: 50px;
 }
 
 /* 
@@ -95,19 +138,19 @@ footer {
 }
 
 a:link {
-    color: rgb(255, 208, 56);
+    color: rgb(247, 0, 255);
     background-color: transparent;
     text-decoration: none;
 }
 
 a:visited {
-    color: rgb(228, 54, 83);
+    color: rgb(247, 0, 255);
     background-color: transparent;
     text-decoration: none;
 }
 
 a:hover {
-    color: rgb(247, 0, 255);
+    color: rgb(255, 208, 56);
     background-color: transparent;
     text-decoration: underline;
 }
