@@ -8,4 +8,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.4.2
 	github.com/rs/zerolog v1.20.0
+	github.com/securego/gosec/v2 v2.7.0 // indirect
+	golang.org/x/mod v0.4.2 // indirect
+	golang.org/x/sys v0.0.0-20210326220804-49726bf1d181 // indirect
 )
