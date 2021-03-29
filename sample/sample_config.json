@@ -6,5 +6,6 @@
     "secure": false,
     "debugLog": true,
     "shutdownCode": 10101,
-    "userShutdown": true
+    "userShutdown": true,
+    "cacheMaxAge": 0
 }

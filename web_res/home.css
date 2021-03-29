@@ -5,13 +5,32 @@
 body {
     font-family: 'Courier New', Courier, monospace;
     background-color: aliceblue;  
+
     /*background-color: rgb(203, 224, 231); */
 
+    position: fixed;
+    width: 99%;
+    height: 99%;
 }
+
+.viewContainer {
+    background-color: aliceblue;  
+
+    /* Hide scrollbar for IE, Edge and Firefox */
+    /*(-ms-overflow-style: none;  /* IE and Edge */
+   /* scrollbar-width: none;  /* Firefox */
+}
+
+.viewContainer::-webkit-scrollbar {
+    /*display: none;*/
+}
+  
 
 /* style for the header */
 header {
     background-color: rgb(203, 224, 231);
+    background: pink;
+
     /*padding: 30px;*/
     text-align: center;
     font-size: 30px;
@@ -22,11 +41,11 @@ header {
 */
 nav {
     float: left;
-    width: 15%;
-    width: 15%;
+    width: 10%;
     min-height: 100vh;
     position: fixed;
     background: rgb(203, 224, 231);
+    background: greenyellow;
     text-align: center;
 }
 
@@ -35,6 +54,9 @@ nav {
 */ 
 ul {
     list-style-type: none;
+}
+
+nav ul {
     text-align: left;
 }
 
@@ -43,14 +65,44 @@ nav li {
     display: block;
 }
 
+.scroll {
+    height: 100%;
+    overflow:scroll; 
+    /* Hide scrollbar for IE, Edge and Firefox */
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+.scroll::-webkit-scrollbar {
+    display: none;
+}
+
 article {
+    position: relative;
+}
+
+.mainArticleBody {
     float: right;
     text-align: center;
-    padding: 20px;
-    width: 85%;
+    /* padding: 20px; */
+    width: 90%;
     background-color: rgb(203, 224, 231);
-    min-height: 100vh;
+    background-color: khaki;
+
 }
+
+.mainArticleBody::-webkit-scrollbar {
+    /*display: none;*/
+}
+
+.mainArticleBody ul {
+    text-align: center;
+}
+
+#bonus_button {
+    padding-top: 10px;
+}
+
 
 
 /* clear floats after the columns */
@@ -61,8 +113,8 @@ section::after {
 }
 
 /* style the footer */
-footer {
-    text-align: left;
+#nav_footer {
+    padding-top: 50px;
 }
 
 /* 

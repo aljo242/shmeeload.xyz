@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/aljo242/http_util"
 	"github.com/rs/zerolog/log"
@@ -19,7 +20,7 @@ const (
 )
 
 // ScriptsHandler takes a script name and
-func ScriptsHandler(scriptName string, debugEnable bool) func(http.ResponseWriter, *http.Request) {
+func ScriptsHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		filename := filepath.Base(r.URL.Path)
 		log.Debug().Str("Handler", "ScriptsHandler").Str("Filename", filename).Msg("incoming request")
@@ -37,7 +38,8 @@ func ScriptsHandler(scriptName string, debugEnable bool) func(http.ResponseWrite
 			case ".js.map":
 				w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 			}
-			w.Header().Set("Cache-Control", "max-age=31536000")
+
+			w.Header().Set("Cache-Control", "max-age="+strconv.FormatInt(int64(cacheMaxAge), 10))
 			http.ServeFile(w, r, wantFile)
 
 		} else {
@@ -48,7 +50,7 @@ func ScriptsHandler(scriptName string, debugEnable bool) func(http.ResponseWrite
 }
 
 // CSSHandler takes a script name and
-func CSSHandler(filename string, debugEnable bool) func(http.ResponseWriter, *http.Request) {
+func CSSHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		filename := filepath.Base(r.URL.Path)
 		log.Debug().Str("Handler", "CSSHandler").Str("Filename", filename).Msg("incoming request")
@@ -62,7 +64,7 @@ func CSSHandler(filename string, debugEnable bool) func(http.ResponseWriter, *ht
 			}
 
 			w.Header().Set("Content-Type", "text/css; charset=UTF-8")
-			w.Header().Set("Cache-Control", "max-age=31536000")
+			w.Header().Set("Cache-Control", "max-age="+strconv.FormatInt(int64(cacheMaxAge), 10))
 			http.ServeFile(w, r, wantFile)
 
 		} else {
@@ -73,7 +75,7 @@ func CSSHandler(filename string, debugEnable bool) func(http.ResponseWriter, *ht
 }
 
 // HTMLHandler takes a script name and
-func HTMLHandler(scriptName string, debugEnable bool) func(http.ResponseWriter, *http.Request) {
+func HTMLHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		filename := filepath.Base(r.URL.Path)
 		log.Debug().Str("Handler", "HTMLHandler").Str("Filename", filename).Msg("incoming request")
@@ -88,7 +90,7 @@ func HTMLHandler(scriptName string, debugEnable bool) func(http.ResponseWriter, 
 
 			//w.WriteHeader(http.StatusOK)
 			w.Header().Set("Content-Type", "text/html; charset=UTF-8")
-			w.Header().Set("Cache-Control", "max-age=31536000")
+			w.Header().Set("Cache-Control", "max-age="+strconv.FormatInt(int64(cacheMaxAge), 10))
 			http.ServeFile(w, r, wantFile)
 
 		} else {
@@ -99,7 +101,7 @@ func HTMLHandler(scriptName string, debugEnable bool) func(http.ResponseWriter, 
 }
 
 // TypeScriptHandler takes a script name and returns a HandleFunc
-func TypeScriptHandler(scriptName string, debugEnable bool) func(http.ResponseWriter, *http.Request) {
+func TypeScriptHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		filename := filepath.Base(r.URL.Path)
 		log.Debug().Str("Handler", "TypeScriptHandler").Str("Filename", filename).Msg("incoming request")
@@ -114,7 +116,7 @@ func TypeScriptHandler(scriptName string, debugEnable bool) func(http.ResponseWr
 
 			//w.WriteHeader(http.StatusOK)
 			w.Header().Set("Content-Type", "text/plain; charset=UTF-8")
-			w.Header().Set("Cache-Control", "max-age=31536000")
+			w.Header().Set("Cache-Control", "max-age="+strconv.FormatInt(int64(cacheMaxAge), 10))
 			http.ServeFile(w, r, wantFile)
 
 		} else {
@@ -125,7 +127,7 @@ func TypeScriptHandler(scriptName string, debugEnable bool) func(http.ResponseWr
 }
 
 // ManifestHandler serves manifest.json
-func ManifestHandler() func(http.ResponseWriter, *http.Request) {
+func ManifestHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		filename := filepath.Base(r.URL.Path)
 
@@ -140,7 +142,7 @@ func ManifestHandler() func(http.ResponseWriter, *http.Request) {
 
 			//w.WriteHeader(http.StatusOK)
 			w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-			w.Header().Set("Cache-Control", "max-age=31536000")
+			w.Header().Set("Cache-Control", "max-age="+strconv.FormatInt(int64(cacheMaxAge), 10))
 			http.ServeFile(w, r, wantFile)
 
 		} else {
@@ -151,7 +153,7 @@ func ManifestHandler() func(http.ResponseWriter, *http.Request) {
 }
 
 // ServiceWorkerHandler serves serviceWorker.js
-func ServiceWorkerHandler() func(http.ResponseWriter, *http.Request) {
+func ServiceWorkerHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		filename := filepath.Base(r.URL.Path)
 
@@ -169,7 +171,7 @@ func ServiceWorkerHandler() func(http.ResponseWriter, *http.Request) {
 			case ".js.map":
 				w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 			}
-			w.Header().Set("Cache-Control", "max-age=31536000")
+			w.Header().Set("Cache-Control", "max-age="+strconv.FormatInt(int64(cacheMaxAge), 10))
 			http.ServeFile(w, r, wantFile)
 
 		} else {
@@ -180,7 +182,7 @@ func ServiceWorkerHandler() func(http.ResponseWriter, *http.Request) {
 }
 
 // ImageHandler returns a HandleFunc to serve image files
-func ImageHandler() func(http.ResponseWriter, *http.Request) {
+func ImageHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		filename := filepath.Base(r.URL.Path)
 
@@ -204,7 +206,7 @@ func ImageHandler() func(http.ResponseWriter, *http.Request) {
 			case ".ico":
 				w.Header().Set("Content-Type", "image/x-icon")
 			}
-			w.Header().Set("Cache-Control", "max-age=31536000")
+			w.Header().Set("Cache-Control", "max-age="+strconv.FormatInt(int64(cacheMaxAge), 10))
 			http.ServeFile(w, r, wantFile)
 
 		} else {
@@ -214,55 +216,54 @@ func ImageHandler() func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-// HomeHandler serves the home.html file
-func HomeHandler(w http.ResponseWriter, r *http.Request) {
-	//http_util.CheckHTTP2Support(w)
-	// this page currently only serves html resources
-
-	if r.Method == http.MethodGet {
-		log.Debug().Str("Handler", "HomeHandler").Msg("incoming request")
-		defer func() {
-			wantFile := filepath.Join(htmlDir, "home.html")
-			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
-				w.WriteHeader(http.StatusNotFound)
-				log.Debug().Err(err).Str("Filename", wantFile).Msg("Error finding file")
-				return
-			}
-
-			//w.WriteHeader(http.StatusOK)
-			w.Header().Set("Content-Type", "text/html; charset=UTF-8")
-			w.Header().Set("Cache-Control", "max-age=31536000")
-			http.ServeFile(w, r, wantFile)
-		}()
-
-		wantFile := cssDir + "chat.css"
-		chatFilepath, _ := filepath.Abs(wantFile)
-		wantFile = jsDir + "chat.js"
-		jsFilepath, _ := filepath.Abs(wantFile)
-		wantFile = imgDir + "1favicon.ico"
-		faviconFilepath, _ := filepath.Abs(wantFile)
-		err := http_util.PushFiles(w, chatFilepath, jsFilepath, faviconFilepath)
-		if err != nil {
-			log.Error().Err(err).Msg("Error pushing files")
-		}
-
-	} else {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+func RedirectHome() func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, r.URL.Host+"/home", http.StatusPermanentRedirect)
 	}
 }
 
-// RedirectHome redirects urls to the address to be served by HomeHandler
-func RedirectHome(host string, debugEnable bool) func(http.ResponseWriter, *http.Request) {
+// HomeHandler serves the home.html file
+func HomeHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		home := host + "/home"
-		log.Debug().Str("Handler", "RedirectHome").Str("Home", home).Msg("incoming request")
-		http.Redirect(w, r, "/home", http.StatusFound)
+		//http_util.CheckHTTP2Support(w)
+		// this page currently only serves html resources
+
+		if r.Method == http.MethodGet {
+			log.Debug().Str("Handler", "HomeHandler").Msg("incoming request")
+			defer func() {
+				wantFile := filepath.Join(htmlDir, "home.html")
+				if _, err := os.Stat(wantFile); os.IsNotExist(err) {
+					w.WriteHeader(http.StatusNotFound)
+					log.Debug().Err(err).Str("Filename", wantFile).Msg("Error finding file")
+					return
+				}
+
+				//w.WriteHeader(http.StatusOK)
+				w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+				w.Header().Set("Cache-Control", "max-age="+strconv.FormatInt(int64(cacheMaxAge), 10))
+				http.ServeFile(w, r, wantFile)
+			}()
+
+			wantFile := cssDir + "chat.css"
+			chatFilepath, _ := filepath.Abs(wantFile)
+			wantFile = jsDir + "chat.js"
+			jsFilepath, _ := filepath.Abs(wantFile)
+			wantFile = imgDir + "1favicon.ico"
+			faviconFilepath, _ := filepath.Abs(wantFile)
+			err := http_util.PushFiles(w, chatFilepath, jsFilepath, faviconFilepath)
+			if err != nil {
+				log.Error().Err(err).Msg("Error pushing files")
+			}
+
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 	}
 }
 
 // ChatHomeHandler is the route for the chat home where users can get assigned unique identifiers
-func ChatHomeHandler(filename string, debugEnable bool) func(http.ResponseWriter, *http.Request) {
+func ChatHomeHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		// this page currently only serves html resources
@@ -278,7 +279,7 @@ func ChatHomeHandler(filename string, debugEnable bool) func(http.ResponseWriter
 				}
 
 				w.Header().Set("Content-Type", "text/html; charset=UTF-8")
-				w.Header().Set("Cache-Control", "max-age=31536000")
+				w.Header().Set("Cache-Control", "max-age="+strconv.FormatInt(int64(cacheMaxAge), 10))
 				http.ServeFile(w, r, wantFile)
 			}()
 
@@ -298,7 +299,7 @@ func ChatHomeHandler(filename string, debugEnable bool) func(http.ResponseWriter
 }
 
 // ResumeHomeHandler takes a script name and
-func ResumeHomeHandler(debugEnable bool) func(http.ResponseWriter, *http.Request) {
+func ResumeHomeHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		filename := filepath.Base(r.URL.Path)
@@ -313,6 +314,8 @@ func ResumeHomeHandler(debugEnable bool) func(http.ResponseWriter, *http.Request
 			}
 
 			//w.WriteHeader(http.StatusOK)
+			w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+			w.Header().Set("Cache-Control", "max-age="+strconv.FormatInt(int64(cacheMaxAge), 10))
 			http.ServeFile(w, r, wantFile)
 
 		} else {
