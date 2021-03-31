@@ -161,6 +161,14 @@ a:active {
     text-decoration: underline;
 }
 
-.resumeSubsection {
+.resumeTextSubsection {
     padding: 20px;
+}
+
+.resumeListSubsection {
+    padding: 20px;
+}
+
+ul.resumeBullet {
+    list-style-type: square;
 }
