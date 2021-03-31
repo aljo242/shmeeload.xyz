@@ -19,11 +19,9 @@ body {
     /* Hide scrollbar for IE, Edge and Firefox */
     /*(-ms-overflow-style: none;  /* IE and Edge */
    /* scrollbar-width: none;  /* Firefox */
+
 }
 
-.viewContainer::-webkit-scrollbar {
-    /*display: none;*/
-}
   
 
 /* style for the header */
@@ -95,9 +93,6 @@ article {
     font-size: medium;
 }
 
-.mainArticleBody::-webkit-scrollbar {
-    /*display: none;*/
-}
 
 .mainArticleBody ul {
     text-align: center;
@@ -131,9 +126,13 @@ section::after {
     next to eac hother on small screens
 */
 @media (max-width: 600px) {
-    nav, article {
+    nav, .mainArticleBody {
         width: 100%;
         height: auto;
+    }
+
+    .viewContainer {
+        flex-direction: column;
     }
 }
 
@@ -162,13 +161,36 @@ a:active {
 }
 
 .resumeTextSubsection {
-    padding: 20px;
+    padding: 25px 50px;
+    text-align: left;
 }
 
 .resumeListSubsection {
-    padding: 20px;
+    padding: 25px 50px;
+    text-align: left;
 }
 
 ul.resumeBullet {
     list-style-type: square;
+    display: inline-block;
+}
+
+li.resumeBullet {
+    padding-left: 10px;
+    padding-bottom: 1px;
+    text-align: left;
+}
+
+.resumeHeader {
+    text-align: left;
+}
+
+h1.resumeHeader {
+    font-size: 120%;
+    padding-left: 50px;
+}
+
+h2.resumeHeader {
+    font-size: 100%;
+    padding-left: 50px;
 }

@@ -15,15 +15,9 @@ body {
 
 .viewContainer {
     background-color: aliceblue;  
-
-    /* Hide scrollbar for IE, Edge and Firefox */
-    /*(-ms-overflow-style: none;  /* IE and Edge */
-   /* scrollbar-width: none;  /* Firefox */
 }
 
-.viewContainer::-webkit-scrollbar {
-    /*display: none;*/
-}
+
   
 
 /* style for the header */

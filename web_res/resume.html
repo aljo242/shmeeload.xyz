@@ -36,9 +36,10 @@
         <ul>
           <li><a href="{{.Host}}/resume/home#sec_projects">projects</a></li>
           <li><a href="{{.Host}}/resume/home#sec_skills">skills</a></li>
-          <li><a href="{{.Host}}/resume/home#sec_education">education</a></li>
           <li><a href="{{.Host}}/resume/home#sec_experience">experience</a></li>
-          <li><a href="{{.Host}}/resume/home#links">contact</a></li>
+          <li><a href="{{.Host}}/resume/home#sec_education">education</a></li>
+          <li><a href="{{.Host}}/resume/home#sec_awards">awards & honors</a></li>
+          <li><a href="{{.Host}}/resume/home#links">links</a></li>
           <li><a href="{{.Host}}/resume/home#sec_references">references</a></li>
         </ul>
 
@@ -54,75 +55,123 @@
       </nav>
 
 
-      <article>
-        <div class="mainArticleBody">
+      <article  class="mainArticleBody">
         <div id="sec_projects">
-            <h2 style="text-align: left;">projects</h2>
+            <h1 class="resumeHeader">projects</h1>
             <div id="subsec_shmeeload.xyz" class="resumeTextSubsection">
-                <h2 style="text-align: left;">shmeeload.xyz</h2>
-                <p style="text-align: left;">
+                <h2 class="resumeHeader">shmeeload.xyz</h2>
+                <p>
                     This website has been a large project for me to showcase some of my development skills.  I developed the full server backend from scratch in Go.  
                     On the GitHub repository, you will find the project demonstrating some of my project management, CI and organizational skills.
                     Before this, I didn't know anything about HTML, CSS, JavaScript or TypeScript, so this has also been a chance for me to gain some of those skills.
                     I hope you like the look of the site.  A little bit of the old web look, a bit of my own touch.
                 </p>
                 <p>
-                    For more information and source code, please go to my <a href="https://github.com/aljo242/shmeeload.xyz" target="_blank" rel="noopener noreferrer">repo.</a>
+                    For more information and source code, please check out my <a href="https://github.com/aljo242/shmeeload.xyz" target="_blank" rel="noopener noreferrer">repo</a>.
                 </p>
             </div>
             <div id="subsec_http_util" class="resumeTextSubsection">
-                <h2 style="text-align: left;">http_util library</h2>
-                <p style="text-align: left;">
+                <h2 class="resumeHeader">http_util library</h2>
+                <p>
                     This website has been a large project for me to showcase some of my development skills.  I developed the full server backend from scratch in Go.  
                     On the GitHub repository, you will find the project demonstrating some of my project management, CI and organizational skills.
                     Before this, I didn't know anything about HTML, CSS, JavaScript or TypeScript, so this has also been a chance for me to gain some of those skills.
                     I hope you like the look of the site.  A little bit of the old web look, a bit of my own touch.
                 </p>
                 <p>
-                    For more information and source code, please go to my <a href="https://github.com/aljo242/http_util" target="_blank" rel="noopener noreferrer">repo.</a>
+                    For more information and source code, please check out my <a href="https://github.com/aljo242/http_util" target="_blank" rel="noopener noreferrer">repo</a>.
                 </p>
             </div>
             <div id="subsec_djinn" class="resumeTextSubsection">
-                <h2 style="text-align: left;">djinn</h2>
-                <p style="text-align: left;">
+                <h2 class="resumeHeader">djinn</h2>
+                <p>
                     This website has been a large project for me to showcase some of my development skills.  I developed the full server backend from scratch in Go.  
                     On the GitHub repository, you will find the project demonstrating some of my project management, CI and organizational skills.
                     Before this, I didn't know anything about HTML, CSS, JavaScript or TypeScript, so this has also been a chance for me to gain some of those skills.
                     I hope you like the look of the site.  A little bit of the old web look, a bit of my own touch.
                 </p>
                 <p>
-                    For more information and source code, please go to my <a href="https://github.com/aljo242/djinn" target="_blank" rel="noopener noreferrer">repo.</a>
+                    For more information and source code, please check out my <a href="https://github.com/aljo242/djinn" target="_blank" rel="noopener noreferrer">repo</a>.
                 </p>
             </div>
         </div>
         <hr>
         <div id="sec_skills">
-            <h2 style="text-align: left;">skills</h2>
+            <h1 class="resumeHeader">skills</h1>
             <div id="subsec_programming" class="resumeListSubsection">
-                <h2 style="text-align: left;">programming</h2>
+                <h2 class="resumeHeader">programming</h2>
                 <ul class="resumeBullet">
-                    <li>Languages (in order of experience): C++, C, Go, CUDA, Python, Shell, GLSL, Matlab, Dlang, C#, OpenCL, Lua</li>
-                    <li>APIs (in order of experience): MPI, OpenSHMEM, OpenMP, Vulkan, OpenGL, PyTorch, TensorFlow</li>
+                    <li class="resumeBullet"><em>Languages</em> (in order of experience): C++, C, Go, CUDA, Python, HTML/CSS, TypeScript, JavaScript, Shell, Haskell, GLSL, Matlab, Dlang, C#, OpenCL, Lua</li>
+                    <li class="resumeBullet"><em>APIs</em> (in order of experience): MPI, OpenSHMEM, OpenMP, Vulkan, OpenGL, PyTorch, TensorFlow</li>
+                </ul>
+            </div>
+            <div id="subsec_hwsw" class="resumeListSubsection">
+                <h2 class="resumeHeader">hardware / software</h2>
+                <ul class="resumeBullet">
+                    <li class="resumeBullet"><em>Hardware</em>: CPUs, HPC Interconnects (Infiniband, Aries, OmniPath), GPUs (Data-center and consumer), TPUs, FPGAs</li>
+                    <li class="resumeBullet"><em>Software</em>: Linux, Git, Windows, Altium Designer, Visual Studio, Simulink, NVIDIA Nsight, LTSPICE</li>
+                </ul>
+            </div>
+            <div id="subsec_knowledge_base" class="resumeListSubsection">
+                <h2 class="resumeHeader">knowledge bases</h2>
+                <ul class="resumeBullet">
+                    <li class="resumeBullet"><em>Distributed Systems</em>: blockchains, smart contracts, proof-of-work, proof-of-stake, leader election</li>
+                    <li class="resumeBullet"><em>Networking</em>: RPC, HTTP, TCP, UDP, QUIC, IBVerbs, RDMA</li>
+                    <li class="resumeBullet"><em>Machine Learning</em>: </li>
+                    <li class="resumeBullet"><em>Rendering</em>: physically-based rendering, ray-tracing, distributed offline rendering</li>
+                    <li class="resumeBullet"><em>Control</em>: adaptive control, PID, fuzzy logic, complex control</li>
+                </ul>
+            </div>
+            <div id="subsec_languages" class="resumeListSubsection">
+                <h2 class="resumeHeader">languages</h2>
+                <ul class="resumeBullet">
+                    <li class="resumeBullet"><em>German</em>: intermediate </li>
+                    <li class="resumeBullet"><em>Mandarin Chinese</em>: intermediate</li>
                 </ul>
             </div>
         </div>
         <hr>
-        <div id="sec_education">
-            <h2>education</h2>
+        <div id="sec_experience">
+            <h1 class="resumeHeader">experience</h1>            
             <p>
                 
             </p>
         </div>
         <hr>
-        <div id="sec_experience">
-            <h2>experience</h2>            
-            <p>
-                
-            </p>
+        <div id="sec_education">
+            <h1 class="resumeHeader">education</h1>
+            <div id="subsec_ms" class="resumeListSubsection">
+                <h2 class="resumeHeader">M.S. in Electrical and Computer Engineering, University of Pittsburgh</h2>
+                <h2 class="resumeHeader">August 2019 - April 2021</h2>
+                <ul class="resumeBullet">
+                    <li class="resumeBullet"><em>Swanson School of Engineering</em></li>
+                    <li class="resumeBullet"><em>GPA</em>: 3.969</li>
+                </ul>
+            </div>
+            <div id="subsec_bs" class="resumeListSubsection">
+                <h2 class="resumeHeader">B.S. in Electrical and Computer Engineering, University of Pittsburgh</h2>
+                <h2 class="resumeHeader">August 2015 - April 2019</h2>
+                <ul class="resumeBullet">
+                    <li class="resumeBullet"><em>Swanson School of Engineering</em></li>
+                    <li class="resumeBullet"><em>GPA</em>: 3.741</li>
+                    <li class="resumeBullet"><em>Summa Cum Laude</em></li>
+                </ul>
+            </div>
+        </div>
+        <hr>
+        <div id="sec_awards">
+            <h1 class="resumeHeader">awards & honors</h1>
+            <div id="subsec_grad_award" class="resumeListSubsection">
+                <h2 class="resumeHeader">Outstanding Graduate in Electrical Engineering</h2>
+                <h2 class="resumeHeader">August 2019</h2>
+                <ul class="resumeBullet">
+                    <li class="resumeBullet">Awarded to the top Electrical Engineering student in Pitt's Class of 2019</li>
+                </ul>
+            </div>
         </div>
         <hr>
         <div id="sec_links">
-            <h2>links</h2>
+            <h1 class="resumeHeader">links</h1>
                 <ul>
                     <li><a href="mailto:alex.johnson@shmeeload.xyz">email</a></li>
                     <li><a href="https://github.com/aljo242" target="_blank">github</a></li>
@@ -131,37 +180,29 @@
         </div>
         <hr>
         <div id="sec_references">
-            <h2>references</h2>
+            <h1 class="resumeHeader">references</h1>
                 <ul>
-                    <li>Alan D. George, Ph.D.
-                        <ul>
-                            <li><em>Department Chair, R&H Mickle Endowed Chair, and Professor of Electrical and Computer Engineering</em></li>
-                            <li><em>University of Pittsburgh</em></li>
-                            <li><a href="mailto:alan.george@pitt.edu ">email</a></li>
-                            <li>412.624.9664</li>
-                        </ul>
-                    </li>
+                <div id="subsec_adg">
+                    <p>Alan D. George, Ph.D.</p>
+                    <p><em>Department Chair, R&H Mickle Endowed Chair, and Professor of Electrical and Computer Engineering</em></p>
+                    <p><a href="mailto:alan.george@pitt.edu ">email</a></p>
+                    <p>412.624.9664</p>
                     <br>
-                    <li>Zhi-Hong Mao, Ph.D.
-                        <ul>
-                            <li><em>Professor of Electrical and Computer Engineering</em></li>
-                            <li><em>University of Pittsburgh</em></li>
-                            <li><a href="mailto:maozh@engr.pitt.edu">email</a></li>
-                            <li>412.624.9674</li>
-
-                        </ul>
-                    </li>
+                </div>
+                <div id="subsec_zhm">
+                    <p>Zhi-Hong Mao, Ph.D.</p>
+                    <p><em>Professor of Electrical and Computer Engineering</em></p>
+                    <p><a href="mailto:maozh@engr.pitt.edu">email</a></p>
+                    <p>412.624.9674</p>
                     <br>
-                    <li>Ahmed Dallal, Ph.D.
-                        <ul>
-                            <li><em>Assistant Professor of Electrical and Computer Engineering</em></li>
-                            <li><em>University of Pittsburgh</em></li>
-                            <li><a href="mailto:ahd12@pitt.edu ">email</a></li>
-                            <li>412.383.4423</li>
-                        </ul>
-                    </li>               
-                 </ul>
-        </div>
+                </div>
+                <div id="subsec_ahd">
+                    <p>Ahmed Dallal, Ph.D.</p>
+                    <p><em>Assistant Professor of Electrical and Computer Engineering</em></p>
+                    <p><a href="mailto:ahd12@pitt.edu ">email</a></p>
+                    <p>412.383.4423</p>
+                    <br>
+                </div>
         </div>
       </article>
     </section>
