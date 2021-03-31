@@ -16,24 +16,16 @@ const msg = "Hello web"
 
 let deferredPrompt: Event;
 
-const homeButton = document.getElementById("testHomeButton")!
+const homeButton = document.getElementById("secretButton")!
 homeButton.onclick = () => {
     printMessage("Button Pushed!");
 };
 
-window.addEventListener('beforeinstallprompt', (e: Event) => {
-    // Prevent Chrome 67 and earlier from automatically showing the prompt
-    e.preventDefault();
-    // Stash the event so it can be triggered later.
-    deferredPrompt = e;
-    // Update UI notify the user they can add to home screen
-    homeButton.style.display = 'block';
-});
+
 
 
 function printMessage(msg: string) {
     console.log(msg)
 }
 
-printMessage(msg)
 

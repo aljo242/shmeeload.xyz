@@ -29,17 +29,17 @@
     <link rel="apple-touch-icon" sizes="180x180" href="{{.Host}}/static/img/1apple-touch-icon-180x180.png" />
     
 </head>
-<body>
-    <section>
+<body style="background-image: url('{{.Host}}/static/img/horse.jpg');">
+    <section class="mainFloats">
       <nav>
         <header>alex's resume</header>
         <ul>
-          <li><a href="{{.Host}}/resume/home/#sec_projects">projects</a></li>
-          <li><a href="{{.Host}}/resume/home/#sec_skills">skills</a></li>
-          <li><a href="{{.Host}}/resume/home/#sec_education">education</a></li>
-          <li><a href="{{.Host}}/resume/home/#sec_experience">experience</a></li>
-          <li><a href="{{.Host}}/resume/home/#links">contact</a></li>
-          <li><a href="{{.Host}}/resume/home/#sec_references">references</a></li>
+          <li><a href="{{.Host}}/resume/home#sec_projects">projects</a></li>
+          <li><a href="{{.Host}}/resume/home#sec_skills">skills</a></li>
+          <li><a href="{{.Host}}/resume/home#sec_education">education</a></li>
+          <li><a href="{{.Host}}/resume/home#sec_experience">experience</a></li>
+          <li><a href="{{.Host}}/resume/home#links">contact</a></li>
+          <li><a href="{{.Host}}/resume/home#sec_references">references</a></li>
         </ul>
 
         <footer id="nav_footer">
@@ -48,10 +48,9 @@
             </div>
             <div id="bonus_button">
               <!--<button id="testHomeButton" style="float:center;">Click Me!</button>-->
-              <input type="image" src="{{.Host}}/static/img/1favicon.ico" />
+              <input type="image" id="secretButton" src="{{.Host}}/static/img/1favicon.ico" />
             </div>
           </footer>
-
       </nav>
 
 
@@ -59,10 +58,15 @@
         <div class="mainArticleBody">
         <div id="sec_projects">
             <h2>projects</h2>
+            <h2 style="text-align: left;">shmeeload.xyz</h2>
+            <p style="text-align: left;">
+                This website has been a large project for me to showcase some of my development skills.  I developed the full server backend from scratch in Go.  
+                On the GitHub repository, you will find the project demonstrating some of my project management, CI and organizational skills.
+                Before this, I didn't know anything about HTML, CSS, JavaScript or TypeScript, so this has also been a chance for me to gain some of those skills.
+                I hope you like the look of the site.  A little bit of the old web look, a bit of my own touch.
+            </p>
             <p>
-                <ul>
-                    <li></li>
-                </ul>
+                For more information and source code, please go to my <a href="https://github.com/aljo242/shmeeload.xyz" target="_blank" rel="noopener noreferrer">repo.</a>
             </p>
         </div>
         <hr>
@@ -91,18 +95,15 @@
         <hr>
         <div id="sec_links">
             <h2>links</h2>
-            <p>
                 <ul>
                     <li><a href="mailto:alex.johnson@shmeeload.xyz">email</a></li>
                     <li><a href="https://github.com/aljo242" target="_blank">github</a></li>
                     <li><a href="https://www.linkedin.com/in/alex-johnson-776180111/" target="_blank">linkedin</a></li>
                 </ul>
-            </p>
         </div>
         <hr>
         <div id="sec_references">
             <h2>references</h2>
-            <p>
                 <ul>
                     <li>Alan D. George, Ph.D.
                         <ul>
@@ -132,7 +133,6 @@
                         </ul>
                     </li>               
                  </ul>
-            </p>
         </div>
         </div>
       </article>
