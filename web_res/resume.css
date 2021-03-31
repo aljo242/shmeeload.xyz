@@ -160,3 +160,7 @@ a:active {
     background-color: transparent;
     text-decoration: underline;
 }
+
+.resumeSubsection {
+    padding: 20px;
+}
