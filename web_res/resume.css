@@ -129,11 +129,18 @@ section::after {
     nav, .mainArticleBody {
         width: 100%;
         height: auto;
+        float: none;
     }
 
-    .viewContainer {
-        flex-direction: column;
+    nav {
+        position: relative;
+        padding-bottom: 1px;
     }
+
+    .mainArticleBody {
+        padding-top: 1px;
+    }
+
 }
 
 a:link {

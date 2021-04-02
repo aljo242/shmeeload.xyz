@@ -15,8 +15,12 @@ body {
 
 .viewContainer {
     background-color: aliceblue;  
-}
 
+    /* Hide scrollbar for IE, Edge and Firefox */
+    /*(-ms-overflow-style: none;  /* IE and Edge */
+   /* scrollbar-width: none;  /* Firefox */
+
+}
 
   
 
@@ -85,12 +89,18 @@ article {
 
 }
 
-.mainArticleBody::-webkit-scrollbar {
-    /*display: none;*/
+.mainArticleBody h2 {
+    font-size: medium;
 }
+
 
 .mainArticleBody ul {
     text-align: center;
+}
+
+.mainArticleBody li {
+    padding: 0;
+    margin: 0;
 }
 
 #bonus_button {
@@ -116,9 +126,19 @@ section::after {
     next to eac hother on small screens
 */
 @media (max-width: 600px) {
-    nav, article {
+    nav, .mainArticleBody {
         width: 100%;
         height: auto;
+        float: none;
+    }
+
+    nav {
+        position: relative;
+        padding-bottom: 1px;
+    }
+
+    .mainArticleBody {
+        padding-top: 1px;
     }
 }
 
@@ -144,4 +164,39 @@ a:active {
     color: yellow;
     background-color: transparent;
     text-decoration: underline;
+}
+
+.resumeTextSubsection {
+    padding: 25px 50px;
+    text-align: left;
+}
+
+.resumeListSubsection {
+    padding: 25px 50px;
+    text-align: left;
+}
+
+ul.resumeBullet {
+    list-style-type: square;
+    display: inline-block;
+}
+
+li.resumeBullet {
+    padding-left: 10px;
+    padding-bottom: 1px;
+    text-align: left;
+}
+
+.resumeHeader {
+    text-align: left;
+}
+
+h1.resumeHeader {
+    font-size: 120%;
+    padding-left: 50px;
+}
+
+h2.resumeHeader {
+    font-size: 100%;
+    padding-left: 50px;
 }
