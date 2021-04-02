@@ -306,18 +306,60 @@ func ResumeHomeHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request)
 		log.Debug().Str("Handler", "ResumeHomeHandler").Str("Filename", filename).Msg("incoming request")
 
 		if r.Method == http.MethodGet {
-			wantFile := filepath.Join(htmlDir, "resumeHome.html")
-			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
-				w.WriteHeader(http.StatusNotFound)
-				log.Fatal().Err(err).Str("Filename", wantFile).Msg("Error finding file")
-				return
+			defer func() {
+				wantFile := filepath.Join(htmlDir, "resume.html")
+				if _, err := os.Stat(wantFile); os.IsNotExist(err) {
+					w.WriteHeader(http.StatusNotFound)
+					log.Fatal().Err(err).Str("Filename", wantFile).Msg("Error finding file")
+					return
+				}
+
+				w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+				w.Header().Set("Cache-Control", "max-age="+strconv.FormatInt(int64(cacheMaxAge), 10))
+				http.ServeFile(w, r, wantFile)
+			}()
+
+			wantFile := cssDir + "resume.css"
+			chatFilepath, _ := filepath.Abs(wantFile)
+		
+			err := http_util.PushFiles(w, chatFilepath)
+			if err != nil {
+				log.Error().Err(err).Msg("Error pushing files")
 			}
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+	}
+}
+// ResumeHomeHandler takes a script name and
+func TunesHomeHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
 
-			//w.WriteHeader(http.StatusOK)
-			w.Header().Set("Content-Type", "text/html; charset=UTF-8")
-			w.Header().Set("Cache-Control", "max-age="+strconv.FormatInt(int64(cacheMaxAge), 10))
-			http.ServeFile(w, r, wantFile)
+	return func(w http.ResponseWriter, r *http.Request) {
+		filename := filepath.Base(r.URL.Path)
+		log.Debug().Str("Handler", "ResumeHomeHandler").Str("Filename", filename).Msg("incoming request")
 
+		if r.Method == http.MethodGet {
+			defer func() {
+				wantFile := filepath.Join(htmlDir, "resume.html")
+				if _, err := os.Stat(wantFile); os.IsNotExist(err) {
+					w.WriteHeader(http.StatusNotFound)
+					log.Fatal().Err(err).Str("Filename", wantFile).Msg("Error finding file")
+					return
+				}
+
+				w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+				w.Header().Set("Cache-Control", "max-age="+strconv.FormatInt(int64(cacheMaxAge), 10))
+				http.ServeFile(w, r, wantFile)
+			}()
+
+			wantFile := cssDir + "resume.css"
+			chatFilepath, _ := filepath.Abs(wantFile)
+		
+			err := http_util.PushFiles(w, chatFilepath)
+			if err != nil {
+				log.Error().Err(err).Msg("Error pushing files")
+			}
 		} else {
 			w.WriteHeader(http.StatusBadRequest)
 			return

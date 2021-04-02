@@ -5,7 +5,7 @@
     "chooseIP": false,
     "secure": false,
     "debugLog": true,
-    "shutdownCode": 10101,
+    "shutdownCode": 3,
     "userShutdown": true,
     "cacheMaxAge": 0
 }
