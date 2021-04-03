@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/aljo242/http_util"
+	"github.com/aljo242/chef"
 	"github.com/rs/zerolog/log"
 )
 
@@ -250,7 +250,7 @@ func HomeHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
 			jsFilepath, _ := filepath.Abs(wantFile)
 			wantFile = imgDir + "1favicon.ico"
 			faviconFilepath, _ := filepath.Abs(wantFile)
-			err := http_util.PushFiles(w, chatFilepath, jsFilepath, faviconFilepath)
+			err := chef.PushFiles(w, chatFilepath, jsFilepath, faviconFilepath)
 			if err != nil {
 				log.Error().Err(err).Msg("Error pushing files")
 			}
@@ -287,7 +287,7 @@ func ChatHomeHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
 			chatFilepath, _ := filepath.Abs(wantFile)
 			wantFile = jsDir + "chat.js"
 			jsFilepath, _ := filepath.Abs(wantFile)
-			err := http_util.PushFiles(w, chatFilepath, jsFilepath)
+			err := chef.PushFiles(w, chatFilepath, jsFilepath)
 			if err != nil {
 				log.Error().Err(err).Msg("Error pushing files")
 			}
@@ -321,8 +321,8 @@ func ResumeHomeHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request)
 
 			wantFile := cssDir + "resume.css"
 			chatFilepath, _ := filepath.Abs(wantFile)
-		
-			err := http_util.PushFiles(w, chatFilepath)
+
+			err := chef.PushFiles(w, chatFilepath)
 			if err != nil {
 				log.Error().Err(err).Msg("Error pushing files")
 			}
@@ -332,6 +332,7 @@ func ResumeHomeHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request)
 		}
 	}
 }
+
 // ResumeHomeHandler takes a script name and
 func TunesHomeHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
 
@@ -355,8 +356,8 @@ func TunesHomeHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) 
 
 			wantFile := cssDir + "resume.css"
 			chatFilepath, _ := filepath.Abs(wantFile)
-		
-			err := http_util.PushFiles(w, chatFilepath)
+
+			err := chef.PushFiles(w, chatFilepath)
 			if err != nil {
 				log.Error().Err(err).Msg("Error pushing files")
 			}
