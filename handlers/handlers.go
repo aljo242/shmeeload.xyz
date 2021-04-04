@@ -298,6 +298,22 @@ func ChatHomeHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
 	}
 }
 
+// ChatSignUpHandler connects to the database and creates a new id for a chat user
+func ChatSignUpHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
+
+	return func(w http.ResponseWriter, r *http.Request) {
+
+	}
+}
+
+// ChatSignInHandler connects to the database and signs a user in if they are in the database
+func ChatSignInHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
+
+	return func(w http.ResponseWriter, r *http.Request) {
+
+	}
+}
+
 // ResumeHomeHandler takes a script name and
 func ResumeHomeHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
 

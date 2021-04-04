@@ -223,10 +223,12 @@ func initServer() *chef.Server {
 	r.HandleFunc("/manifest.json", handlers.ManifestHandler(cfg.CacheMaxAge))
 	r.HandleFunc("/serviceWorker.js", handlers.ServiceWorkerHandler(cfg.CacheMaxAge))
 	r.HandleFunc("/serviceWorker.js.map", handlers.ServiceWorkerHandler(cfg.CacheMaxAge))
-	r.HandleFunc("/chat/home", handlers.ChatHomeHandler(cfg.CacheMaxAge))
 	r.HandleFunc("/tunes/home", handlers.TunesHomeHandler(cfg.CacheMaxAge))
 	//r.HandleFunc("/chat/{name}", handlers.ChatHomeHandler("", cfg.DebugLog))
+	r.HandleFunc("/chat/home", handlers.ChatHomeHandler(cfg.CacheMaxAge))
 	r.HandleFunc("/chat/ws", serveWs(hub))
+	r.HandleFunc("/chat/signup", handlers.ChatSignUpHandler(cfg.CacheMaxAge))
+	r.HandleFunc("/chat/signin", handlers.ChatSignInHandler(cfg.CacheMaxAge))
 	r.HandleFunc("/resume/home", handlers.ResumeHomeHandler(cfg.CacheMaxAge))
 
 	fmt.Printf("\n")
