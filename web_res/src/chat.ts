@@ -1,5 +1,5 @@
 const DEFAULT_NAME : string = "anon";
-const DEFUALT_DECODING : string = "utf-8";
+const DEFAULT_DECODING : string = "utf-8";
 
 // TODO MAKE CheckHTTPS() func
 const currentURL = window.location.href;
@@ -25,7 +25,7 @@ let encoder = new TextEncoder();
 if (!("TextDecoder" in window)) {
     alert("Sorry, this browser does not support TextEncoder!");
 }
-let decoder = new TextDecoder(DEFUALT_DECODING);
+let decoder = new TextDecoder(DEFAULT_DECODING);
 
 function encode(msg : string): ArrayBuffer {
     return encoder.encode(msg).buffer as ArrayBuffer;
@@ -69,6 +69,8 @@ class User {
     }
 }
 
+let loginPopUpOpen = false;
+
 function openPopUpForm() {
     let form = document.getElementById("popUpForm");
     if (form == null) {
@@ -76,6 +78,7 @@ function openPopUpForm() {
         return;
     }  
     form.style.display = "block";
+    loginPopUpOpen = true;
 }
 
 function closePopUpForm() {
@@ -85,6 +88,7 @@ function closePopUpForm() {
         return;
     }  
     form.style.display = "none";
+    loginPopUpOpen = false;
 }
 
 //Since you know what type you are expecting, but the type 
@@ -94,6 +98,8 @@ function closePopUpForm() {
 //const inputElement = <HTMLInputElement> document.getElementById("food-name-val"); 
 //or 
 //const inputElement = document.getElementById("food-name-val") as HTMLInputElement;
+
+
 
 
 window.onclick = (event : MouseEvent) => {
@@ -142,21 +148,37 @@ window.onload = () => {
         let item = document.createElement("div");
         item.innerHTML = "<b>Your browser does not support WebSockets.</b>";
         appendLog(item);
-        return
+        return;
     }
 
     let signInButton = document.getElementById("signInButton")!;
-    signInButton.onclick = () => {
+    
+    let signIn = () => {
         let userName = document.getElementById("chatname") as HTMLInputElement;
-        if (userName.value != "") {
-            user = new User(userName.value, conn);
-            closePopUpForm(); 
-        } else {
+        if (userName.value == "") {
             console.error("USER INPUT ERROR");
-            user = new User(DEFAULT_NAME, conn);
-            closePopUpForm(); 
+            userName.value = DEFAULT_NAME
+
+        }
+        console.log(`user submitted to login form as: ${userName.value}`);
+        user = new User(DEFAULT_NAME, conn);
+        closePopUpForm(); 
+    };
+    signInButton.onclick = signIn;
+
+
+    let formKeyCallback = (ev: KeyboardEvent) => {
+        if (loginPopUpOpen) {
+            const enterCode = "Enter";
+            const keyCode = ev.key;
+            if (keyCode === enterCode) {
+                // get form and submit it
+                signIn()
+            }
         }
     }
+    
+    window.onkeypress = formKeyCallback;
 
     let msgForm = document.getElementById("send_msg_form")!;
     msgForm.onsubmit = () => {
