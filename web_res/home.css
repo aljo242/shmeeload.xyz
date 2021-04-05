@@ -4,7 +4,7 @@
 
 body {
     font-family: 'Courier New', Courier, monospace;
-    background-color: #101010;  
+    background-color: #14ff14;  
 
     /*background-color: rgb(203, 224, 231); */
 
@@ -13,14 +13,6 @@ body {
     height: 99%;
 }
 
-.viewContainer {
-    background-color: aliceblue;  
-
-    /* Hide scrollbar for IE, Edge and Firefox */
-    /*(-ms-overflow-style: none;  /* IE and Edge */
-   /* scrollbar-width: none;  /* Firefox */
-
-}
 
   
 
@@ -39,12 +31,14 @@ header {
 */
 nav {
     float: left;
-    width: 10%;
-    min-height: 100vh;
+    /* width: 10%; */
+    min-height: 100vh; 
+    min-width: fit-content;
     position: fixed;
     background: rgb(203, 224, 231);
     background: greenyellow;
     text-align: center;
+    z-index: 1;
 }
 
 /*
@@ -65,7 +59,7 @@ nav li {
 
 .scroll {
     height: 100%;
-    overflow:scroll; 
+    overflow-y:scroll; 
     /* Hide scrollbar for IE, Edge and Firefox */
     -ms-overflow-style: none;  /* IE and Edge */
     scrollbar-width: none;  /* Firefox */
@@ -83,9 +77,11 @@ article {
     float: right;
     text-align: center;
     /* padding: 20px; */
-    width: 90%;
-    background-color: rgb(203, 224, 231);
+   /*  width: 90%; */
+    max-width: 70%;
+    margin-left: 30%;
     background-color: khaki;
+    overflow-x: hidden;
 
 }
 
@@ -130,15 +126,19 @@ section::after {
         width: 100%;
         height: auto;
         float: none;
+        max-width: 95%;
+        min-height: min-content;
+        margin-left: 0%;
+
     }
 
     nav {
         position: relative;
-        padding-bottom: 1px;
+        margin-bottom: 5px;
     }
 
     .mainArticleBody {
-        padding-top: 1px;
+        margin-top: 5px;
     }
 
 }
