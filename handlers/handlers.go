@@ -216,17 +216,49 @@ func ImageHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
 	}
 }
 
+// RedirectHome redirects to the {HOST}/home url with a 301 status
 func RedirectHome() func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		log.Debug().Str("Handler", "RedirectHome").Str("Request URL", r.URL.Path).Msg("incoming request")
 		http.Redirect(w, r, r.URL.Host+"/home", http.StatusPermanentRedirect)
+	}
+}
+
+// RedirectConstructionHandler redirects to the {HOST}/under-construction url (construction handler) with a 307 (temporary moved) status
+func RedirectConstructionHandler() func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		log.Debug().Str("Handler", "RedirectConstructionHandler").Str("Request URL", r.URL.Path).Msg("incoming request")
+		http.Redirect(w, r, r.URL.Host+"/under-construction", http.StatusTemporaryRedirect)
+	}
+}
+
+func ConstructionHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			log.Debug().Str("Handler", "ConstructionHandler").Msg("incoming request")
+			defer func() {
+				wantFile := filepath.Join(htmlDir, "construction.html")
+				if _, err := os.Stat(wantFile); os.IsNotExist(err) {
+					w.WriteHeader(http.StatusNotFound)
+					log.Debug().Err(err).Str("Filename", wantFile).Msg("Error finding file")
+					return
+				}
+
+				//w.WriteHeader(http.StatusOK)
+				w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+				w.Header().Set("Cache-Control", "max-age="+strconv.FormatInt(int64(cacheMaxAge), 10))
+				http.ServeFile(w, r, wantFile)
+			}()
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 	}
 }
 
 // HomeHandler serves the home.html file
 func HomeHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		//http_util.CheckHTTP2Support(w)
-		// this page currently only serves html resources
 
 		if r.Method == http.MethodGet {
 			log.Debug().Str("Handler", "HomeHandler").Msg("incoming request")
@@ -244,9 +276,9 @@ func HomeHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
 				http.ServeFile(w, r, wantFile)
 			}()
 
-			wantFile := cssDir + "chat.css"
+			wantFile := cssDir + "home.css"
 			chatFilepath, _ := filepath.Abs(wantFile)
-			wantFile = jsDir + "chat.js"
+			wantFile = jsDir + "app.js"
 			jsFilepath, _ := filepath.Abs(wantFile)
 			wantFile = imgDir + "1favicon.ico"
 			faviconFilepath, _ := filepath.Abs(wantFile)
