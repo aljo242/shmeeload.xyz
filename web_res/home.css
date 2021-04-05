@@ -140,6 +140,7 @@ section::after {
     .mainArticleBody {
         padding-top: 1px;
     }
+
 }
 
 a:link {
@@ -166,37 +167,37 @@ a:active {
     text-decoration: underline;
 }
 
-.resumeTextSubsection {
+.TextSubsection {
     padding: 25px 50px;
     text-align: left;
 }
 
-.resumeListSubsection {
+.ListSubsection {
     padding: 25px 50px;
     text-align: left;
 }
 
-ul.resumeBullet {
-    list-style-type: square;
+ul.Bullet {
+    list-style-type: none;
     display: inline-block;
 }
 
-li.resumeBullet {
+li.Bullet {
     padding-left: 10px;
     padding-bottom: 1px;
     text-align: left;
 }
 
-.resumeHeader {
+.Header {
     text-align: left;
 }
 
-h1.resumeHeader {
+h1.Header {
     font-size: 120%;
     padding-left: 50px;
 }
 
-h2.resumeHeader {
+h2.Header {
     font-size: 100%;
     padding-left: 50px;
 }
