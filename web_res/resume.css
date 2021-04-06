@@ -226,11 +226,25 @@ ul.resumeBullet {
     display: inline-block;
 }
 
+
 li.resumeBullet {
     padding-left: 10px;
     padding-bottom: 1px;
     text-align: left;
 }
+
+ul.resumeBulletSquare {
+    list-style-type: square;
+    display: inline-block;
+}
+
+
+li.resumeBulletSquare {
+    padding-left: 10px;
+    padding-bottom: 5px;
+    text-align: left;
+}
+
 
 .resumeHeader {
     text-align: left;
