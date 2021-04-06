@@ -177,7 +177,6 @@ window.onload = () => {
             }
         }
     }
-    
     window.onkeypress = formKeyCallback;
 
     let msgForm = document.getElementById("send_msg_form")!;
