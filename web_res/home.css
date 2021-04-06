@@ -82,6 +82,7 @@ article {
     margin-left: 30%;
     background-color: khaki;
     overflow-x: hidden;
+    min-width: 60%;
 
 }
 
