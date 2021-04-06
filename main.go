@@ -226,12 +226,20 @@ func initServer() *chef.Server {
 	r.HandleFunc("/tunes/home", handlers.RedirectConstructionHandler())
 	r.HandleFunc("/shop/home", handlers.RedirectConstructionHandler())
 	//r.HandleFunc("/chat/{name}", handlers.ChatHomeHandler("", cfg.DebugLog))
+	// CHAT HANDLERs
 	r.HandleFunc("/chat/home", handlers.ChatHomeHandler(cfg.CacheMaxAge))
 	r.HandleFunc("/chat/ws", serveWs(hub))
 	r.HandleFunc("/chat/signup", handlers.RedirectConstructionHandler())
 	r.HandleFunc("/chat/signin", handlers.RedirectConstructionHandler())
+
+	// RESUME HANDLER
 	r.HandleFunc("/resume/home", handlers.ResumeHomeHandler(cfg.CacheMaxAge))
+
+	// UNDER CONSTRUCTION
 	r.HandleFunc("/under-construction", handlers.ConstructionHandler(cfg.CacheMaxAge))
+
+	// DONATE PAGES
+	r.HandleFunc("/donate/{cryptoname}", handlers.DonateHandler(cfg.CacheMaxAge))
 
 	fmt.Printf("\n")
 	log.Printf("starting Server at: %v...", addr)
