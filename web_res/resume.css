@@ -13,15 +13,52 @@ body {
     height: 99%;
 }
 
-.viewContainer {
-    background-color: aliceblue;  
+/* Gradient color1 - color2 - color1 */
 
-    /* Hide scrollbar for IE, Edge and Firefox */
-    /*(-ms-overflow-style: none;  /* IE and Edge */
-   /* scrollbar-width: none;  /* Firefox */
+hr.style-one {
+    border: 0;
+    height: 1px;
+    background: #333;
+    background-image: linear-gradient(to right, #ccc, #333, #ccc);
+    text-align: center;
+    width: 90%;
 
 }
 
+/* Gradient transparent - color - transparent */
+hr.style-two {
+    border: 0;
+    height: 1px;
+    background-image: linear-gradient(to right, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0));
+    text-align: center;
+    width: 90%;
+
+}
+
+/* Inset, by Dan Eden */
+
+hr.style-six {
+    border: 0;
+    height: 0;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    text-align: center;
+    width: 90%;
+}
+
+hr.style2 {
+	border-top: 3px double #8c8b8b;
+    text-align: center;
+    width: 90%;
+}
+
+hr.style3 {
+    border: none;
+    height: 1px;
+    /* Set the hr color */
+    color: #333; /* old IE */
+    background-color: #333; /* Modern Browsers */
+}
   
 
 /* style for the header */
@@ -39,12 +76,14 @@ header {
 */
 nav {
     float: left;
-    width: 10%;
-    min-height: 100vh;
+    /* width: 10%; */
+    min-height: 100vh; 
+    min-width: fit-content;
     position: fixed;
     background: rgb(203, 224, 231);
     background: greenyellow;
     text-align: center;
+    z-index: 1;
 }
 
 /*
@@ -65,7 +104,7 @@ nav li {
 
 .scroll {
     height: 100%;
-    overflow:scroll; 
+    overflow-y:scroll; 
     /* Hide scrollbar for IE, Edge and Firefox */
     -ms-overflow-style: none;  /* IE and Edge */
     scrollbar-width: none;  /* Firefox */
@@ -83,9 +122,12 @@ article {
     float: right;
     text-align: center;
     /* padding: 20px; */
-    width: 90%;
+   /*  width: 90%; */
+    padding-left: 10px;
+    max-width: 70%;
     background-color: rgb(203, 224, 231);
     background-color: khaki;
+    overflow-x: hidden;
 
 }
 
@@ -130,15 +172,17 @@ section::after {
         width: 100%;
         height: auto;
         float: none;
+        max-width: 95%;
+        min-height: min-content;
     }
 
     nav {
         position: relative;
-        padding-bottom: 1px;
+        margin-bottom: 5px;
     }
 
     .mainArticleBody {
-        padding-top: 1px;
+        margin-top: 5px;
     }
 
 }
@@ -178,7 +222,7 @@ a:active {
 }
 
 ul.resumeBullet {
-    list-style-type: square;
+    list-style-type: none;
     display: inline-block;
 }
 
