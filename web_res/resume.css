@@ -63,8 +63,7 @@ hr.style3 {
 
 /* style for the header */
 header {
-    background-color: rgb(203, 224, 231);
-    background: pink;
+    background: #ffc0cb;
 
     /*padding: 30px;*/
     text-align: center;
@@ -80,8 +79,7 @@ nav {
     min-height: 100vh; 
     min-width: fit-content;
     position: fixed;
-    background: rgb(203, 224, 231);
-    background: greenyellow;
+    background: #adff2f;
     text-align: center;
     z-index: 1;
 }
@@ -125,8 +123,7 @@ article {
    /*  width: 90%; */
     padding-left: 10px;
     max-width: 70%;
-    background-color: rgb(203, 224, 231);
-    background-color: khaki;
+    background-color: #f0e68c;
     overflow-x: hidden;
 
 }
@@ -188,25 +185,25 @@ section::after {
 }
 
 a:link {
-    color: rgb(247, 0, 255);
+    color: #f700ff;
     background-color: transparent;
     text-decoration: none;
 }
 
 a:visited {
-    color: rgb(247, 0, 255);
+    color: #f700ff;
     background-color: transparent;
     text-decoration: none;
 }
 
 a:hover {
-    color: rgb(255, 208, 56);
+    color: #ffd038;
     background-color: transparent;
     text-decoration: underline;
 }
 
 a:active {
-    color: yellow;
+    color: #ffff00;
     background-color: transparent;
     text-decoration: underline;
 }
