@@ -79,6 +79,7 @@ function openPopUpForm() {
     }  
     form.style.display = "block";
     loginPopUpOpen = true;
+    console.log("opening login pop up");
 }
 
 function closePopUpForm() {
@@ -89,6 +90,7 @@ function closePopUpForm() {
     }  
     form.style.display = "none";
     loginPopUpOpen = false;
+    console.log("closing login pop up");
 }
 
 //Since you know what type you are expecting, but the type 
@@ -102,12 +104,12 @@ function closePopUpForm() {
 
 
 
-window.onclick = (event : MouseEvent) => {
-    let modal = document.getElementById("popUpForm")!;
-    if (event.target == modal) {
-        closePopUpForm();
-    }
-}
+//window.onclick = (event : MouseEvent) => {
+//    let modal = document.getElementById("popUpForm")!;
+//    if (event.target == modal) {
+//        closePopUpForm();
+//    }
+//}
 
 function appendLog(item : HTMLDivElement) {
     let log = document.getElementById("log")!;
@@ -131,6 +133,7 @@ window.onload = () => {
             let item = document.createElement("div");
             item.innerHTML = "<b>Connection to server closed.</b>";
             appendLog(item);
+            console.log("closing WS...")
         };
         conn.onmessage = (evt) => {
             //console.log(evt);
@@ -161,23 +164,24 @@ window.onload = () => {
 
         }
         console.log(`user submitted to login form as: ${userName.value}`);
-        user = new User(DEFAULT_NAME, conn);
+        user = new User(userName.value, conn);
         closePopUpForm(); 
     };
     signInButton.onclick = signIn;
 
+    //let formKeyCallback = (ev: KeyboardEvent) => {
+    //    if (loginPopUpOpen) {
+    //        const enterCode = "Enter";
+    //        const keyCode = ev.key;
+    //        if (keyCode === enterCode) {
+    //            // get form and submit it
+    //            console.log(`User hit ${enterCode}`)
+    //            signIn()
+    //        }
+    //    }
+    //}
 
-    let formKeyCallback = (ev: KeyboardEvent) => {
-        if (loginPopUpOpen) {
-            const enterCode = "Enter";
-            const keyCode = ev.key;
-            if (keyCode === enterCode) {
-                // get form and submit it
-                signIn()
-            }
-        }
-    }
-    window.onkeypress = formKeyCallback;
+    //window.onkeypress = formKeyCallback;
 
     let msgForm = document.getElementById("send_msg_form")!;
     msgForm.onsubmit = () => {
@@ -187,6 +191,7 @@ window.onload = () => {
         if (!msg.value) {
             return false;
         }
+
         const messageWithName = encode(`${user.userName}: ${msg.value}`);
         user.broadcast(messageWithName);
 

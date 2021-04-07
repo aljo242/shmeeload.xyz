@@ -231,6 +231,8 @@ func initServer() *chef.Server {
 	r.HandleFunc("/chat/ws", serveWs(hub))
 	r.HandleFunc("/chat/signup", handlers.RedirectConstructionHandler())
 	r.HandleFunc("/chat/signin", handlers.RedirectConstructionHandler())
+	// file handler
+	r.HandleFunc("/files/{filename}", handlers.MiscFileHandler(cfg.CacheMaxAge))
 
 	// RESUME HANDLER
 	r.HandleFunc("/resume/home", handlers.ResumeHomeHandler(cfg.CacheMaxAge))
