@@ -76,7 +76,9 @@ func HomeHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
 			jsFilepath, _ := filepath.Abs(wantFile)
 			wantFile = imgDir + "1favicon.ico"
 			faviconFilepath, _ := filepath.Abs(wantFile)
-			err := chef.PushFiles(w, chatFilepath, jsFilepath, faviconFilepath)
+			wantFile = imgDir + "horse.jpg"
+			backgroundImage, _ := filepath.Abs(wantFile)
+			err := chef.PushFiles(w, chatFilepath, jsFilepath, faviconFilepath, backgroundImage)
 			if err != nil {
 				log.Error().Err(err).Msg("Error pushing files")
 			}
@@ -111,8 +113,12 @@ func ResumeHomeHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request)
 
 			wantFile := cssDir + "resume.css"
 			chatFilepath, _ := filepath.Abs(wantFile)
+			wantFile = imgDir + "1favicon.ico"
+			faviconFilepath, _ := filepath.Abs(wantFile)
+			wantFile = imgDir + "cactus.jpg"
+			backgroundImage, _ := filepath.Abs(wantFile)
 
-			err := chef.PushFiles(w, chatFilepath)
+			err := chef.PushFiles(w, chatFilepath, faviconFilepath, backgroundImage)
 			if err != nil {
 				log.Error().Err(err).Msg("Error pushing files")
 			}
