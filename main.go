@@ -51,57 +51,39 @@ func SetupTemplates(cfg chef.ServerConfig) ([]string, error) {
 
 	log.Debug().Str("OutputDir", TemplateOutputDir).Msg("creating new output directories")
 	// Create/ensure output directory
-	if !Exists(TemplateOutputDir) {
-		err := os.Mkdir(TemplateOutputDir, 0750)
-		if err != nil {
-			return nil,
-				fmt.Errorf("error creating directory %v : %w", TemplateOutputDir, err)
-		}
+	if err = EnsureDir(TemplateOutputDir); err != nil {
+		return nil, err
 	}
 
 	// Create subdirs
 	htmlOutputDir := filepath.Join(TemplateOutputDir, "html")
-	if !Exists(htmlOutputDir) {
-		err := os.Mkdir(htmlOutputDir, 0750)
-		if err != nil {
-			return nil,
-				fmt.Errorf("error creating directory %v : %w", htmlOutputDir, err)
-		}
+	if err = EnsureDir(htmlOutputDir); err != nil {
+		return nil, err
 	}
+
 	jsOutputDir := filepath.Join(TemplateOutputDir, "js")
-	if !Exists(jsOutputDir) {
-		err := os.Mkdir(jsOutputDir, 0750)
-		if err != nil {
-			return nil,
-				fmt.Errorf("error creating directory %v : %w", jsOutputDir, err)
-		}
+	if err = EnsureDir(jsOutputDir); err != nil {
+		return nil, err
 	}
 
 	cssOutputDir := filepath.Join(TemplateOutputDir, "css")
-	if !Exists(cssOutputDir) {
-		err := os.Mkdir(cssOutputDir, 0750)
-		if err != nil {
-			return nil,
-				fmt.Errorf("error creating directory %v : %w", cssOutputDir, err)
-		}
+	if err = EnsureDir(cssOutputDir); err != nil {
+		return nil, err
 	}
 
 	tsOutputDir := filepath.Join(TemplateOutputDir, "src")
-	if !Exists(tsOutputDir) {
-		err := os.Mkdir(tsOutputDir, 0750)
-		if err != nil {
-			return nil,
-				fmt.Errorf("error creating directory %v : %w", tsOutputDir, err)
-		}
+	if err = EnsureDir(tsOutputDir); err != nil {
+		return nil, err
 	}
 
 	imgOutputDir := filepath.Join(TemplateOutputDir, "img")
-	if !Exists(imgOutputDir) {
-		err := os.Mkdir(imgOutputDir, 0750)
-		if err != nil {
-			return nil,
-				fmt.Errorf("error creating directory %v : %w", imgOutputDir, err)
-		}
+	if err = EnsureDir(imgOutputDir); err != nil {
+		return nil, err
+	}
+
+	miscFilesOutputDir := filepath.Join(TemplateOutputDir, "files")
+	if err = EnsureDir(miscFilesOutputDir); err != nil {
+		return nil, err
 	}
 
 	log.Debug().Str("BaseDir", TemplateBaseDir).Msg("ensuring template base directory exists")
@@ -153,6 +135,10 @@ func SetupTemplates(cfg chef.ServerConfig) ([]string, error) {
 				handleCopyFileErr(CopyFile(path, newPath))
 			case ".ico", ".png", ".jpg", ".svg", ".gif":
 				newPath := filepath.Join(imgOutputDir, filepath.Base(path))
+				log.Debug().Str("fromPath", path).Str("toPath", newPath).Msg("moving static web resources")
+				handleCopyFileErr(CopyFile(path, newPath))
+			case ".pdf", ".doc", ".docx", ".xml":
+				newPath := filepath.Join(miscFilesOutputDir, filepath.Base(path))
 				log.Debug().Str("fromPath", path).Str("toPath", newPath).Msg("moving static web resources")
 				handleCopyFileErr(CopyFile(path, newPath))
 			}

@@ -14,12 +14,13 @@ const (
 )
 
 const (
-	htmlDir string = "./static/html/"
-	jsDir   string = "./static/js/"
-	cssDir  string = "./static/css/"
-	tsDir   string = "./static/src/"
-	imgDir  string = "./static/img/"
-	rootDir string = "./"
+	htmlDir      string = "./static/html/"
+	jsDir        string = "./static/js/"
+	cssDir       string = "./static/css/"
+	tsDir        string = "./static/src/"
+	imgDir       string = "./static/img/"
+	miscFilesDir string = "./static/files"
+	rootDir      string = "./"
 )
 
 // ScriptsHandler takes a script name and
@@ -223,7 +224,27 @@ func ImageHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
 func MiscFileHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		filename := filepath.Base(r.URL.Path)
-		log.Debug().Str("Handler", "MiscFileHandler").Str("requested file", filename).Msg("incoming request")
 
+		if r.Method == http.MethodGet {
+			wantFile := filepath.Join(miscFilesDir, filename)
+			log.Debug().Str("Handler", "MiscFileHandler").Str("requested file", filename).Msg("incoming request")
+
+			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
+				w.WriteHeader(http.StatusNotFound)
+				log.Debug().Err(err).Str("Filename", wantFile).Msg("Error finding file")
+				return
+			}
+
+			switch filepath.Ext(wantFile) {
+			case ".pdf":
+				w.Header().Set("Content-Type", "application/pdf")
+			}
+			w.Header().Set("Cache-Control", "max-age="+strconv.FormatInt(int64(cacheMaxAge), 10))
+			http.ServeFile(w, r, wantFile)
+
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 	}
 }

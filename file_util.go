@@ -15,6 +15,17 @@ func Exists(path string) bool {
 	return !os.IsNotExist(err)
 }
 
+// EnsureDir checks if a dir exists and creates it if it does not exsits
+func EnsureDir(dir string) error {
+	if !Exists(dir) {
+		err := os.Mkdir(dir, 0750)
+		if err != nil {
+			return fmt.Errorf("error creating directory %v : %w", dir, err)
+		}
+	}
+	return nil
+}
+
 // CopyFile copies filename src to dst
 func CopyFile(src, dst string) error {
 	filePath := filepath.Clean(src)
