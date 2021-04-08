@@ -113,17 +113,44 @@ section::after {
     clear: both;
 }
 
+#float_about_container::after {
+    content: "";
+    display: table;
+    clear: both;
+}
+
 /* style the footer */
 #nav_footer {
     padding-top: 10vh;
 }
+
+#about_me_section{
+    float: left;
+    width: 60%;
+}
+
+#me_img {
+    float: right;
+    width: 40%;
+}
+
+#me_img img {
+    min-width: 50%;
+    width: 60%;
+    height: auto;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+
 
 /* 
     Responsive layout -makes two columns/boxes stack on top of each other instead of
     next to eac hother on small screens
 */
 @media (max-width: 600px) {
-    nav, .mainArticleBody {
+    nav, .mainArticleBody, #me_img, #about_me_section{
         width: 100%;
         height: auto;
         float: none;
