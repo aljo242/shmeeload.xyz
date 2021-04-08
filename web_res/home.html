@@ -29,18 +29,19 @@
     <link rel="apple-touch-icon" sizes="180x180" href="{{.Host}}/static/img/1apple-touch-icon-180x180.png" />
     
     <script src="{{.Host}}/static/js/app.js" defer></script>
+
 </head>
 <body style="background-image: url('{{.Host}}/static/img/horse.jpg');">
 
   <section class="scroll">
-    <nav>
-      <header>alex johnson</header>
+    <nav id="nav">
+      <header id="header">alex johnson</header>
       <ul>
-        <li><a href="{{.Host}}/resume/home">resume</a></li>
-        <li><a href="{{.Host}}/tunes/home">tunes</a></li>
-        <li><a href="https://github.com/aljo242" target="_blank" rel="noopener noreferrer">github</a></li>
-        <li><a href="{{.Host}}/chat/home">chat</a></li>
-        <li><a href="{{.Host}}/shop/home">shoppers</a></li>
+        <li class="navLink"><a  href="{{.Host}}/resume/home">resume</a></li>
+        <li class="navLink"><a  href="{{.Host}}/tunes/home">tunes</a></li>
+        <li class="navLink"><a  href="https://github.com/aljo242" target="_blank" rel="noopener noreferrer">github</a></li>
+        <li class="navLink"><a  href="{{.Host}}/chat/home">chat</a></li>
+        <li class="navLink"><a href="{{.Host}}/shop/home">shoppers</a></li>
       </ul>
 
       <footer id="nav_footer">
@@ -54,7 +55,7 @@
       </footer>
     </nav>
 
-    <article class="mainArticleBody">
+    <article id="mainArticleBody">
       <div id= "float_about_container">
         <h1 class="Header">about me</h1>
         <div class="TextSubsection" id="about_me_section">
@@ -71,7 +72,7 @@
         <h1 class="Header">donate</h1>
         <div id="donate" class="ListSubsection">
             <ul class="Bullet">
-              <li><a href="{{.Host}}/donate/btc">btc</a> <a href="{{.Host}}/donate/ltc">ltc</a> <a href="{{.Host}}/donate/eth">eth</a> <a href="{{.Host}}/donate/ada">ada</a> </li>
+              <li class="navLink"><a href="{{.Host}}/donate/btc">btc</a> <a href="{{.Host}}/donate/ltc">ltc</a> <a href="{{.Host}}/donate/eth">eth</a> <a href="{{.Host}}/donate/ada">ada</a> </li>
             </ul>
         </div>
       </article>

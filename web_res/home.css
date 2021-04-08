@@ -17,7 +17,7 @@ body {
   
 
 /* style for the header */
-header {
+#header {
     background-color: rgb(203, 224, 231);
     background: pink;
 
@@ -26,20 +26,23 @@ header {
     font-size: 30px;
 }
 
+
+
+
 /*
     create two columns/boxes that float next to each other
 */
-nav {
+#nav {
     float: left;
     /* width: 10%; */
     min-height: 100vh; 
     min-width: fit-content;
     position: fixed;
-    background: rgb(203, 224, 231);
     background: greenyellow;
     text-align: center;
     z-index: 1;
 }
+
 
 /*
     xstyle the list inside the nav menu
@@ -48,11 +51,11 @@ ul {
     list-style-type: none;
 }
 
-nav ul {
+#nav ul {
     text-align: left;
 }
 
-nav li {
+#nav li {
     padding-top: 5vh;
     display: block;
 }
@@ -73,7 +76,7 @@ article {
     position: relative;
 }
 
-.mainArticleBody {
+#mainArticleBody {
     float: right;
     text-align: center;
     /* padding: 20px; */
@@ -86,16 +89,16 @@ article {
 
 }
 
-.mainArticleBody h2 {
+#mainArticleBody h2 {
     font-size: medium;
 }
 
 
-.mainArticleBody ul {
+#mainArticleBody ul {
     text-align: center;
 }
 
-.mainArticleBody li {
+#mainArticleBody li {
     padding: 0;
     margin: 0;
 }
@@ -150,7 +153,7 @@ section::after {
     next to eac hother on small screens
 */
 @media (max-width: 600px) {
-    nav, .mainArticleBody, #me_img, #about_me_section{
+    nav, #mainArticleBody, #me_img, #about_me_section{
         width: 100%;
         height: auto;
         float: none;
@@ -165,31 +168,31 @@ section::after {
         margin-bottom: 5px;
     }
 
-    .mainArticleBody {
+    #mainArticleBody {
         margin-top: 5px;
     }
 
 }
 
-a:link {
+.navLink a:link {
     color: rgb(247, 0, 255);
     background-color: transparent;
     text-decoration: none;
 }
 
-a:visited {
+.navLink a:visited {
     color: rgb(247, 0, 255);
     background-color: transparent;
     text-decoration: none;
 }
 
-a:hover {
+.navLink a:hover {
     color: rgb(255, 208, 56);
     background-color: transparent;
     text-decoration: underline;
 }
 
-a:active {
+.navLink a:active {
     color: yellow;
     background-color: transparent;
     text-decoration: underline;
