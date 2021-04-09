@@ -62,7 +62,7 @@ hr.style3 {
   
 
 /* style for the header */
-header {
+#header {
     background: #ffc0cb;
 
     /*padding: 30px;*/
@@ -73,7 +73,7 @@ header {
 /*
     create two columns/boxes that float next to each other
 */
-nav {
+#nav {
     float: left;
     /* width: 10%; */
     min-height: 100vh; 
@@ -116,7 +116,7 @@ article {
     position: relative;
 }
 
-.mainArticleBody {
+#mainArticleBody {
     float: right;
     text-align: center;
     /* padding: 20px; */
@@ -128,16 +128,16 @@ article {
 
 }
 
-.mainArticleBody h2 {
+#mainArticleBody h2 {
     font-size: medium;
 }
 
 
-.mainArticleBody ul {
+#mainArticleBody ul {
     text-align: center;
 }
 
-.mainArticleBody li {
+#mainArticleBody li {
     padding: 0;
     margin: 0;
 }
@@ -165,7 +165,7 @@ section::after {
     next to eac hother on small screens
 */
 @media (max-width: 600px) {
-    nav, .mainArticleBody {
+    #nav, #mainArticleBody {
         width: 100%;
         height: auto;
         float: none;
@@ -173,40 +173,66 @@ section::after {
         min-height: min-content;
     }
 
-    nav {
+    #nav {
         position: relative;
         margin-bottom: 5px;
     }
 
-    .mainArticleBody {
+    #mainArticleBody {
         margin-top: 5px;
     }
 
 }
 
-a:link {
+.navLink a:link {
     color: #f700ff;
     background-color: transparent;
     text-decoration: none;
 }
 
-a:visited {
+.navLink a:visited {
     color: #f700ff;
     background-color: transparent;
     text-decoration: none;
 }
 
-a:hover {
+.navLink k a:hover {
     color: #ffd038;
     background-color: transparent;
     text-decoration: underline;
 }
 
-a:active {
+.navLink a:active {
     color: #ffff00;
     background-color: transparent;
     text-decoration: underline;
 }
+
+
+.textLink a:link {
+    color: rgb(247, 0, 255);
+    background-color: transparent;
+    text-decoration: none;
+}
+
+.textLink a:visited {
+    color: rgb(247, 0, 255);
+    background-color: transparent;
+    text-decoration: none;
+}
+
+.textLink a:hover {
+    color: rgb(255, 208, 56);
+    background-color: transparent;
+    text-decoration: underline;
+}
+
+.textLink a:active {
+    color: yellow;
+    background-color: transparent;
+    text-decoration: underline;
+}
+
 
 .resumeTextSubsection {
     padding: 25px 50px;

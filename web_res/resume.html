@@ -28,21 +28,23 @@
     <link rel="apple-touch-icon" sizes="152x152" href="{{.Host}}/static/img/1apple-touch-icon-152x152.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="{{.Host}}/static/img/1apple-touch-icon-180x180.png" />
     
+    <script src="{{.Host}}/static/js/app.js" defer></script>
+
 </head>
 <body style="background-image: url('{{.Host}}/static/img/cactus.jpg'); background-size: cover;">
     <section class= "scroll">
-      <nav>
-        <header>alex's resume</header>
+      <nav id="nav">
+        <header id="header">alex's resume</header>
         <ul>
-          <li><a href="{{.Host}}/files/alex_johnson_1page_resume.pdf" target="_blank">traditional resume</a></li>
-          <li><a href="{{.Host}}/resume/home#sec_projects">projects</a></li>
-          <li><a href="{{.Host}}/resume/home#sec_skills">skills</a></li>
-          <li><a href="{{.Host}}/resume/home#sec_experience">experience</a></li>
-          <li><a href="{{.Host}}/resume/home#sec_publications">publications</a></li>
-          <li><a href="{{.Host}}/resume/home#sec_education">education</a></li>
-          <li><a href="{{.Host}}/resume/home#sec_awards">awards & honors</a></li>
-          <li><a href="{{.Host}}/resume/home#links">links</a></li>
-          <li><a href="{{.Host}}/resume/home#sec_references">references</a></li>
+          <li class="navLink"><a href="{{.Host}}/files/alex_johnson_1page_resume.pdf" target="_blank">traditional resume</a></li>
+          <li class="navLink"><a href="{{.Host}}/resume/home#sec_projects">projects</a></li>
+          <li class="navLink"><a href="{{.Host}}/resume/home#sec_skills">skills</a></li>
+          <li class="navLink"><a href="{{.Host}}/resume/home#sec_experience">experience</a></li>
+          <li class="navLink"><a href="{{.Host}}/resume/home#sec_publications">publications</a></li>
+          <li class="navLink"><a href="{{.Host}}/resume/home#sec_education">education</a></li>
+          <li class="navLink"><a href="{{.Host}}/resume/home#sec_awards">awards & honors</a></li>
+          <li class="navLink"><a href="{{.Host}}/resume/home#links">links</a></li>
+          <li class="navLink"><a href="{{.Host}}/resume/home#sec_references">references</a></li>
         </ul>
 
         <footer id="nav_footer">
@@ -56,49 +58,49 @@
           </footer>
       </nav>
 
-      <article  class="mainArticleBody">
+      <article  id="mainArticleBody">
 
         <div id="sec_projects">
             <h1 class="resumeHeader">projects</h1>
             <div id="subsec_shmeeload.xyz" class="resumeTextSubsection">
                 <h2 class="resumeHeader">shmeeload.xyz</h2>
-                <p>
+                <p class="textLink">
                     This website has been a large project for me to showcase some of my development skills.  I developed the full server backend from scratch in Go.  
                     On the GitHub repository, you will find the project demonstrating some of my project management, CI and organizational skills.
                     Before this, I didn't know anything about HTML, CSS, JavaScript or TypeScript, so this has also been a chance for me to gain some of those skills.
                     I hope you like the look of the site.  A little bit of the old web look, a bit of my own touch.
                 </p>
-                <p>
-                    For more information and source code, please check out my <a href="https://github.com/aljo242/shmeeload.xyz" target="_blank" rel="noopener noreferrer">repo</a>.
+                <p class="textLink">
+                    For more information and source code, please check out my <a class="textLink" href="https://github.com/aljo242/shmeeload.xyz" target="_blank" rel="noopener noreferrer">repo</a>.
                 </p>
             </div>
 
             <div id="subsec_chef" class="resumeTextSubsection">
                 <h2 class="resumeHeader">chef library</h2>
-                <p>
+                <p class="textLink"> 
                     This is a simple HTTP utility library that is used extentively for the backend of this website.  
                     Demonstates some slick test-driven development and has extensive coverage for all use cases I will ever have.
                     I plan on continuing to flesh this project out into a nice minimal HTTP backend library that hopefully someone other than just me can use.
                     In designing this package, I've learned a lot about making extendable APIs/packages and creating development roadmaps for a more
                     organized engineering workflow.
                 </p>
-                <p>
-                    For more information and source code, please check out my <a href="https://github.com/aljo242/chef" target="_blank" rel="noopener noreferrer">repo</a>.
+                <p class="textLink">
+                    For more information and source code, please check out my <a class="textLink" href="https://github.com/aljo242/chef" target="_blank" rel="noopener noreferrer">repo</a>.
                 </p>
             </div>
 
             <div id="subsec_djinn" class="resumeTextSubsection">
                 <h2 class="resumeHeader">djinn 3D game engine</h2>
-                <p>
+                <p class="textLink">
                     My ongoing game engine project.  Vulkan rendering engine with physically-based rendering, custom memory allocators, hardware accelerated ray-tracing, 
                     editor and audio engine.  I've learned so much about GPU hardware, physics and high-performance allocations and threading on this project.  A main goal
                     of the project has been to build a strong knowledge base in performant modern C++ (C++20), which can be seen with the engine's use of compile-time computation,
-                    concepts, and anonymous functions (lambdas).  I'm planning to merge this project with another Vulkan renderer from my colleague at <a href = "http://nsf-shrec.org/" target="_blank" rel="noopener noreferrer">NSF SHREC</a>,
-                    Bill Derksen (<a href = "https://github.com/bderksen20" target="_blank" rel="noopener noreferrer">github</a>), so we can have an ongoing collaborative
+                    concepts, and anonymous functions (lambdas).  I'm planning to merge this project with another Vulkan renderer from my colleague at <a  class="textLink"  href = "http://nsf-shrec.org/" target="_blank" rel="noopener noreferrer">NSF SHREC</a>,
+                    Bill Derksen (<a class="textLink"  href = "https://github.com/bderksen20" target="_blank" rel="noopener noreferrer">github</a>), so we can have an ongoing collaborative
                     renderer project.  
                 </p>
-                <p>
-                    For more information and source code, please check out my <a href="https://github.com/aljo242/djinn" target="_blank" rel="noopener noreferrer">repo</a>.
+                <p class="textLink">
+                    For more information and source code, please check out my <a class="textLink"  href="https://github.com/aljo242/djinn" target="_blank" rel="noopener noreferrer">repo</a>.
                 </p>
             </div>
         </div>
@@ -249,7 +251,7 @@
 
         <div id="sec_links" class="resumeListSubsection">
             <h1 class="resumeHeader">links</h1>
-                <ul>
+                <ul class="textLink">
                     <li><a href="mailto:alex.johnson@shmeeload.xyz">email</a></li>
                     <li><a href="https://github.com/aljo242" target="_blank">github</a></li>
                     <li><a href="https://www.linkedin.com/in/alex-johnson-776180111/" target="_blank">linkedin</a></li>
@@ -266,7 +268,7 @@
                 <div id="subsec_adg">
                     <p>Alan D. George, Ph.D.</p>
                     <p><em>Department Chair, R&H Mickle Endowed Chair, and Professor of Electrical and Computer Engineering</em></p>
-                    <p><a href="mailto:alan.george@pitt.edu ">email</a></p>
+                    <p class="textLink" ><a href="mailto:alan.george@pitt.edu ">email</a></p>
                     <p>412.624.9664</p>
                     <br>
                 </div>
@@ -274,7 +276,7 @@
                 <div id="subsec_zhm">
                     <p>Zhi-Hong Mao, Ph.D.</p>
                     <p><em>Professor of Electrical and Computer Engineering</em></p>
-                    <p><a href="mailto:maozh@engr.pitt.edu">email</a></p>
+                    <p class="textLink" ><a href="mailto:maozh@engr.pitt.edu">email</a></p>
                     <p>412.624.9674</p>
                     <br>
                 </div>
@@ -282,7 +284,7 @@
                 <div id="subsec_ahd">
                     <p>Ahmed Dallal, Ph.D.</p>
                     <p><em>Assistant Professor of Electrical and Computer Engineering</em></p>
-                    <p><a href="mailto:ahd12@pitt.edu ">email</a></p>
+                    <p class="textLink" ><a href="mailto:ahd12@pitt.edu ">email</a></p>
                     <p>412.383.4423</p>
                     <br>
                 </div>

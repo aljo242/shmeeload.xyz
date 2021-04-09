@@ -153,7 +153,7 @@ section::after {
     next to eac hother on small screens
 */
 @media (max-width: 600px) {
-    nav, #mainArticleBody, #me_img, #about_me_section{
+    #nav, #mainArticleBody, #me_img, #about_me_section{
         width: 100%;
         height: auto;
         float: none;
@@ -163,7 +163,7 @@ section::after {
 
     }
 
-    nav {
+    #nav {
         position: relative;
         margin-bottom: 5px;
     }
@@ -193,6 +193,30 @@ section::after {
 }
 
 .navLink a:active {
+    color: yellow;
+    background-color: transparent;
+    text-decoration: underline;
+}
+
+.textLink a:link {
+    color: rgb(247, 0, 255);
+    background-color: transparent;
+    text-decoration: none;
+}
+
+.textLink a:visited {
+    color: rgb(247, 0, 255);
+    background-color: transparent;
+    text-decoration: none;
+}
+
+.textLink a:hover {
+    color: rgb(255, 208, 56);
+    background-color: transparent;
+    text-decoration: underline;
+}
+
+.textLink a:active {
     color: yellow;
     background-color: transparent;
     text-decoration: underline;
