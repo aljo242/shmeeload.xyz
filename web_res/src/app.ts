@@ -53,6 +53,16 @@ scheme3.a_nav_link = "#52b788";
 
 scheme3.a_text_link = "#52b788";
 
+let scheme4 = new ColorScheme;
+scheme4.article_background = "#f28482";
+scheme4.nav_background = "#84a59d";
+scheme4.nav_header = "#f7ede2";
+scheme4.body_background = black;
+scheme4.hr = black;
+scheme4.a_nav_link = "#14ff14";
+
+scheme4.a_text_link = "#14ff14";
+
 
 // Register Service Worker
 if ("serviceWorker" in navigator) {
@@ -106,7 +116,7 @@ function applyColorScheme(scheme: ColorScheme) {
   }
 }
 
-const colorSchemes = [scheme1, scheme2, scheme3];
+const colorSchemes = [scheme1, scheme2, scheme3, scheme4];
 let currentSelection = 0;
 
 
