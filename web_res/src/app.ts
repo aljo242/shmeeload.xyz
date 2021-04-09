@@ -29,13 +29,8 @@ scheme1.nav_header = "#e76f51";
 scheme1.body_background = black;
 scheme1.hr = black;
 scheme1.a_nav_link = "#14ff14";
-scheme1.a_nav_visited = "e9c46a";
-scheme1.a_nav_hover = "e9c46a";
-scheme1.a_nav_active = "e9c46a";
 scheme1.a_text_link = "#e9c46a";
-scheme1.a_text_visited = "#e9c46a";
-scheme1.a_text_hover = "#e9c46a";
-scheme1.a_text_active = "#e9c46a";
+
 
 
 let scheme2 = new ColorScheme;
@@ -45,13 +40,19 @@ scheme2.nav_header = "#ffc0cb";
 scheme2.body_background = black;
 scheme2.hr = black;
 scheme2.a_nav_link = "#f700ff";
-scheme2.a_nav_visited = "f700ff";
-scheme2.a_nav_hover = "ffd038";
-scheme2.a_nav_active = "ffff00";
 scheme2.a_text_link = "#f700ff";
-scheme2.a_text_visited = "f700ff";
-scheme2.a_text_hover = "ffd038";
-scheme2.a_text_active = "ffff00";
+
+
+let scheme3 = new ColorScheme;
+scheme3.article_background = "#e5e5e5";
+scheme3.nav_background = "#e5e5e5";
+scheme3.nav_header = "#fb8500";
+scheme3.body_background = black;
+scheme3.hr = black;
+scheme3.a_nav_link = "#52b788";
+
+scheme3.a_text_link = "#52b788";
+
 
 // Register Service Worker
 if ("serviceWorker" in navigator) {
@@ -79,7 +80,7 @@ function printMessage(msg: string) {
 
 
 function applyColorScheme(scheme: ColorScheme) {
-  console.log(scheme)
+  //console.log(scheme)
   let header = document.getElementById("header")!;
   header.style.backgroundColor = scheme.nav_header;
   let nav = document.getElementById("nav")!;
@@ -105,18 +106,25 @@ function applyColorScheme(scheme: ColorScheme) {
   }
 }
 
-const colorSchemes = [scheme1, scheme2];
+const colorSchemes = [scheme1, scheme2, scheme3];
+let currentSelection = 0;
 
 
 function applyRandomColorScheme() {
-  const random = Math.floor(Math.random() * colorSchemes.length);
-  applyColorScheme(colorSchemes[random]);
+  let random = Math.floor(Math.random() * colorSchemes.length);
+  // make sure we always choose a unique one
+  while (random === currentSelection) {
+    random = Math.floor(Math.random() * colorSchemes.length);
+  }
+  currentSelection = random
+  console.log(currentSelection)
+  applyColorScheme(colorSchemes[currentSelection]);
 }
 
+applyColorScheme(colorSchemes[currentSelection]);
 
 const homeButton = document.getElementById("secretButton")!
 homeButton.onclick = () => {
-    printMessage("Button Pushed!");
     applyRandomColorScheme();
 };
 
