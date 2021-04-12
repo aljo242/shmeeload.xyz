@@ -13,9 +13,6 @@ body {
     height: 99%;
 }
 
-
-  
-
 /* style for the header */
 #header {
     background-color: rgb(203, 224, 231);
@@ -25,9 +22,6 @@ body {
     text-align: center;
     font-size: 30px;
 }
-
-
-
 
 /*
     create two columns/boxes that float next to each other
@@ -106,8 +100,6 @@ article {
 #bonus_button {
     padding-top: 10px;
 }
-
-
 
 /* clear floats after the columns */
 section::after {
