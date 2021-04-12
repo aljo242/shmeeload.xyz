@@ -129,7 +129,7 @@ func ResumeHomeHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request)
 	}
 }
 
-// ResumeHomeHandler takes a script name and
+// TunesHomeHandler takes a script name and
 func TunesHomeHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -151,6 +151,41 @@ func TunesHomeHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) 
 			}()
 
 			wantFile := cssDir + "resume.css"
+			chatFilepath, _ := filepath.Abs(wantFile)
+
+			err := chef.PushFiles(w, chatFilepath)
+			if err != nil {
+				log.Error().Err(err).Msg("Error pushing files")
+			}
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+	}
+}
+
+// HallofArtHomeHandler takes a script name and
+func HallofArtHomeHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		filename := filepath.Base(r.URL.Path)
+		log.Debug().Str("Handler", "HallofArtHomeHandler").Str("Filename", filename).Msg("incoming request")
+
+		if r.Method == http.MethodGet {
+			defer func() {
+				wantFile := filepath.Join(htmlDir, "shadow.html")
+				if _, err := os.Stat(wantFile); os.IsNotExist(err) {
+					w.WriteHeader(http.StatusNotFound)
+					log.Fatal().Err(err).Str("Filename", wantFile).Msg("Error finding file")
+					return
+				}
+
+				w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+				w.Header().Set("Cache-Control", "max-age="+strconv.FormatInt(int64(cacheMaxAge), 10))
+				http.ServeFile(w, r, wantFile)
+			}()
+
+			wantFile := cssDir + "home.css"
 			chatFilepath, _ := filepath.Abs(wantFile)
 
 			err := chef.PushFiles(w, chatFilepath)

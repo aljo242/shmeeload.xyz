@@ -226,6 +226,9 @@ func initServer() *chef.Server {
 	// UNDER CONSTRUCTION
 	r.HandleFunc("/under-construction", handlers.ConstructionHandler(cfg.CacheMaxAge))
 
+	// HALL OF ART
+	r.HandleFunc("/hall-of-art/home", handlers.HallofArtHomeHandler(cfg.CacheMaxAge))
+
 	// DONATE PAGES
 	r.HandleFunc("/donate/{cryptoname}", handlers.DonateHandler(cfg.CacheMaxAge))
 

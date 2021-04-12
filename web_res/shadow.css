@@ -1,0 +1,35 @@
+body {
+    font-family: 'Courier New', Courier, monospace;
+    background-color: #14ff14;  
+    position: fixed;
+    height: 100%;
+    width: 100%;
+}
+
+
+.center {
+    margin: 0;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    -ms-transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%);
+}
+
+.shmee-man {
+    height: 80vh;
+    width: auto;
+}
+
+.image-container{
+    background-color: lightgoldenrodyellow;
+    
+}
+
+.transition-image {
+    opacity: 0;
+}
+
+.transition-image:hover {
+    opacity: 1;
+}
