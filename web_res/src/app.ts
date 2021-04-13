@@ -4,8 +4,10 @@ const black: Color = "#000000"
 
 class ColorScheme {
     article_background: Color = black;
+    article_opacity = "1.0";
     nav_background: Color = black;
     nav_header: Color = black;
+    nav_opacity = "1.0";
     body_background: Color = black;
     hr: Color = black;
 
@@ -31,8 +33,6 @@ scheme1.hr = black;
 scheme1.a_nav_link = "#14ff14";
 scheme1.a_text_link = "#e9c46a";
 
-
-
 let scheme2 = new ColorScheme;
 scheme2.article_background = "#f0e68c";
 scheme2.nav_background = "#adff2f";
@@ -42,7 +42,6 @@ scheme2.hr = black;
 scheme2.a_nav_link = "#f700ff";
 scheme2.a_text_link = "#f700ff";
 
-
 let scheme3 = new ColorScheme;
 scheme3.article_background = "#e5e5e5";
 scheme3.nav_background = "#e5e5e5";
@@ -50,19 +49,38 @@ scheme3.nav_header = "#fb8500";
 scheme3.body_background = black;
 scheme3.hr = black;
 scheme3.a_nav_link = "#52b788";
-
 scheme3.a_text_link = "#52b788";
 
 let scheme4 = new ColorScheme;
-scheme4.article_background = "#f28482";
-scheme4.nav_background = "#84a59d";
-scheme4.nav_header = "#f7ede2";
+scheme4.article_background = "#e2fdff";
+scheme4.nav_background = "#bfd7ff";
+scheme4.nav_header = "#5465ff";
 scheme4.body_background = black;
 scheme4.hr = black;
-scheme4.a_nav_link = "#14ff14";
+scheme4.a_nav_link = "#c32f27";
+scheme4.a_text_link = "#c32f27";
 
-scheme4.a_text_link = "#14ff14";
+let scheme5 = new ColorScheme;
+scheme5.article_background = "#f28482";
+scheme5.article_opacity = ".975";
+scheme5.nav_background = "#84a59d";
+scheme5.nav_header = "#f7ede2";
+scheme5.nav_opacity = ".975";
+scheme5.body_background = black;
+scheme5.hr = black;
+scheme5.a_nav_link = "#14ff14";
+scheme5.a_text_link = "#14ff14";
 
+let scheme6 = new ColorScheme;
+scheme6.article_background = "#ddc9b4";
+scheme6.article_opacity = ".95";
+scheme6.nav_background = "#bcac9b";
+scheme6.nav_header = "#c17c74";
+scheme6.nav_opacity = ".90";
+scheme6.body_background = black;
+scheme6.hr = black;
+scheme6.a_nav_link = "#df2935";
+scheme6.a_text_link = "#df2935";
 
 // Register Service Worker
 if ("serviceWorker" in navigator) {
@@ -95,8 +113,10 @@ function applyColorScheme(scheme: ColorScheme) {
   header.style.backgroundColor = scheme.nav_header;
   let nav = document.getElementById("nav")!;
   nav.style.backgroundColor = scheme.nav_background;
+  nav.style.opacity =  scheme.nav_opacity;
   let mainArticleBody = document.getElementById("mainArticleBody")!;
-  mainArticleBody.style.backgroundColor = scheme.article_background
+  mainArticleBody.style.backgroundColor = scheme.article_background;
+  mainArticleBody.style.opacity = scheme.article_opacity;
   
   //let navLinks = document.getElementsByClassName("navLink")!;
   //for (let item  of navLinks) {
@@ -116,16 +136,18 @@ function applyColorScheme(scheme: ColorScheme) {
   }
 }
 
-const colorSchemes = [scheme1, scheme2, scheme3, scheme4];
+const colorSchemes = [scheme1, scheme2, scheme3, scheme4, scheme5, scheme6];
 let currentSelection = 0;
+let prevSelection = 0;
 
 
 function applyRandomColorScheme() {
   let random = Math.floor(Math.random() * colorSchemes.length);
   // make sure we always choose a unique one
-  while (random === currentSelection) {
+  while (random === currentSelection || random === prevSelection) {
     random = Math.floor(Math.random() * colorSchemes.length);
   }
+  prevSelection = currentSelection;
   currentSelection = random
   console.log(currentSelection)
   applyColorScheme(colorSchemes[currentSelection]);

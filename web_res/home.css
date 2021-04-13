@@ -127,6 +127,7 @@ section::after {
 #me_img {
     float: right;
     width: 40%;
+    opacity: 1.0;
 }
 
 #me_img img {
