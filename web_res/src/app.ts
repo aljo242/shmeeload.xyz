@@ -82,6 +82,17 @@ scheme6.hr = black;
 scheme6.a_nav_link = "#df2935";
 scheme6.a_text_link = "#df2935";
 
+let scheme7 = new ColorScheme;
+scheme7.article_background = "#dddf00";
+scheme7.article_opacity = ".95";
+scheme7.nav_background = "#2b9348";
+scheme7.nav_header = "#007f5f";
+scheme7.nav_opacity = ".90";
+scheme7.body_background = black;
+scheme7.hr = black;
+scheme7.a_nav_link = "#001d3d";
+scheme7.a_text_link = "#001d3d";
+
 // Register Service Worker
 if ("serviceWorker" in navigator) {
     window.addEventListener("load", function() {
@@ -136,7 +147,7 @@ function applyColorScheme(scheme: ColorScheme) {
   }
 }
 
-const colorSchemes = [scheme1, scheme2, scheme3, scheme4, scheme5, scheme6];
+const colorSchemes = [scheme1, scheme2, scheme3, scheme4, scheme5, scheme6, scheme7];
 let currentSelection = 0;
 let prevSelection = 0;
 
