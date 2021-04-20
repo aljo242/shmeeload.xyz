@@ -96,7 +96,7 @@ nav ul {
 }
 
 nav li {
-    padding-top: 5vh;
+    padding-top: 4vh;
     display: block;
 }
 
@@ -143,7 +143,7 @@ article {
 }
 
 #bonus_button {
-    padding-top: 10px;
+    padding-top: 0px;
 }
 
 
