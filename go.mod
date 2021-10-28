@@ -1,6 +1,6 @@
 module github.com/aljo242/shmeeload.xyz
 
-go 1.16
+go 1.17
 
 require (
 	github.com/aljo242/chef v0.0.0-20210403133720-3883e581c2b9
@@ -9,3 +9,5 @@ require (
 	github.com/gorilla/websocket v1.4.2
 	github.com/rs/zerolog v1.21.0
 )
+
+require github.com/glendc/go-external-ip v0.0.0-20200601212049-c872357d968e // indirect
