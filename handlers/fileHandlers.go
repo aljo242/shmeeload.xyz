@@ -19,6 +19,7 @@ const (
 	cssDir       string = "./static/css/"
 	tsDir        string = "./static/src/"
 	imgDir       string = "./static/img/"
+	modelDir       string = "./static/model/"
 	miscFilesDir string = "./static/files"
 	rootDir      string = "./"
 )
@@ -209,6 +210,39 @@ func ImageHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
 				w.Header().Set("Content-Type", "image/gif")
 			case ".ico":
 				w.Header().Set("Content-Type", "image/x-icon")
+			}
+			w.Header().Set("Cache-Control", "max-age="+strconv.FormatInt(int64(cacheMaxAge), 10))
+			http.ServeFile(w, r, wantFile)
+
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+	}
+}
+
+// ModelHandler returns a HandleFunc to serve model files
+func ModelHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		filename := filepath.Base(r.URL.Path)
+
+		if r.Method == http.MethodGet {
+			wantFile := filepath.Join(modelDir, filename)
+			log.Debug().Str("Handler", "ModelHandler").Str("Filename", wantFile).Msg("incoming request")
+
+			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
+				w.WriteHeader(http.StatusNotFound)
+				log.Debug().Err(err).Str("Filename", wantFile).Msg("Error finding file")
+				return
+			}
+
+			switch filepath.Ext(wantFile) {
+			case ".dae":
+				w.Header().Set("Content-Type", "model/dae")
+			case ".obj":
+				w.Header().Set("Content-Type", "model/obj")
+			case ".gltf":
+				w.Header().Set("Content-Type", "model/gltf")
 			}
 			w.Header().Set("Cache-Control", "max-age="+strconv.FormatInt(int64(cacheMaxAge), 10))
 			http.ServeFile(w, r, wantFile)
