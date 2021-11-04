@@ -81,6 +81,11 @@ func SetupTemplates(cfg chef.ServerConfig) ([]string, error) {
 		return nil, err
 	}
 
+	modelOutputDir := filepath.Join(TemplateOutputDir, "model")
+	if err = EnsureDir(modelOutputDir); err != nil {
+		return nil, err
+	}
+
 	miscFilesOutputDir := filepath.Join(TemplateOutputDir, "files")
 	if err = EnsureDir(miscFilesOutputDir); err != nil {
 		return nil, err
@@ -139,6 +144,10 @@ func SetupTemplates(cfg chef.ServerConfig) ([]string, error) {
 				handleCopyFileErr(CopyFile(path, newPath))
 			case ".pdf", ".doc", ".docx", ".xml":
 				newPath := filepath.Join(miscFilesOutputDir, filepath.Base(path))
+				log.Debug().Str("fromPath", path).Str("toPath", newPath).Msg("moving static web resources")
+				handleCopyFileErr(CopyFile(path, newPath))
+			case ".dae", ".obj", ".gltf":
+				newPath := filepath.Join(modelOutputDir, filepath.Base(path))
 				log.Debug().Str("fromPath", path).Str("toPath", newPath).Msg("moving static web resources")
 				handleCopyFileErr(CopyFile(path, newPath))
 			}
@@ -206,6 +215,7 @@ func initServer() *chef.Server {
 	r.HandleFunc("/static/html/{filename}", handlers.HTMLHandler(cfg.CacheMaxAge))
 	r.HandleFunc("/static/src/{filename}", handlers.TypeScriptHandler(cfg.CacheMaxAge))
 	r.HandleFunc("/static/img/{filename}", handlers.ImageHandler(cfg.CacheMaxAge))
+	r.HandleFunc("/static/model/{filename}", handlers.ModelHandler(cfg.CacheMaxAge))
 	r.HandleFunc("/manifest.json", handlers.ManifestHandler(cfg.CacheMaxAge))
 	r.HandleFunc("/serviceWorker.js", handlers.ServiceWorkerHandler(cfg.CacheMaxAge))
 	r.HandleFunc("/serviceWorker.js.map", handlers.ServiceWorkerHandler(cfg.CacheMaxAge))
