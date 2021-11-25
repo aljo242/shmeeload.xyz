@@ -7,8 +7,6 @@ import (
 )
 
 func setupLogger(cfg chef.ServerConfig) {
-	//zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-
 	if cfg.DebugLog {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 		log.Debug().Msg("log level is DEBUG")
@@ -17,5 +15,4 @@ func setupLogger(cfg chef.ServerConfig) {
 		log.Error().Msg("log level is ERROR")
 
 	}
-
 }

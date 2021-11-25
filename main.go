@@ -4,12 +4,12 @@ import (
 	"flag"
 	"fmt"
 
-	//"net"
 	"os"
 	"path/filepath"
 
 	"github.com/aljo242/chef"
 	"github.com/aljo242/ip_util"
+
 	"github.com/aljo242/shmeeload.xyz/handlers"
 
 	"github.com/gorilla/mux"
@@ -46,7 +46,7 @@ func SetupTemplates(cfg chef.ServerConfig) ([]string, error) {
 	err := os.RemoveAll(TemplateOutputDir)
 	if err != nil {
 		return nil,
-			fmt.Errorf("error cleaning ouput directory %v : %w", TemplateOutputDir, err)
+			fmt.Errorf("error cleaning output directory %v : %w", TemplateOutputDir, err)
 	}
 
 	log.Debug().Str("OutputDir", TemplateOutputDir).Msg("creating new output directories")
@@ -221,7 +221,7 @@ func initServer() *chef.Server {
 	r.HandleFunc("/serviceWorker.js.map", handlers.ServiceWorkerHandler(cfg.CacheMaxAge))
 	r.HandleFunc("/tunes/home", handlers.RedirectConstructionHandler())
 	r.HandleFunc("/shop/home", handlers.RedirectConstructionHandler())
-	//r.HandleFunc("/chat/{name}", handlers.ChatHomeHandler("", cfg.DebugLog))
+	// r.HandleFunc("/chat/{name}", handlers.ChatHomeHandler("", cfg.DebugLog))
 	// CHAT HANDLERs
 	r.HandleFunc("/chat/home", handlers.ChatHomeHandler(cfg.CacheMaxAge))
 	r.HandleFunc("/chat/ws", serveWs(hub))
@@ -251,7 +251,6 @@ func initServer() *chef.Server {
 
 func main() {
 	flag.Parse()
-	//runGorillaServer()
 	log.Printf("main: starting HTTP server...")
 	srv := initServer()
 	running := make(chan struct{})
