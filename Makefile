@@ -17,7 +17,7 @@ export GO111MODULE = on
 
 all: lint build test 
 
-build: format
+build:
 	@cd ./web_res && tsc
 	@go build -o ${BINARY_NAME}
 
