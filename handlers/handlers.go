@@ -38,7 +38,6 @@ func ConstructionHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Reques
 					return
 				}
 
-				//w.WriteHeader(http.StatusOK)
 				w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 				w.Header().Set("Cache-Control", "max-age="+strconv.FormatInt(int64(cacheMaxAge), 10))
 				http.ServeFile(w, r, wantFile)
@@ -64,7 +63,6 @@ func HomeHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
 					return
 				}
 
-				//w.WriteHeader(http.StatusOK)
 				w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 				w.Header().Set("Cache-Control", "max-age="+strconv.FormatInt(int64(cacheMaxAge), 10))
 				http.ServeFile(w, r, wantFile)

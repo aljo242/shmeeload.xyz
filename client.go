@@ -62,10 +62,7 @@ func (c *Client) readPump() {
 		log.Error().Err(err).Msg("error setting WebSocket ReadDeadline")
 	}
 	c.conn.SetPongHandler(func(string) error {
-		if err := c.conn.SetReadDeadline(time.Now().Add(pongWait)); err != nil {
-			return err
-		}
-		return nil
+		return c.conn.SetReadDeadline(time.Now().Add(pongWait))
 	})
 
 	for {
@@ -77,7 +74,7 @@ func (c *Client) readPump() {
 			break
 		}
 
-		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
+		message = bytes.TrimSpace(bytes.ReplaceAll(message, newline, space))
 		c.hub.broadcast <- message
 	}
 }

@@ -10,16 +10,12 @@ import (
 )
 
 const (
-	miscFileDir string = "./files"
-)
-
-const (
 	htmlDir      string = "./static/html/"
 	jsDir        string = "./static/js/"
 	cssDir       string = "./static/css/"
 	tsDir        string = "./static/src/"
 	imgDir       string = "./static/img/"
-	modelDir       string = "./static/model/"
+	modelDir     string = "./static/model/"
 	miscFilesDir string = "./static/files"
 	rootDir      string = "./"
 )
@@ -93,7 +89,6 @@ func HTMLHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
 				return
 			}
 
-			//w.WriteHeader(http.StatusOK)
 			w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 			w.Header().Set("Cache-Control", "max-age="+strconv.FormatInt(int64(cacheMaxAge), 10))
 			http.ServeFile(w, r, wantFile)
@@ -119,7 +114,6 @@ func TypeScriptHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request)
 				return
 			}
 
-			//w.WriteHeader(http.StatusOK)
 			w.Header().Set("Content-Type", "text/plain; charset=UTF-8")
 			w.Header().Set("Cache-Control", "max-age="+strconv.FormatInt(int64(cacheMaxAge), 10))
 			http.ServeFile(w, r, wantFile)
@@ -145,7 +139,6 @@ func ManifestHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
 				return
 			}
 
-			//w.WriteHeader(http.StatusOK)
 			w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 			w.Header().Set("Cache-Control", "max-age="+strconv.FormatInt(int64(cacheMaxAge), 10))
 			http.ServeFile(w, r, wantFile)
@@ -269,8 +262,7 @@ func MiscFileHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
 				return
 			}
 
-			switch filepath.Ext(wantFile) {
-			case ".pdf":
+			if filepath.Ext(wantFile) == ".pdf" {
 				w.Header().Set("Content-Type", "application/pdf")
 			}
 			w.Header().Set("Cache-Control", "max-age="+strconv.FormatInt(int64(cacheMaxAge), 10))
