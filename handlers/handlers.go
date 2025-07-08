@@ -52,7 +52,6 @@ func ConstructionHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Reques
 // HomeHandler serves the home.html file
 func HomeHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		if r.Method == http.MethodGet {
 			log.Debug().Str("Handler", "HomeHandler").Msg("incoming request")
 			defer func() {
@@ -92,7 +91,6 @@ func HomeHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
 
 // ResumeHomeHandler takes a script name and
 func ResumeHomeHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
-
 	return func(w http.ResponseWriter, r *http.Request) {
 		filename := filepath.Base(r.URL.Path)
 		log.Debug().Str("Handler", "ResumeHomeHandler").Str("Filename", filename).Msg("incoming request")
@@ -131,7 +129,6 @@ func ResumeHomeHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request)
 
 // TunesHomeHandler takes a script name and
 func TunesHomeHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
-
 	return func(w http.ResponseWriter, r *http.Request) {
 		filename := filepath.Base(r.URL.Path)
 		log.Debug().Str("Handler", "ResumeHomeHandler").Str("Filename", filename).Msg("incoming request")
@@ -166,7 +163,6 @@ func TunesHomeHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) 
 
 // HallofArtHomeHandler takes a script name and
 func HallofArtHomeHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
-
 	return func(w http.ResponseWriter, r *http.Request) {
 		filename := filepath.Base(r.URL.Path)
 		log.Debug().Str("Handler", "HallofArtHomeHandler").Str("Filename", filename).Msg("incoming request")

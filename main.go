@@ -3,17 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
-
 	"os"
 	"path/filepath"
 
 	"github.com/aljo242/chef"
 	"github.com/aljo242/ip_util"
-
 	"github.com/aljo242/shmeeload.xyz/handlers"
-
 	"github.com/gorilla/mux"
-
 	"github.com/rs/zerolog/log"
 )
 

@@ -49,25 +49,20 @@ endif
 ###############################################################################
 ###                                Linting                                  ###
 ###############################################################################
-
-markdownLintImage=tmknom/markdownlint
-containerMarkdownLint=$(PROJECT_NAME)-markdownlint
-containerMarkdownLintFix=$(PROJECT_NAME)-markdownlint-fix
+golangci_lint_cmd=golangci-lint
+golangci_version=v2.1.6
 
 lint:
-	@golangci-lint run -c ./.golangci.yml --out-format=tab --issues-exit-code=0
-	@# @if $(DOCKER) ps -a --format '{{.Names}}' | grep -Eq "^${containerMarkdownLint}$$"; then $(DOCKER) start -a $(containerMarkdownLint); else $(DOCKER) run --name $(containerMarkdownLint) -i -v "$(CURDIR):/work" $(markdownLintImage); fi
+	@echo "--> Running linter"
+	@go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(golangci_version)
+	@$(golangci_lint_cmd) run --timeout=10m
 
 
-FIND_ARGS := -name '*.go' -type f -not -path "./sample_txs*" -not -path "*.git*" -not -path "./build_report/*" -not -path "./scripts*" -not -name '*.pb.go'
+lint-fix:
+	@go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(golangci_version)
+	@$(golangci_lint_cmd) run --timeout=10m --fix
 
-format:
-	@find . $(FIND_ARGS) | xargs gofmt -w -s
-	@find . $(FIND_ARGS) | xargs goimports -w -local github.com/aljo242/shmeeload.xyz
-
-
-.PHONY: lint format
-
+.PHONY: lint lint-fix
 
 ###############################################################################
 ###                                Testing                                  ###

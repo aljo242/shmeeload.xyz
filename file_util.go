@@ -18,7 +18,7 @@ func Exists(path string) bool {
 // EnsureDir checks if a dir exists and creates it if it does not exsits
 func EnsureDir(dir string) error {
 	if !Exists(dir) {
-		err := os.Mkdir(dir, 0750)
+		err := os.Mkdir(dir, 0o750)
 		if err != nil {
 			return fmt.Errorf("error creating directory %v : %w", dir, err)
 		}

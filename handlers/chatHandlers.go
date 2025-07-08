@@ -12,7 +12,6 @@ import (
 
 // ChatHomeHandler is the route for the chat home where users can get assigned unique identifiers
 func ChatHomeHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
-
 	return func(w http.ResponseWriter, r *http.Request) {
 		// this page currently only serves html resources
 		log.Debug().Str("Handler", "ChatHomeHandler").Msg("incoming request")
@@ -48,15 +47,12 @@ func ChatHomeHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
 
 // ChatSignUpHandler connects to the database and creates a new id for a chat user
 func ChatSignUpHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
-
 	return func(w http.ResponseWriter, r *http.Request) {
-
 	}
 }
 
 // ChatSignInHandler connects to the database and signs a user in if they are in the database
 func ChatSignInHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-
 	}
 }
