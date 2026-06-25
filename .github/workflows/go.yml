@@ -7,31 +7,35 @@ on:
     branches: [ master ]
 
 jobs:
-
   build-and-test:
-    strategy: 
-      matrix:
-        go-version: [1.17.x]
-  
-    runs-on: ubuntu-latest
+    # Self-hosted x86 runner on foundry (dedicated instance for this repo).
+    # No GitHub-hosted runners are used.
+    runs-on: [self-hosted, x86-linux]
     steps:
-    - name: Set up Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: ${{ matrix.go-version }}
-    
-    - name: Checkout Code
-      uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v7
 
-    - name: Build
-      run: make build
-      
-    - name: Test
-      run: make test
-      
-    - name: Run Gosec Security Scanner
-      uses: securego/gosec@master
-      with: 
-        args: -no-fail ./...
-      
-      
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.26'
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Install TypeScript
+        # make build runs `tsc`; install the real compiler globally so it is on PATH.
+        run: npm install -g typescript@^4.2.3
+
+      - name: Build
+        run: make build
+
+      - name: Test
+        run: make test
+
+      - name: Lint
+        # Installs and runs golangci-lint (which includes gosec) per the Makefile,
+        # keeping CI identical to local `make lint`.
+        run: make lint

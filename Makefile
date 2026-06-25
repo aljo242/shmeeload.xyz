@@ -50,7 +50,7 @@ endif
 ###                                Linting                                  ###
 ###############################################################################
 golangci_lint_cmd=golangci-lint
-golangci_version=v2.1.6
+golangci_version=v2.12.2
 
 lint:
 	@echo "--> Running linter"

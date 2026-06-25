@@ -1,0 +1,10 @@
+.git
+.github
+deploy
+static
+server
+coverage.out
+coverage.html
+*.test
+web_res/node_modules
+web_res/dist
