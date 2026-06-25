@@ -4,7 +4,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 
 	"github.com/aljo242/chef"
 	"github.com/aljo242/ip_util"
@@ -250,5 +252,19 @@ func main() {
 	log.Printf("main: starting HTTP server...")
 	srv := initServer()
 	running := make(chan struct{})
+
+	// Trigger a graceful shutdown on SIGINT/SIGTERM (e.g. `docker stop`), so the
+	// server drains in-flight requests instead of being SIGKILLed after a timeout.
+	go func() {
+		<-running // wait until the server is actually running before allowing Quit
+		sig := make(chan os.Signal, 1)
+		signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
+		s := <-sig
+		log.Info().Str("signal", s.String()).Msg("shutdown signal received")
+		if err := srv.Quit(); err != nil {
+			log.Error().Err(err).Msg("error initiating server shutdown")
+		}
+	}()
+
 	srv.Run(running)
 }

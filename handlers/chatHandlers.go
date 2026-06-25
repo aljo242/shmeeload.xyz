@@ -21,7 +21,7 @@ func ChatHomeHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
 				wantFile := filepath.Join(htmlDir, "chat.html")
 				if _, err := os.Stat(wantFile); os.IsNotExist(err) {
 					w.WriteHeader(http.StatusNotFound)
-					log.Fatal().Err(err).Str("Filename", wantFile).Msg("Error finding file")
+					log.Error().Err(err).Str("Filename", wantFile).Msg("Error finding file")
 					return
 				}
 
