@@ -1,6 +1,6 @@
 module github.com/aljo242/shmeeload.xyz
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/aljo242/chef v0.0.0-20210403133720-3883e581c2b9
