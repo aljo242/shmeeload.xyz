@@ -1,0 +1,11 @@
+{
+    "host": "192.168.68.56:8080",
+    "port": "8080",
+    "IP": "0.0.0.0",
+    "chooseIP": false,
+    "secure": false,
+    "debugLog": true,
+    "shutdownCode": 0,
+    "userShutdown": false,
+    "cacheMaxAge": 0
+}
