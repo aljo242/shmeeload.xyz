@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -16,7 +18,7 @@ const (
 	// Time allowed to read the next pong message from peer
 	pongWait = 60 * time.Second
 
-	// Send pints to peer with this period. Must be less thatn pong Wait
+	// Send pings to peer with this period. Must be less than pong wait.
 	pingPeriod = (pongWait * 9) / 10
 
 	// Maximum message size allowed from peer
@@ -31,6 +33,22 @@ var (
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
+	CheckOrigin:     sameOriginCheck,
+}
+
+// sameOriginCheck only allows websocket upgrades whose Origin host matches the
+// request host, preventing cross-site websocket hijacking. Requests without an
+// Origin header (non-browser clients) are allowed.
+func sameOriginCheck(r *http.Request) bool {
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		return true
+	}
+	u, err := url.Parse(origin)
+	if err != nil {
+		return false
+	}
+	return strings.EqualFold(u.Host, r.Host)
 }
 
 // Client is a middleman between the websocket connection and the hub

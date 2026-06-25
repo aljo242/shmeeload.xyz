@@ -1,20 +1,8 @@
 const DEFAULT_NAME : string = "anon";
 const DEFAULT_DECODING : string = "utf-8";
 
-// TODO MAKE CheckHTTPS() func
-const currentURL = window.location.href;
-console.log(currentURL)
-let websocketPrefix = ""
-if (currentURL.includes("http:/")) {
-    console.log("USING HTTP")
-    websocketPrefix = "ws://"
-}
-if (currentURL.includes("https://")) {
-    console.log("USING HTTPS")
-    websocketPrefix = "wss://"
-}
-
-console.log(websocketPrefix)
+// Use the page's own scheme to pick the matching websocket scheme.
+const websocketPrefix = window.location.protocol === "https:" ? "wss://" : "ws://";
 
 
 if (!("TextEncoder" in window)) {
@@ -54,7 +42,7 @@ class User {
     }
 
     signIn() {
-        const signInMessage = encode(`<b>${this.userName} signed in.</b>`);
+        const signInMessage = encode(`${this.userName} signed in.`);
         this.broadcast(signInMessage);
     }
 
@@ -138,9 +126,10 @@ window.onload = () => {
         conn.onmessage = (evt) => {
             //console.log(evt);
             let buf = evt.data as ArrayBuffer;
-            //let message : string[] = decode(evt.data).split("\n");
             let item = document.createElement("div");
-            item.innerHTML = `${buf}`;
+            // Render as text, never HTML: messages are broadcast verbatim from
+            // other clients, so innerHTML here would be a stored XSS.
+            item.textContent = decode(buf);
             appendLog(item);
         };
         conn.onclose = (evt) => {

@@ -9,10 +9,8 @@ import (
 func setupLogger(cfg chef.ServerConfig) {
 	if cfg.DebugLog {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
-		log.Debug().Msg("log level is DEBUG")
 	} else {
-		zerolog.SetGlobalLevel(zerolog.ErrorLevel)
-		log.Error().Msg("log level is ERROR")
-
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	}
+	log.Info().Str("level", zerolog.GlobalLevel().String()).Msg("logger configured")
 }

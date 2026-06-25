@@ -165,6 +165,7 @@ func initServer() *chef.Server {
 
 	// create new gorilla mux router and attach each path to its handler
 	r := mux.NewRouter()
+	r.Use(securityHeaders)
 	r.HandleFunc("/home", handlers.HomeHandler(cfg.CacheMaxAge))
 	r.HandleFunc("/", handlers.RedirectHome())
 	r.HandleFunc("/static/js/{scriptname}", handlers.ScriptsHandler(cfg.CacheMaxAge))
