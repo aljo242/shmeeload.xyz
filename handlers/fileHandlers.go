@@ -1,276 +1,66 @@
 package handlers
 
-import (
-	"net/http"
-	"os"
-	"path/filepath"
-	"strconv"
+import "net/http"
 
-	"github.com/rs/zerolog/log"
-)
-
-const (
-	htmlDir      string = "./static/html/"
-	jsDir        string = "./static/js/"
-	cssDir       string = "./static/css/"
-	tsDir        string = "./static/src/"
-	imgDir       string = "./static/img/"
-	modelDir     string = "./static/model/"
-	miscFilesDir string = "./static/files"
-	rootDir      string = "./"
-)
-
-// ScriptsHandler takes a script name and
-func ScriptsHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
+// ScriptsHandler serves compiled JavaScript and source maps from the js dir.
+func ScriptsHandler(cacheMaxAge int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		filename := filepath.Base(r.URL.Path)
-		log.Debug().Str("Handler", "ScriptsHandler").Str("Filename", filename).Msg("incoming request")
-		if r.Method == http.MethodGet {
-			wantFile := filepath.Join(jsDir, filename)
-			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
-				w.WriteHeader(http.StatusNotFound)
-				log.Debug().Err(err).Str("Filename", wantFile).Msg("Error finding file")
-				return
-			}
-
-			switch filepath.Ext(wantFile) {
-			case ".js":
-				w.Header().Set("Content-Type", "application/javascript; charset=UTF-8")
-			case ".js.map":
-				w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-			}
-
-			w.Header().Set("Cache-Control", "max-age="+strconv.FormatInt(int64(cacheMaxAge), 10))
-			http.ServeFile(w, r, wantFile)
-
-		} else {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
+		serveFile(w, r, "ScriptsHandler", jsDir(), cacheMaxAge, scriptContentTypes)
 	}
 }
 
-// CSSHandler takes a script name and
-func CSSHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
+// CSSHandler serves stylesheets from the css dir.
+func CSSHandler(cacheMaxAge int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		filename := filepath.Base(r.URL.Path)
-		log.Debug().Str("Handler", "CSSHandler").Str("Filename", filename).Msg("incoming request")
-
-		if r.Method == http.MethodGet {
-			wantFile := filepath.Join(cssDir, filename)
-			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
-				w.WriteHeader(http.StatusNotFound)
-				log.Debug().Err(err).Str("Filename", wantFile).Msg("Error finding file")
-				return
-			}
-
-			w.Header().Set("Content-Type", "text/css; charset=UTF-8")
-			w.Header().Set("Cache-Control", "max-age="+strconv.FormatInt(int64(cacheMaxAge), 10))
-			http.ServeFile(w, r, wantFile)
-
-		} else {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
+		serveFile(w, r, "CSSHandler", cssDir(), cacheMaxAge, cssContentTypes)
 	}
 }
 
-// HTMLHandler takes a script name and
-func HTMLHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
+// HTMLHandler serves prepared HTML fragments from the html dir.
+func HTMLHandler(cacheMaxAge int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		filename := filepath.Base(r.URL.Path)
-		log.Debug().Str("Handler", "HTMLHandler").Str("Filename", filename).Msg("incoming request")
-
-		if r.Method == http.MethodGet {
-			wantFile := filepath.Join(htmlDir, filename)
-			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
-				w.WriteHeader(http.StatusNotFound)
-				log.Debug().Err(err).Str("Filename", wantFile).Msg("Error finding file")
-				return
-			}
-
-			w.Header().Set("Content-Type", "text/html; charset=UTF-8")
-			w.Header().Set("Cache-Control", "max-age="+strconv.FormatInt(int64(cacheMaxAge), 10))
-			http.ServeFile(w, r, wantFile)
-
-		} else {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
+		serveFile(w, r, "HTMLHandler", htmlDir(), cacheMaxAge, htmlContentTypes)
 	}
 }
 
-// TypeScriptHandler takes a script name and returns a HandleFunc
-func TypeScriptHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
+// TypeScriptHandler serves the TypeScript sources from the src dir as plain text.
+func TypeScriptHandler(cacheMaxAge int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		filename := filepath.Base(r.URL.Path)
-		log.Debug().Str("Handler", "TypeScriptHandler").Str("Filename", filename).Msg("incoming request")
-
-		if r.Method == http.MethodGet {
-			wantFile := filepath.Join(tsDir, filename)
-			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
-				w.WriteHeader(http.StatusNotFound)
-				log.Debug().Err(err).Str("Filename", wantFile).Msg("Error finding file")
-				return
-			}
-
-			w.Header().Set("Content-Type", "text/plain; charset=UTF-8")
-			w.Header().Set("Cache-Control", "max-age="+strconv.FormatInt(int64(cacheMaxAge), 10))
-			http.ServeFile(w, r, wantFile)
-
-		} else {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
+		serveFile(w, r, "TypeScriptHandler", tsDir(), cacheMaxAge, tsContentTypes)
 	}
 }
 
-// ManifestHandler serves manifest.json
-func ManifestHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
+// ManifestHandler serves manifest.json from the site root.
+func ManifestHandler(cacheMaxAge int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		filename := filepath.Base(r.URL.Path)
-
-		if r.Method == http.MethodGet {
-			log.Debug().Str("Handler", "ManifestHandler").Str("Filename", filename).Msg("incoming request")
-			wantFile := filepath.Join(rootDir, filename)
-			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
-				w.WriteHeader(http.StatusNotFound)
-				log.Debug().Err(err).Str("Filename", wantFile).Msg("Error finding file")
-				return
-			}
-
-			w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-			w.Header().Set("Cache-Control", "max-age="+strconv.FormatInt(int64(cacheMaxAge), 10))
-			http.ServeFile(w, r, wantFile)
-
-		} else {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
+		serveFile(w, r, "ManifestHandler", siteRoot, cacheMaxAge, jsonContentTypes)
 	}
 }
 
-// ServiceWorkerHandler serves serviceWorker.js
-func ServiceWorkerHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
+// ServiceWorkerHandler serves serviceWorker.js (and its map) from the site root.
+func ServiceWorkerHandler(cacheMaxAge int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		filename := filepath.Base(r.URL.Path)
-
-		if r.Method == http.MethodGet {
-			log.Debug().Str("Handler", "ServiceWorkerHandler").Str("Filename", filename).Msg("incoming request")
-			wantFile := filepath.Join(rootDir, filename)
-			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
-				w.WriteHeader(http.StatusNotFound)
-				log.Debug().Err(err).Str("Filename", wantFile).Msg("Error finding file")
-				return
-			}
-			switch filepath.Ext(wantFile) {
-			case ".js":
-				w.Header().Set("Content-Type", "application/javascript; charset=UTF-8")
-			case ".js.map":
-				w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-			}
-			w.Header().Set("Cache-Control", "max-age="+strconv.FormatInt(int64(cacheMaxAge), 10))
-			http.ServeFile(w, r, wantFile)
-
-		} else {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
+		serveFile(w, r, "ServiceWorkerHandler", siteRoot, cacheMaxAge, scriptContentTypes)
 	}
 }
 
-// ImageHandler returns a HandleFunc to serve image files
-func ImageHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
+// ImageHandler serves image files from the img dir.
+func ImageHandler(cacheMaxAge int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		filename := filepath.Base(r.URL.Path)
-
-		if r.Method == http.MethodGet {
-			wantFile := filepath.Join(imgDir, filename)
-			log.Debug().Str("Handler", "ImageHandler").Str("Filename", wantFile).Msg("incoming request")
-
-			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
-				w.WriteHeader(http.StatusNotFound)
-				log.Debug().Err(err).Str("Filename", wantFile).Msg("Error finding file")
-				return
-			}
-
-			switch filepath.Ext(wantFile) {
-			case ".jpg", ".jpeg":
-				w.Header().Set("Content-Type", "image/jpeg")
-			case ".png":
-				w.Header().Set("Content-Type", "image/png")
-			case ".gif":
-				w.Header().Set("Content-Type", "image/gif")
-			case ".ico":
-				w.Header().Set("Content-Type", "image/x-icon")
-			}
-			w.Header().Set("Cache-Control", "max-age="+strconv.FormatInt(int64(cacheMaxAge), 10))
-			http.ServeFile(w, r, wantFile)
-
-		} else {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
+		serveFile(w, r, "ImageHandler", imgDir(), cacheMaxAge, imageContentTypes)
 	}
 }
 
-// ModelHandler returns a HandleFunc to serve model files
-func ModelHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
+// ModelHandler serves 3D model files from the model dir.
+func ModelHandler(cacheMaxAge int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		filename := filepath.Base(r.URL.Path)
-
-		if r.Method == http.MethodGet {
-			wantFile := filepath.Join(modelDir, filename)
-			log.Debug().Str("Handler", "ModelHandler").Str("Filename", wantFile).Msg("incoming request")
-
-			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
-				w.WriteHeader(http.StatusNotFound)
-				log.Debug().Err(err).Str("Filename", wantFile).Msg("Error finding file")
-				return
-			}
-
-			switch filepath.Ext(wantFile) {
-			case ".dae":
-				w.Header().Set("Content-Type", "model/dae")
-			case ".obj":
-				w.Header().Set("Content-Type", "model/obj")
-			case ".gltf":
-				w.Header().Set("Content-Type", "model/gltf")
-			}
-			w.Header().Set("Cache-Control", "max-age="+strconv.FormatInt(int64(cacheMaxAge), 10))
-			http.ServeFile(w, r, wantFile)
-
-		} else {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
+		serveFile(w, r, "ModelHandler", modelDir(), cacheMaxAge, modelContentTypes)
 	}
 }
 
-// MiscFileHandler serves file requests
-func MiscFileHandler(cacheMaxAge int) func(http.ResponseWriter, *http.Request) {
+// MiscFileHandler serves miscellaneous downloadable files from the files dir.
+func MiscFileHandler(cacheMaxAge int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		filename := filepath.Base(r.URL.Path)
-
-		if r.Method == http.MethodGet {
-			wantFile := filepath.Join(miscFilesDir, filename)
-			log.Debug().Str("Handler", "MiscFileHandler").Str("requested file", filename).Msg("incoming request")
-
-			if _, err := os.Stat(wantFile); os.IsNotExist(err) {
-				w.WriteHeader(http.StatusNotFound)
-				log.Debug().Err(err).Str("Filename", wantFile).Msg("Error finding file")
-				return
-			}
-
-			if filepath.Ext(wantFile) == ".pdf" {
-				w.Header().Set("Content-Type", "application/pdf")
-			}
-			w.Header().Set("Cache-Control", "max-age="+strconv.FormatInt(int64(cacheMaxAge), 10))
-			http.ServeFile(w, r, wantFile)
-
-		} else {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
+		serveFile(w, r, "MiscFileHandler", miscFilesDir(), cacheMaxAge, miscContentTypes)
 	}
 }
