@@ -56,6 +56,8 @@ install it on each device once.
 - The site renders with origin-relative URLs, so the same deployment works at
   `https://shmee.lan`, `http://192.168.68.56:8080`, or any future hostname with no
   reconfiguration.
-- The memory cap in `docker-compose.yml` is currently discarded: the Pi's kernel needs
-  the memory cgroup enabled (`cgroup_enable=memory cgroup_memory=1` on the kernel
-  cmdline, then reboot). The CPU cap works without it.
+- The container's CPU and memory caps are enforced. The Pi's kernel has the memory cgroup
+  enabled via `cgroup_enable=memory cgroup_memory=1` appended to
+  `/boot/firmware/cmdline.txt` (then a reboot) — without it the Raspberry Pi firmware
+  disables the memory controller by default and Docker silently drops the memory limit.
+- CI (build/test/lint) runs on a self-hosted x86 runner, not GitHub-hosted runners.

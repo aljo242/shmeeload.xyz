@@ -11,7 +11,7 @@ require (
 )
 
 require (
-	github.com/glendc/go-external-ip v0.0.0-20200601212049-c872357d968e // indirect
+	github.com/glendc/go-external-ip v0.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.15 // indirect
 	github.com/mattn/go-isatty v0.0.22 // indirect
 	golang.org/x/sys v0.46.0 // indirect
