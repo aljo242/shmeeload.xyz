@@ -35,14 +35,11 @@ func ExecuteTemplateHTML(cfg chef.ServerConfig, path, newPath string) error {
 		return fmt.Errorf("error creating template : %w", err)
 	}
 
-	var httpPrefix string
-	if cfg.HTTPS {
-		httpPrefix = "https://"
-	} else {
-		httpPrefix = "http://"
-	}
-
-	p := htmlTemplateInfo{httpPrefix + cfg.Host}
+	// Use origin-relative URLs so the rendered pages work behind any host,
+	// port, or scheme (direct LAN, reverse proxy, tailnet, public domain)
+	// without rebuilding. An empty Host makes <base href="{{.Host}}/"> render
+	// as <base href="/">, so every asset path resolves against the current origin.
+	p := htmlTemplateInfo{Host: ""}
 
 	err = tpl.Execute(newFile, p)
 	if err != nil {
