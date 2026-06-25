@@ -63,6 +63,12 @@ linters:
       - legacy
       - std-error-handling
     rules:
+      # Test files routinely repeat literal strings and read/write files from
+      # variable paths; those checks are noise here, not real risks.
+      - linters:
+          - goconst
+          - gosec
+        path: _test\.go
       - linters:
           - gosec
         text: Use of weak random number generator

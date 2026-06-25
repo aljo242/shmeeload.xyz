@@ -7,31 +7,33 @@ on:
     branches: [ master ]
 
 jobs:
-
   build-and-test:
-    strategy: 
-      matrix:
-        go-version: [1.17.x]
-  
     runs-on: ubuntu-latest
     steps:
-    - name: Set up Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: ${{ matrix.go-version }}
-    
-    - name: Checkout Code
-      uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Build
-      run: make build
-      
-    - name: Test
-      run: make test
-      
-    - name: Run Gosec Security Scanner
-      uses: securego/gosec@master
-      with: 
-        args: -no-fail ./...
-      
-      
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install TypeScript
+        # make build runs `tsc`; install the real compiler globally so it is on PATH.
+        run: npm install -g typescript@^4.2.3
+
+      - name: Build
+        run: make build
+
+      - name: Test
+        run: make test
+
+      - name: Lint
+        # Installs and runs golangci-lint (which includes gosec) per the Makefile,
+        # keeping CI identical to local `make lint`.
+        run: make lint

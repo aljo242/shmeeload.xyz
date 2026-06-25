@@ -11,7 +11,7 @@ COPY web_res/ ./
 RUN node_modules/typescript/bin/tsc
 
 # ---- Stage 2: build the Go server (static, no CGO) ----
-FROM golang:1.24-alpine AS build
+FROM golang:1.25-alpine AS build
 WORKDIR /src
 RUN apk add --no-cache git
 COPY go.mod go.sum ./
