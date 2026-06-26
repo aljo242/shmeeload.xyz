@@ -10,12 +10,14 @@ require (
 	github.com/klauspost/compress v1.18.6
 	github.com/quic-go/quic-go v0.60.0
 	github.com/rs/zerolog v1.35.1
+	github.com/tdewolff/minify/v2 v2.24.13
 )
 
 require (
 	github.com/mattn/go-colorable v0.1.15 // indirect
 	github.com/mattn/go-isatty v0.0.22 // indirect
 	github.com/quic-go/qpack v0.6.0 // indirect
+	github.com/tdewolff/parse/v2 v2.8.12 // indirect
 	golang.org/x/crypto v0.51.0 // indirect
 	golang.org/x/image v0.43.0 // indirect
 	golang.org/x/net v0.55.0 // indirect
