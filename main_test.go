@@ -7,7 +7,11 @@ import (
 )
 
 func TestBuildRouter(t *testing.T) {
-	r := buildRouter(Config{CacheMaxAge: 0}, newHub())
+	site, err := newStaticSite(siteFS(), 0)
+	if err != nil {
+		t.Fatalf("newStaticSite: %v", err)
+	}
+	r := buildRouter(Config{CacheMaxAge: 0}, newHub(), site)
 
 	cases := []struct {
 		name string

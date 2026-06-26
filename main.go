@@ -40,21 +40,23 @@ func fatal(msg string, err error) {
 // endpoint behind shared middleware. Static assets (/static/*, /files/*,
 // /manifest.json, …) are served straight from the embedded FS; the few pretty
 // page URLs map to their HTML file, and legacy placeholders redirect.
-func buildRouter(cfg Config, hub *Hub) *mux.Router {
+func buildRouter(cfg Config, hub *Hub, site *staticSite) *mux.Router {
 	r := mux.NewRouter()
 	r.Use(securityHeaders)
 
-	site := siteFS()
-
-	page := func(name string) http.HandlerFunc {
+	// serveAsset serves a named asset (GET/HEAD only), 404ing if absent.
+	serveAsset := func(name string) http.HandlerFunc {
 		return func(w http.ResponseWriter, rq *http.Request) {
 			if rq.Method != http.MethodGet && rq.Method != http.MethodHead {
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
-			http.ServeFileFS(w, rq, site, name)
+			if !site.serve(w, rq, name) {
+				http.NotFound(w, rq)
+			}
 		}
 	}
+	page := serveAsset
 	underConstruction := func(w http.ResponseWriter, rq *http.Request) {
 		http.Redirect(w, rq, "/under-construction", http.StatusTemporaryRedirect)
 	}
@@ -80,7 +82,15 @@ func buildRouter(cfg Config, hub *Hub) *mux.Router {
 	r.HandleFunc("/chat/signin", underConstruction)
 
 	// everything else is a static asset from the embedded site
-	r.PathPrefix("/").Handler(http.FileServerFS(site))
+	r.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, rq *http.Request) {
+		if rq.Method != http.MethodGet && rq.Method != http.MethodHead {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		if !site.serve(w, rq, rq.URL.Path) {
+			http.NotFound(w, rq)
+		}
+	})
 
 	return r
 }
@@ -94,12 +104,17 @@ func initServer() (*http.Server, *Hub, Config) {
 	}
 	log.Setup(cfg.DebugLog)
 
+	site, err := newStaticSite(siteFS(), cfg.CacheMaxAge)
+	if err != nil {
+		fatal("error indexing embedded site", err)
+	}
+
 	hub := newHub()
 	go hub.run()
 
 	srv := &http.Server{
 		Addr:              cfg.IP + ":" + cfg.Port,
-		Handler:           buildRouter(cfg, hub),
+		Handler:           buildRouter(cfg, hub, site),
 		ReadTimeout:       15 * time.Second,
 		ReadHeaderTimeout: 15 * time.Second,
 		WriteTimeout:      15 * time.Second,
