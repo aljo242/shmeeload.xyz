@@ -23,10 +23,15 @@ RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/server 
 
 # ---- Stage 3: runtime (the site is embedded in the binary) ----
 FROM alpine:3.20@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc
-RUN apk add --no-cache ca-certificates wget && adduser -D -u 10001 app
+RUN apk add --no-cache ca-certificates wget \
+	&& adduser -D -u 10001 app \
+	&& mkdir -p /data && chown app:app /data
 WORKDIR /app
 COPY --from=build /out/server /app/server
 USER app
-EXPOSE 8080
+# /data holds the persisted self-signed TLS cert (a named volume inherits this
+# app-owned dir on first mount, so the non-root process can write it).
+VOLUME ["/data"]
+EXPOSE 443
 ENTRYPOINT ["/app/server"]
 CMD ["-c", "/app/config.json"]

@@ -104,6 +104,12 @@ func initServer() (*http.Server, *Hub, Config) {
 	}
 	log.Setup(cfg.DebugLog)
 
+	if cfg.HTTPS {
+		if err := ensureCert(cfg.CertFile, cfg.KeyFile, cfg.TLSHosts); err != nil {
+			fatal("error preparing TLS certificate", err)
+		}
+	}
+
 	site, err := newStaticSite(siteFS(), cfg.CacheMaxAge)
 	if err != nil {
 		fatal("error indexing embedded site", err)

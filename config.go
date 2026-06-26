@@ -8,14 +8,14 @@ import (
 
 // Config is the server configuration loaded from a JSON file.
 type Config struct {
-	Port        string `json:"port"`
-	IP          string `json:"IP"`
-	ChooseIP    bool   `json:"chooseIP"`
-	HTTPS       bool   `json:"secure"`
-	DebugLog    bool   `json:"debugLog"`
-	CacheMaxAge int    `json:"cacheMaxAge"`
-	CertFile    string `json:"certFile"`
-	KeyFile     string `json:"keyFile"`
+	Port        string   `json:"port"`
+	IP          string   `json:"IP"`
+	HTTPS       bool     `json:"secure"`
+	DebugLog    bool     `json:"debugLog"`
+	CacheMaxAge int      `json:"cacheMaxAge"`
+	CertFile    string   `json:"certFile"`
+	KeyFile     string   `json:"keyFile"`
+	TLSHosts    []string `json:"tlsHosts"` // SANs for the self-signed cert generated when secure is true
 }
 
 // LoadConfig reads and parses the JSON config at path. Unlike the previous
