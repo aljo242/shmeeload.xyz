@@ -5,7 +5,6 @@ import (
 	"compress/gzip"
 	"crypto/sha256"
 	"encoding/hex"
-	"image"
 	"io/fs"
 	"mime"
 	"net/http"
@@ -13,12 +12,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/HugoSmits86/nativewebp"
 	"github.com/andybalholm/brotli"
 	"github.com/klauspost/compress/zstd"
-
-	_ "image/gif"
-	_ "image/png"
 )
 
 const (
@@ -35,7 +30,8 @@ type variant struct {
 
 // staticAsset is one served file, prepared once at startup: its content type, a
 // content-hash ETag, the raw bytes, precomputed brotli/zstd/gzip variants (for
-// compressible types), and a WebP variant (for PNG/GIF that shrink).
+// compressible types), and a WebP variant (the build-time "<name>.webp" sibling,
+// when one was generated for a PNG/GIF).
 type staticAsset struct {
 	contentType string
 	etag        string
@@ -58,34 +54,49 @@ func newStaticSite(fsys fs.FS, cacheMaxAge int) (*staticSite, error) {
 		assets:       make(map[string]*staticAsset),
 		cacheControl: "public, max-age=" + strconv.Itoa(cacheMaxAge),
 	}
+	// First pass: read every file. WebP variants are precomputed at build time
+	// (see cmd/genwebp) and embedded as "<name>.webp" siblings, so collect the
+	// whole tree before pairing each image with its sibling.
+	raw := make(map[string][]byte)
 	err := fs.WalkDir(fsys, ".", func(p string, d fs.DirEntry, err error) error {
 		if err != nil || d.IsDir() {
 			return err
 		}
-		raw, err := fs.ReadFile(fsys, p)
+		b, err := fs.ReadFile(fsys, p)
 		if err != nil {
 			return err
 		}
+		raw[p] = b
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	for p, b := range raw {
+		// ".webp" files are attached to their source image below, not served on their own.
+		if strings.HasSuffix(p, ".webp") {
+			continue
+		}
 		ct := mime.TypeByExtension(path.Ext(p))
 		if ct == "" {
-			ct = http.DetectContentType(raw)
+			ct = http.DetectContentType(b)
 		}
-		a := &staticAsset{contentType: ct, etag: etagOf(raw), raw: raw}
+		a := &staticAsset{contentType: ct, etag: etagOf(b), raw: b}
 		if compressible(ct) {
-			a.br = smaller(brotliBytes(raw), raw)
-			a.zst = smaller(zstdBytes(raw), raw)
-			a.gz = smaller(gzipBytes(raw), raw)
+			a.br = smaller(brotliBytes(b), b)
+			a.zst = smaller(zstdBytes(b), b)
+			a.gz = smaller(gzipBytes(b), b)
 		}
-		// Lossless WebP beats PNG/GIF; for JPEG (lossy photos) it is larger, so skip it.
+		// Pair PNG/GIF with the smaller build-time WebP sibling, when present.
 		if ct == mimePNG || ct == mimeGIF {
-			if wb := webpBytes(raw); smaller(wb, raw) != nil {
+			if wb, ok := raw[p+".webp"]; ok {
 				a.webp = &variant{body: wb, etag: etagOf(wb)}
 			}
 		}
 		s.assets[p] = a
-		return nil
-	})
-	return s, err
+	}
+	return s, nil
 }
 
 // serve writes the asset at urlPath if present (returning true). It serves WebP
@@ -232,17 +243,4 @@ func zstdBytes(raw []byte) []byte {
 	}
 	defer enc.Close()
 	return enc.EncodeAll(raw, nil)
-}
-
-// webpBytes losslessly re-encodes a PNG/GIF as WebP, or returns nil on failure.
-func webpBytes(raw []byte) []byte {
-	img, _, err := image.Decode(bytes.NewReader(raw))
-	if err != nil {
-		return nil
-	}
-	var buf bytes.Buffer
-	if err := nativewebp.Encode(&buf, img, nil); err != nil {
-		return nil
-	}
-	return buf.Bytes()
 }
