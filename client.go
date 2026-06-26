@@ -9,6 +9,7 @@ import (
 
 	"github.com/aljo242/shmeeload.xyz/internal/log"
 	"github.com/gorilla/websocket"
+	"golang.org/x/time/rate"
 )
 
 const (
@@ -60,6 +61,14 @@ type Client struct {
 
 	// Buffered channel of outbound messages
 	send chan []byte
+
+	// ip and conns release this connection's slot in the per-IP/global cap when
+	// the connection closes.
+	ip    string
+	conns *connLimiter
+
+	// msgLimiter throttles inbound chat messages from this connection.
+	msgLimiter *rate.Limiter
 }
 
 // readPump pumps messages from the websocket connection to the hub.
@@ -74,6 +83,7 @@ func (c *Client) readPump() {
 		case c.hub.unregister <- c:
 		case <-c.hub.quit:
 		}
+		c.conns.release(c.ip)
 		if err := c.conn.Close(); err != nil {
 			log.Error("error closing WebSocket connection", "err", err)
 		}
@@ -94,6 +104,13 @@ func (c *Client) readPump() {
 				log.Error("unexpected websocket close", "err", err)
 			}
 			break
+		}
+
+		// Drop messages from a connection that exceeds its rate instead of
+		// disconnecting, so a brief burst is tolerated but a flood cannot spam
+		// the broadcast.
+		if !c.msgLimiter.Allow() {
+			continue
 		}
 
 		message = bytes.TrimSpace(bytes.ReplaceAll(message, newline, space))
@@ -172,15 +189,30 @@ func (c *Client) writePump() {
 }
 
 // serveWs handles websocket requests from the peer.
-func serveWs(hub *Hub) func(http.ResponseWriter, *http.Request) {
+func serveWs(hub *Hub, conns *connLimiter) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ip := clientIP(r)
+		// Cap concurrent connections before upgrading so a flood is rejected cheaply.
+		if !conns.acquire(ip) {
+			http.Error(w, "too many connections", http.StatusTooManyRequests)
+			return
+		}
+
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
+			conns.release(ip)
 			log.Error("error upgrading to websocket", "err", err)
 			return
 		}
 
-		client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256)}
+		client := &Client{
+			hub:        hub,
+			conn:       conn,
+			send:       make(chan []byte, 256),
+			ip:         ip,
+			conns:      conns,
+			msgLimiter: rate.NewLimiter(wsMsgPerSec, wsMsgBurst),
+		}
 
 		// Start the pumps, then register: the writePump must be ready to drain the
 		// send channel before the hub can target this client with a broadcast.

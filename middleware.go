@@ -26,6 +26,16 @@ func securityHeaders(next http.Handler) http.Handler {
 	})
 }
 
+// hsts tells browsers to use HTTPS for this host for two years. Only safe with a
+// publicly-trusted cert, so it is gated behind the HSTS config flag and applied
+// only then (see buildRouter).
+func hsts(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
+		next.ServeHTTP(w, r)
+	})
+}
+
 // altSvc advertises HTTP/3 availability on the given port via the Alt-Svc header
 // so capable clients upgrade from TCP (h1/h2) to QUIC (h3).
 func altSvc(port string) func(http.Handler) http.Handler {

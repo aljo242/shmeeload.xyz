@@ -16,6 +16,7 @@ type Config struct {
 	CertFile    string   `json:"certFile"`
 	KeyFile     string   `json:"keyFile"`
 	TLSHosts    []string `json:"tlsHosts"` // SANs for the self-signed cert generated when secure is true
+	HSTS        bool     `json:"hsts"`     // send Strict-Transport-Security; enable only with a publicly-trusted cert
 }
 
 // LoadConfig reads and parses the JSON config at path. Unlike the previous

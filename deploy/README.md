@@ -71,6 +71,11 @@ only trust it once per device. It is valid for 10 years.
 
 - The container runs read-only and unprivileged (`cap_drop: ALL`, only
   `NET_BIND_SERVICE` to bind :443), with the cert volume and `/tmp` writable.
+- Abuse controls (for public exposure): per-IP HTTP rate limiting, plus per-IP
+  and global caps on concurrent chat connections and a per-connection chat
+  message-rate limit. Set `"hsts": true` in the config once a publicly-trusted
+  cert is in play to send `Strict-Transport-Security` (leave it off on LAN with
+  the self-signed cert).
 - Static assets are minified (HTML/CSS/JS) and served with precomputed
   brotli/zstd/gzip, build-time AVIF/WebP for images, and content-hash ETags
   (`If-None-Match` → 304). `cacheMaxAge` in the config tunes `Cache-Control`.

@@ -12,6 +12,7 @@ require (
 	github.com/quic-go/quic-go v0.60.0
 	github.com/rs/zerolog v1.35.1
 	github.com/tdewolff/minify/v2 v2.24.13
+	golang.org/x/time v0.15.0
 )
 
 require (
