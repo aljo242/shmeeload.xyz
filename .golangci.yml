@@ -72,12 +72,12 @@ linters:
       - linters:
           - gosec
         text: Use of weak random number generator
-      # cmd/genwebp is a build-time tool that walks and rewrites the app's own
+      # cmd/genimg is a build-time tool that walks and rewrites the app's own
       # site tree (not user input), so the file-path/TOCTOU/perms warnings on
       # ReadFile/WriteFile/WalkDir are noise here, not real risks.
       - linters:
           - gosec
-        path: cmd/genwebp/
+        path: cmd/genimg/
       - linters:
           - golint
         text: comment on exported var

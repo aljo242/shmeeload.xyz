@@ -8,7 +8,8 @@ shmeechat websocket hub. The frontend is TypeScript compiled to JavaScript at bu
 
 - The whole site is embedded with `//go:embed`; the binary is the only artifact
 - Text assets minified (HTML/CSS/JS) and served with precomputed brotli/zstd/gzip;
-  build-time WebP for images; content-hash ETags (`If-None-Match` → 304)
+  build-time AVIF/WebP for images (smallest accepted variant wins); content-hash
+  ETags (`If-None-Match` → 304)
 - Terminates TLS itself (self-signed cert), speaks HTTP/2, advertises HTTP/3 (QUIC)
 - WebSockets for shmeechat
 - Pages use origin-relative URLs, so the same build works at any host, port, or scheme
@@ -16,10 +17,10 @@ shmeechat websocket hub. The frontend is TypeScript compiled to JavaScript at bu
 ## Layout
 
 - `main.go` — config load, cert setup, routing, HTTP/2 + HTTP/3 serving, graceful shutdown
-- `staticsite.go` — the embedded static handler (compression + WebP + ETag negotiation)
+- `staticsite.go` — the embedded static handler (minify + compression + AVIF/WebP + ETag)
 - `tls.go` — self-signed certificate generation
 - `embed.go` — `//go:embed site` and the embedded filesystem
-- `cmd/genwebp/` — build-time tool that generates the WebP image variants
+- `cmd/genimg/` — build-time tool that generates the WebP/AVIF image variants
 - `handlers/` — the `/donate` handler (the only remaining dynamic file handler)
 - `client.go`, `hub.go` — the websocket chat hub
 - `site/` — the embedded site tree (HTML pages, `static/`, `files/`)
@@ -31,15 +32,16 @@ shmeechat websocket hub. The frontend is TypeScript compiled to JavaScript at bu
 Requires Go and the TypeScript compiler (`tsc`).
 
 ```sh
-make build    # genwebp + tsc + go build -> ./server
+make build    # genimg + tsc + go build -> ./server
 make test     # go test -race + coverage
 make lint     # golangci-lint (installs the pinned version)
 ```
 
 The server reads a JSON config (`-c <file>`, default `sample/sample_config.json`)
 controlling host/IP/port, the TLS toggle, cert paths and hostnames, cache max-age, and
-log level. At startup it indexes the embedded site, precomputes the compressed and WebP
-variants' bookkeeping, and (when TLS is on) ensures a self-signed certificate exists.
+log level. At startup it indexes the embedded site, minifies text, precomputes the
+compression variants, pairs each image with its embedded AVIF/WebP siblings, and (when
+TLS is on) ensures a self-signed certificate exists.
 
 ## Run it (Docker)
 
@@ -48,7 +50,7 @@ cd deploy
 docker compose up -d --build
 ```
 
-This builds the image (TypeScript compile + WebP image generation + static Go binary) and
+This builds the image (TypeScript compile + AVIF/WebP image generation + static Go binary) and
 serves the site over HTTPS. The single binary embeds the whole site and terminates TLS
 itself with a self-signed certificate, so there is no reverse proxy. See
 [deploy/README.md](deploy/README.md) for the full homelab setup (Raspberry Pi + Pi-hole

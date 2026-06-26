@@ -205,3 +205,56 @@ func TestWebPSiblingPairing(t *testing.T) {
 		t.Error("the .webp sibling should not be a standalone asset")
 	}
 }
+
+// TestImageNegotiation checks that serve() picks the smallest image variant the
+// client accepts, across AVIF, WebP, and the original.
+func TestImageNegotiation(t *testing.T) {
+	asset := func() *staticAsset {
+		return &staticAsset{
+			contentType: mimePNG,
+			etag:        `"png-etag"`,
+			raw:         []byte("the-raw-png-bytes"),
+			webp:        &variant{body: []byte("webp-bytes"), etag: `"webp-etag"`}, // 10 bytes
+			avif:        &variant{body: []byte("avif"), etag: `"avif-etag"`},       // 4 bytes (smallest)
+		}
+	}
+	s := &staticSite{
+		cacheControl: "public, max-age=3600",
+		assets:       map[string]*staticAsset{"static/img/x.png": asset()},
+	}
+
+	cases := []struct {
+		name, accept, wantCT, wantBody string
+	}{
+		{"avif preferred when accepted and smallest", "image/avif,image/webp,*/*", mimeAVIF, "avif"},
+		{"webp when avif not accepted", "image/webp,*/*", mimeWebP, "webp-bytes"},
+		{"original when neither accepted", "image/png,*/*", mimePNG, "the-raw-png-bytes"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			rr := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodGet, "/static/img/x.png", nil)
+			req.Header.Set("Accept", c.accept)
+			s.serve(rr, req, req.URL.Path)
+			if got := rr.Header().Get("Content-Type"); got != c.wantCT {
+				t.Errorf("content-type = %q, want %q", got, c.wantCT)
+			}
+			if got := rr.Body.String(); got != c.wantBody {
+				t.Errorf("body = %q, want %q", got, c.wantBody)
+			}
+		})
+	}
+
+	t.Run("serves webp when it is smaller than avif even if both accepted", func(t *testing.T) {
+		a := asset()
+		a.avif = &variant{body: []byte("a-much-larger-avif-body"), etag: `"avif-etag"`}
+		small := &staticSite{cacheControl: "x", assets: map[string]*staticAsset{"static/img/x.png": a}}
+		rr := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/static/img/x.png", nil)
+		req.Header.Set("Accept", "image/avif,image/webp,*/*")
+		small.serve(rr, req, req.URL.Path)
+		if got := rr.Header().Get("Content-Type"); got != mimeWebP {
+			t.Errorf("content-type = %q, want image/webp (the smaller one)", got)
+		}
+	})
+}
