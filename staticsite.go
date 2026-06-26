@@ -11,26 +11,30 @@ import (
 	"path"
 	"strconv"
 	"strings"
+
+	"github.com/andybalholm/brotli"
+	"github.com/klauspost/compress/zstd"
 )
 
 // staticAsset is one served file, prepared once at startup: its content type, a
-// content-hash ETag, the raw bytes, and (for compressible types) a precomputed
-// gzip variant so responses never compress on the fly.
+// content-hash ETag, the raw bytes, and (for compressible types) precomputed
+// brotli/zstd/gzip variants so responses never compress on the fly.
 type staticAsset struct {
 	contentType string
 	etag        string
 	raw         []byte
-	gz          []byte // gzip-compressed bytes; nil when compression doesn't help
+	br          []byte // brotli; nil when not worth it
+	zst         []byte // zstd; nil when not worth it
+	gz          []byte // gzip; nil when not worth it
 }
 
-// staticSite serves an embedded file tree with ETag-based revalidation and
-// precompressed responses.
+// staticSite serves an embedded file tree with ETag revalidation and
+// precompressed responses (brotli > zstd > gzip, by Accept-Encoding).
 type staticSite struct {
-	assets       map[string]*staticAsset // keyed by clean relative path, e.g. "static/css/home.css"
+	assets       map[string]*staticAsset
 	cacheControl string
 }
 
-// newStaticSite indexes every file in fsys, precomputing ETags and gzip variants.
 func newStaticSite(fsys fs.FS, cacheMaxAge int) (*staticSite, error) {
 	s := &staticSite{
 		assets:       make(map[string]*staticAsset),
@@ -55,9 +59,9 @@ func newStaticSite(fsys fs.FS, cacheMaxAge int) (*staticSite, error) {
 			raw:         raw,
 		}
 		if compressible(ct) {
-			if gz := gzipBytes(raw); len(gz) > 0 && len(gz) < len(raw) {
-				a.gz = gz
-			}
+			a.br = smaller(brotliBytes(raw), raw)
+			a.zst = smaller(zstdBytes(raw), raw)
+			a.gz = smaller(gzipBytes(raw), raw)
 		}
 		s.assets[p] = a
 		return nil
@@ -65,8 +69,8 @@ func newStaticSite(fsys fs.FS, cacheMaxAge int) (*staticSite, error) {
 	return s, err
 }
 
-// serve writes the asset at urlPath if present and returns true; it returns
-// false (writing nothing) when there is no such asset, so callers can 404.
+// serve writes the asset at urlPath if present (returning true), negotiating the
+// best available encoding; it returns false (writing nothing) on a miss.
 func (s *staticSite) serve(w http.ResponseWriter, r *http.Request, urlPath string) bool {
 	key := strings.TrimPrefix(path.Clean("/"+urlPath), "/")
 	a, ok := s.assets[key]
@@ -85,10 +89,9 @@ func (s *staticSite) serve(w http.ResponseWriter, r *http.Request, urlPath strin
 		return true
 	}
 
-	body := a.raw
-	if a.gz != nil && acceptsGzip(r) {
-		h.Set("Content-Encoding", "gzip")
-		body = a.gz
+	body, enc := a.negotiate(r.Header.Get("Accept-Encoding"))
+	if enc != "" {
+		h.Set("Content-Encoding", enc)
 	}
 	h.Set("Content-Length", strconv.Itoa(len(body)))
 
@@ -98,6 +101,33 @@ func (s *staticSite) serve(w http.ResponseWriter, r *http.Request, urlPath strin
 	}
 	_, _ = w.Write(body)
 	return true
+}
+
+// negotiate picks the best precomputed encoding the client accepts, preferring
+// brotli, then zstd, then gzip, falling back to the raw bytes.
+func (a *staticAsset) negotiate(acceptEncoding string) (body []byte, encoding string) {
+	accepted := parseAcceptEncoding(acceptEncoding)
+	switch {
+	case a.br != nil && accepted["br"]:
+		return a.br, "br"
+	case a.zst != nil && accepted["zstd"]:
+		return a.zst, "zstd"
+	case a.gz != nil && accepted["gzip"]:
+		return a.gz, "gzip"
+	default:
+		return a.raw, ""
+	}
+}
+
+func parseAcceptEncoding(header string) map[string]bool {
+	out := make(map[string]bool)
+	for _, tok := range strings.Split(header, ",") {
+		name := strings.TrimSpace(strings.SplitN(tok, ";", 2)[0])
+		if name != "" {
+			out[strings.ToLower(name)] = true
+		}
+	}
+	return out
 }
 
 func compressible(contentType string) bool {
@@ -116,13 +146,12 @@ func compressible(contentType string) bool {
 	}
 }
 
-func acceptsGzip(r *http.Request) bool {
-	for _, enc := range strings.Split(r.Header.Get("Accept-Encoding"), ",") {
-		if strings.EqualFold(strings.TrimSpace(strings.SplitN(enc, ";", 2)[0]), "gzip") {
-			return true
-		}
+// smaller returns compressed only when it actually beats raw, else nil.
+func smaller(compressed, raw []byte) []byte {
+	if len(compressed) > 0 && len(compressed) < len(raw) {
+		return compressed
 	}
-	return false
+	return nil
 }
 
 func gzipBytes(raw []byte) []byte {
@@ -138,4 +167,25 @@ func gzipBytes(raw []byte) []byte {
 		return nil
 	}
 	return buf.Bytes()
+}
+
+func brotliBytes(raw []byte) []byte {
+	var buf bytes.Buffer
+	bw := brotli.NewWriterLevel(&buf, brotli.BestCompression)
+	if _, err := bw.Write(raw); err != nil {
+		return nil
+	}
+	if err := bw.Close(); err != nil {
+		return nil
+	}
+	return buf.Bytes()
+}
+
+func zstdBytes(raw []byte) []byte {
+	enc, err := zstd.NewWriter(nil, zstd.WithEncoderLevel(zstd.SpeedBestCompression))
+	if err != nil {
+		return nil
+	}
+	defer enc.Close()
+	return enc.EncodeAll(raw, nil)
 }

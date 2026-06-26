@@ -7,7 +7,8 @@ services:
     container_name: shmeeload
     restart: unless-stopped
     ports:
-      - "443:443"
+      - "443:443/tcp"
+      - "443:443/udp"
     volumes:
       - ./config.local.json:/app/config.json:ro
       - shmee_tls:/data
