@@ -3,6 +3,7 @@ module github.com/aljo242/shmeeload.xyz
 go 1.26.0
 
 require (
+	github.com/HugoSmits86/nativewebp v1.3.0
 	github.com/andybalholm/brotli v1.2.1
 	github.com/gorilla/mux v1.8.1
 	github.com/gorilla/websocket v1.5.3
@@ -16,6 +17,7 @@ require (
 	github.com/mattn/go-isatty v0.0.22 // indirect
 	github.com/quic-go/qpack v0.6.0 // indirect
 	golang.org/x/crypto v0.51.0 // indirect
+	golang.org/x/image v0.24.0 // indirect
 	golang.org/x/net v0.55.0 // indirect
 	golang.org/x/sys v0.46.0 // indirect
 	golang.org/x/text v0.37.0 // indirect

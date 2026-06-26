@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"crypto/sha256"
 	"encoding/hex"
+	"image"
 	"io/fs"
 	"mime"
 	"net/http"
@@ -12,13 +13,23 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/HugoSmits86/nativewebp"
 	"github.com/andybalholm/brotli"
 	"github.com/klauspost/compress/zstd"
+
+	_ "image/gif"
+	_ "image/png"
 )
 
+// variant is an alternate encoding of an asset with its own content-hash ETag.
+type variant struct {
+	body []byte
+	etag string
+}
+
 // staticAsset is one served file, prepared once at startup: its content type, a
-// content-hash ETag, the raw bytes, and (for compressible types) precomputed
-// brotli/zstd/gzip variants so responses never compress on the fly.
+// content-hash ETag, the raw bytes, precomputed brotli/zstd/gzip variants (for
+// compressible types), and a WebP variant (for PNG/GIF that shrink).
 type staticAsset struct {
 	contentType string
 	etag        string
@@ -26,10 +37,11 @@ type staticAsset struct {
 	br          []byte // brotli; nil when not worth it
 	zst         []byte // zstd; nil when not worth it
 	gz          []byte // gzip; nil when not worth it
+	webp        *variant
 }
 
-// staticSite serves an embedded file tree with ETag revalidation and
-// precompressed responses (brotli > zstd > gzip, by Accept-Encoding).
+// staticSite serves an embedded file tree with ETag revalidation, precompressed
+// text (brotli > zstd > gzip), and transparent WebP for images that shrink.
 type staticSite struct {
 	assets       map[string]*staticAsset
 	cacheControl string
@@ -52,16 +64,17 @@ func newStaticSite(fsys fs.FS, cacheMaxAge int) (*staticSite, error) {
 		if ct == "" {
 			ct = http.DetectContentType(raw)
 		}
-		sum := sha256.Sum256(raw)
-		a := &staticAsset{
-			contentType: ct,
-			etag:        `"` + hex.EncodeToString(sum[:]) + `"`,
-			raw:         raw,
-		}
+		a := &staticAsset{contentType: ct, etag: etagOf(raw), raw: raw}
 		if compressible(ct) {
 			a.br = smaller(brotliBytes(raw), raw)
 			a.zst = smaller(zstdBytes(raw), raw)
 			a.gz = smaller(gzipBytes(raw), raw)
+		}
+		// Lossless WebP beats PNG/GIF; for JPEG (lossy photos) it is larger, so skip it.
+		if ct == "image/png" || ct == "image/gif" {
+			if wb := webpBytes(raw); smaller(wb, raw) != nil {
+				a.webp = &variant{body: wb, etag: etagOf(wb)}
+			}
 		}
 		s.assets[p] = a
 		return nil
@@ -69,8 +82,9 @@ func newStaticSite(fsys fs.FS, cacheMaxAge int) (*staticSite, error) {
 	return s, err
 }
 
-// serve writes the asset at urlPath if present (returning true), negotiating the
-// best available encoding; it returns false (writing nothing) on a miss.
+// serve writes the asset at urlPath if present (returning true). It serves WebP
+// when the client accepts it and a smaller variant exists, otherwise the raw
+// bytes with the best accepted compression. Returns false (writing nothing) on a miss.
 func (s *staticSite) serve(w http.ResponseWriter, r *http.Request, urlPath string) bool {
 	key := strings.TrimPrefix(path.Clean("/"+urlPath), "/")
 	a, ok := s.assets[key]
@@ -79,34 +93,49 @@ func (s *staticSite) serve(w http.ResponseWriter, r *http.Request, urlPath strin
 	}
 
 	h := w.Header()
-	h.Set("ETag", a.etag)
 	h.Set("Cache-Control", s.cacheControl)
-	h.Set("Content-Type", a.contentType)
 	h.Add("Vary", "Accept-Encoding")
 
+	// Image negotiation: serve the smaller WebP when the client accepts it.
+	if a.webp != nil && acceptsWebP(r) {
+		h.Add("Vary", "Accept")
+		h.Set("Content-Type", "image/webp")
+		h.Set("ETag", a.webp.etag)
+		if r.Header.Get("If-None-Match") == a.webp.etag {
+			w.WriteHeader(http.StatusNotModified)
+			return true
+		}
+		writeBody(w, r, a.webp.body)
+		return true
+	}
+
+	h.Set("Content-Type", a.contentType)
+	h.Set("ETag", a.etag)
 	if r.Header.Get("If-None-Match") == a.etag {
 		w.WriteHeader(http.StatusNotModified)
 		return true
 	}
-
 	body, enc := a.negotiate(r.Header.Get("Accept-Encoding"))
 	if enc != "" {
 		h.Set("Content-Encoding", enc)
 	}
-	h.Set("Content-Length", strconv.Itoa(len(body)))
-
-	if r.Method == http.MethodHead {
-		w.WriteHeader(http.StatusOK)
-		return true
-	}
-	_, _ = w.Write(body)
+	writeBody(w, r, body)
 	return true
 }
 
-// negotiate picks the best precomputed encoding the client accepts, preferring
-// brotli, then zstd, then gzip, falling back to the raw bytes.
+func writeBody(w http.ResponseWriter, r *http.Request, body []byte) {
+	w.Header().Set("Content-Length", strconv.Itoa(len(body)))
+	if r.Method == http.MethodHead {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	_, _ = w.Write(body)
+}
+
+// negotiate picks the best precomputed compression the client accepts (brotli >
+// zstd > gzip), falling back to the raw bytes.
 func (a *staticAsset) negotiate(acceptEncoding string) (body []byte, encoding string) {
-	accepted := parseAcceptEncoding(acceptEncoding)
+	accepted := parseList(acceptEncoding)
 	switch {
 	case a.br != nil && accepted["br"]:
 		return a.br, "br"
@@ -119,7 +148,11 @@ func (a *staticAsset) negotiate(acceptEncoding string) (body []byte, encoding st
 	}
 }
 
-func parseAcceptEncoding(header string) map[string]bool {
+func acceptsWebP(r *http.Request) bool {
+	return strings.Contains(r.Header.Get("Accept"), "image/webp")
+}
+
+func parseList(header string) map[string]bool {
 	out := make(map[string]bool)
 	for _, tok := range strings.Split(header, ",") {
 		name := strings.TrimSpace(strings.SplitN(tok, ";", 2)[0])
@@ -128,6 +161,11 @@ func parseAcceptEncoding(header string) map[string]bool {
 		}
 	}
 	return out
+}
+
+func etagOf(b []byte) string {
+	sum := sha256.Sum256(b)
+	return `"` + hex.EncodeToString(sum[:]) + `"`
 }
 
 func compressible(contentType string) bool {
@@ -188,4 +226,17 @@ func zstdBytes(raw []byte) []byte {
 	}
 	defer enc.Close()
 	return enc.EncodeAll(raw, nil)
+}
+
+// webpBytes losslessly re-encodes a PNG/GIF as WebP, or returns nil on failure.
+func webpBytes(raw []byte) []byte {
+	img, _, err := image.Decode(bytes.NewReader(raw))
+	if err != nil {
+		return nil
+	}
+	var buf bytes.Buffer
+	if err := nativewebp.Encode(&buf, img, nil); err != nil {
+		return nil
+	}
+	return buf.Bytes()
 }
