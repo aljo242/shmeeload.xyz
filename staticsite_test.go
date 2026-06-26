@@ -24,10 +24,10 @@ func newTestSite(t *testing.T) *staticSite {
 func TestStaticSiteServe(t *testing.T) {
 	s := newTestSite(t)
 
-	t.Run("serves text with etag, cache-control, and gzip when accepted", func(t *testing.T) {
+	t.Run("prefers brotli when the client accepts br/gzip/zstd", func(t *testing.T) {
 		rr := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/static/css/home.css", nil)
-		req.Header.Set("Accept-Encoding", "gzip")
+		req.Header.Set("Accept-Encoding", "gzip, deflate, br, zstd")
 		if !s.serve(rr, req, req.URL.Path) {
 			t.Fatal("expected the asset to be served")
 		}
@@ -37,11 +37,30 @@ func TestStaticSiteServe(t *testing.T) {
 		if rr.Header().Get("ETag") == "" {
 			t.Error("missing ETag")
 		}
-		if got := rr.Header().Get("Content-Encoding"); got != "gzip" {
-			t.Errorf("content-encoding = %q, want gzip", got)
+		if got := rr.Header().Get("Content-Encoding"); got != "br" {
+			t.Errorf("content-encoding = %q, want br", got)
 		}
 		if got := rr.Header().Get("Cache-Control"); got != "public, max-age=3600" {
 			t.Errorf("cache-control = %q", got)
+		}
+	})
+
+	t.Run("falls back to gzip when only gzip is accepted", func(t *testing.T) {
+		rr := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/static/css/home.css", nil)
+		req.Header.Set("Accept-Encoding", "gzip")
+		s.serve(rr, req, req.URL.Path)
+		if got := rr.Header().Get("Content-Encoding"); got != "gzip" {
+			t.Errorf("content-encoding = %q, want gzip", got)
+		}
+	})
+
+	t.Run("serves raw when no encoding is accepted", func(t *testing.T) {
+		rr := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/static/css/home.css", nil)
+		s.serve(rr, req, req.URL.Path)
+		if got := rr.Header().Get("Content-Encoding"); got != "" {
+			t.Errorf("content-encoding = %q, want empty", got)
 		}
 	})
 
