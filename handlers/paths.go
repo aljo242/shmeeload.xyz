@@ -1,31 +1,34 @@
 package handlers
 
-import "path/filepath"
+import "time"
 
-// staticRoot is the base directory prepared assets are served from. siteRoot is
-// the working-directory root for top-level files (manifest.json, serviceWorker.js).
-//
-// They are package vars rather than consts so tests can point them at a temp
-// directory (via SetStaticRoot / SetSiteRoot) and exercise the handlers without
-// depending on a real ./static tree.
+// assets holds every served file, keyed by "<dir>/<name>" (and bare names for
+// site-root files like manifest.json). The server builds this once at startup
+// (package main) and installs it via SetAssets, so handlers serve straight from
+// memory and the container needs no writable filesystem.
 var (
-	staticRoot = "./static"
-	siteRoot   = "."
+	assets       = map[string][]byte{}
+	assetModTime time.Time
 )
 
-// SetStaticRoot overrides the base directory for served static assets.
-func SetStaticRoot(dir string) { staticRoot = dir }
+// SetAssets installs the in-memory asset map and the modification time reported
+// to clients (used for caching/conditional requests).
+func SetAssets(m map[string][]byte, modTime time.Time) {
+	assets = m
+	assetModTime = modTime
+}
 
-// SetSiteRoot overrides the base directory for top-level site files.
-func SetSiteRoot(dir string) { siteRoot = dir }
-
-func htmlDir() string      { return filepath.Join(staticRoot, "html") }
-func jsDir() string        { return filepath.Join(staticRoot, "js") }
-func cssDir() string       { return filepath.Join(staticRoot, "css") }
-func tsDir() string        { return filepath.Join(staticRoot, "src") }
-func imgDir() string       { return filepath.Join(staticRoot, "img") }
-func modelDir() string     { return filepath.Join(staticRoot, "model") }
-func miscFilesDir() string { return filepath.Join(staticRoot, "files") }
+// Asset directory keys within the asset map.
+const (
+	dirHTML  = "html"
+	dirJS    = "js"
+	dirCSS   = "css"
+	dirSrc   = "src"
+	dirImg   = "img"
+	dirModel = "model"
+	dirFiles = "files"
+	dirRoot  = "" // site root: manifest.json, serviceWorker.js
+)
 
 // Common Content-Type values, named so the maps below and the page handlers
 // share a single source of truth.

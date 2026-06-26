@@ -3,9 +3,9 @@ package handlers
 import (
 	"fmt"
 	"net/http"
-	"path/filepath"
+	"path"
 
-	"github.com/rs/zerolog/log"
+	"github.com/aljo242/shmeeload.xyz/internal/log"
 )
 
 // cryptoAddr maps a lowercase currency code to its public donation address.
@@ -21,8 +21,8 @@ var cryptoAddr = map[string]string{
 // it is safe to embed directly in the response.
 func DonateHandler(cacheMaxAge int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		currency := filepath.Base(r.URL.Path)
-		log.Debug().Str("Handler", "DonateHandler").Str("Currency", currency).Msg("incoming request")
+		currency := path.Base(r.URL.Path)
+		log.Debug("incoming request", "handler", "DonateHandler", "currency", currency)
 
 		addr, ok := cryptoAddr[currency]
 		if !ok {

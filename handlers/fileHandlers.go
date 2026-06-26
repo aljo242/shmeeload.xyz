@@ -2,65 +2,65 @@ package handlers
 
 import "net/http"
 
-// ScriptsHandler serves compiled JavaScript and source maps from the js dir.
+// ScriptsHandler serves compiled JavaScript and source maps.
 func ScriptsHandler(cacheMaxAge int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		serveFile(w, r, "ScriptsHandler", jsDir(), cacheMaxAge, scriptContentTypes)
+		serveFile(w, r, "ScriptsHandler", dirJS, cacheMaxAge, scriptContentTypes)
 	}
 }
 
-// CSSHandler serves stylesheets from the css dir.
+// CSSHandler serves stylesheets.
 func CSSHandler(cacheMaxAge int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		serveFile(w, r, "CSSHandler", cssDir(), cacheMaxAge, cssContentTypes)
+		serveFile(w, r, "CSSHandler", dirCSS, cacheMaxAge, cssContentTypes)
 	}
 }
 
-// HTMLHandler serves prepared HTML fragments from the html dir.
+// HTMLHandler serves prepared HTML fragments.
 func HTMLHandler(cacheMaxAge int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		serveFile(w, r, "HTMLHandler", htmlDir(), cacheMaxAge, htmlContentTypes)
+		serveFile(w, r, "HTMLHandler", dirHTML, cacheMaxAge, htmlContentTypes)
 	}
 }
 
-// TypeScriptHandler serves the TypeScript sources from the src dir as plain text.
+// TypeScriptHandler serves the TypeScript sources as plain text.
 func TypeScriptHandler(cacheMaxAge int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		serveFile(w, r, "TypeScriptHandler", tsDir(), cacheMaxAge, tsContentTypes)
+		serveFile(w, r, "TypeScriptHandler", dirSrc, cacheMaxAge, tsContentTypes)
 	}
 }
 
 // ManifestHandler serves manifest.json from the site root.
 func ManifestHandler(cacheMaxAge int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		serveFile(w, r, "ManifestHandler", siteRoot, cacheMaxAge, jsonContentTypes)
+		serveFile(w, r, "ManifestHandler", dirRoot, cacheMaxAge, jsonContentTypes)
 	}
 }
 
 // ServiceWorkerHandler serves serviceWorker.js (and its map) from the site root.
 func ServiceWorkerHandler(cacheMaxAge int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		serveFile(w, r, "ServiceWorkerHandler", siteRoot, cacheMaxAge, scriptContentTypes)
+		serveFile(w, r, "ServiceWorkerHandler", dirRoot, cacheMaxAge, scriptContentTypes)
 	}
 }
 
-// ImageHandler serves image files from the img dir.
+// ImageHandler serves image files.
 func ImageHandler(cacheMaxAge int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		serveFile(w, r, "ImageHandler", imgDir(), cacheMaxAge, imageContentTypes)
+		serveFile(w, r, "ImageHandler", dirImg, cacheMaxAge, imageContentTypes)
 	}
 }
 
-// ModelHandler serves 3D model files from the model dir.
+// ModelHandler serves 3D model files.
 func ModelHandler(cacheMaxAge int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		serveFile(w, r, "ModelHandler", modelDir(), cacheMaxAge, modelContentTypes)
+		serveFile(w, r, "ModelHandler", dirModel, cacheMaxAge, modelContentTypes)
 	}
 }
 
-// MiscFileHandler serves miscellaneous downloadable files from the files dir.
+// MiscFileHandler serves miscellaneous downloadable files.
 func MiscFileHandler(cacheMaxAge int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		serveFile(w, r, "MiscFileHandler", miscFilesDir(), cacheMaxAge, miscContentTypes)
+		serveFile(w, r, "MiscFileHandler", dirFiles, cacheMaxAge, miscContentTypes)
 	}
 }

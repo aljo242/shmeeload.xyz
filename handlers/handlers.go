@@ -2,15 +2,14 @@ package handlers
 
 import (
 	"net/http"
-	"path/filepath"
 
-	"github.com/rs/zerolog/log"
+	"github.com/aljo242/shmeeload.xyz/internal/log"
 )
 
 // RedirectHome permanently redirects to /home.
 func RedirectHome() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		log.Debug().Str("Handler", "RedirectHome").Str("Request URL", r.URL.Path).Msg("incoming request")
+		log.Debug("incoming request", "handler", "RedirectHome", "url", r.URL.Path)
 		http.Redirect(w, r, "/home", http.StatusPermanentRedirect)
 	}
 }
@@ -18,7 +17,7 @@ func RedirectHome() http.HandlerFunc {
 // RedirectConstructionHandler temporarily redirects to /under-construction.
 func RedirectConstructionHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		log.Debug().Str("Handler", "RedirectConstructionHandler").Str("Request URL", r.URL.Path).Msg("incoming request")
+		log.Debug("incoming request", "handler", "RedirectConstructionHandler", "url", r.URL.Path)
 		http.Redirect(w, r, "/under-construction", http.StatusTemporaryRedirect)
 	}
 }
@@ -33,32 +32,20 @@ func ConstructionHandler(cacheMaxAge int) http.HandlerFunc {
 // HomeHandler serves the home page.
 func HomeHandler(cacheMaxAge int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		servePage(w, r, "HomeHandler", "home.html", cacheMaxAge,
-			filepath.Join(cssDir(), "home.css"),
-			filepath.Join(jsDir(), "app.js"),
-			filepath.Join(imgDir(), "1favicon.ico"),
-			filepath.Join(imgDir(), "horse.jpg"),
-			filepath.Join(modelDir(), "kasa_obake.gltf"),
-		)
+		servePage(w, r, "HomeHandler", "home.html", cacheMaxAge)
 	}
 }
 
 // ResumeHomeHandler serves the resume page.
 func ResumeHomeHandler(cacheMaxAge int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		servePage(w, r, "ResumeHomeHandler", "resume.html", cacheMaxAge,
-			filepath.Join(cssDir(), "resume.css"),
-			filepath.Join(imgDir(), "1favicon.ico"),
-			filepath.Join(imgDir(), "cactus.jpg"),
-		)
+		servePage(w, r, "ResumeHomeHandler", "resume.html", cacheMaxAge)
 	}
 }
 
 // HallofArtHomeHandler serves the hall-of-art page.
 func HallofArtHomeHandler(cacheMaxAge int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		servePage(w, r, "HallofArtHomeHandler", "shadow.html", cacheMaxAge,
-			filepath.Join(cssDir(), "home.css"),
-		)
+		servePage(w, r, "HallofArtHomeHandler", "shadow.html", cacheMaxAge)
 	}
 }

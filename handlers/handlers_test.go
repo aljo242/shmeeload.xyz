@@ -3,7 +3,6 @@ package handlers
 import (
 	"net/http"
 	"net/http/httptest"
-	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -34,7 +33,7 @@ func TestRedirects(t *testing.T) {
 }
 
 // TestPageHandlers exercises the fixed-page handlers (which serve a known HTML
-// file and may issue server pushes) against a temp static tree.
+// page from the asset map).
 func TestPageHandlers(t *testing.T) {
 	cases := []struct {
 		name    string
@@ -51,8 +50,7 @@ func TestPageHandlers(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name+" serves the page", func(t *testing.T) {
-			root := setupStatic(t)
-			writeTestFile(t, filepath.Join(root, "html", c.page), "<html>"+c.name+"</html>")
+			setupAssets(t, map[string]string{"html/" + c.page: "<html>" + c.name + "</html>"})
 
 			rr := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodGet, c.path, nil)
@@ -70,7 +68,7 @@ func TestPageHandlers(t *testing.T) {
 		})
 
 		t.Run(c.name+" missing page is 404", func(t *testing.T) {
-			setupStatic(t) // no page file written
+			setupAssets(t, nil)
 			rr := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodGet, c.path, nil)
 			c.handler(0)(rr, req)
@@ -80,8 +78,7 @@ func TestPageHandlers(t *testing.T) {
 		})
 
 		t.Run(c.name+" non-GET is 400", func(t *testing.T) {
-			root := setupStatic(t)
-			writeTestFile(t, filepath.Join(root, "html", c.page), "x")
+			setupAssets(t, map[string]string{"html/" + c.page: "x"})
 			rr := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodPost, c.path, nil)
 			c.handler(0)(rr, req)
@@ -93,30 +90,27 @@ func TestPageHandlers(t *testing.T) {
 }
 
 // TestStaticContentTypes confirms each static handler picks the right Content-Type
-// by extension and serves from the expected directory.
+// by extension and serves from the expected asset directory.
 func TestStaticContentTypes(t *testing.T) {
-	root := setupStatic(t)
-
 	cases := []struct {
 		name    string
-		sub     string
-		file    string
+		key     string
 		urlPath string
 		wantCT  string
 		handler func(int) http.HandlerFunc
 	}{
-		{"script", "js", "app.js", "/static/js/app.js", "application/javascript; charset=UTF-8", ScriptsHandler},
-		{"sourcemap", "js", "app.js.map", "/static/js/app.js.map", "application/json; charset=UTF-8", ScriptsHandler},
-		{"css", "css", "home.css", "/static/css/home.css", "text/css; charset=UTF-8", CSSHandler},
-		{"html", "html", "frag.html", "/static/html/frag.html", "text/html; charset=UTF-8", HTMLHandler},
-		{"typescript", "src", "app.ts", "/static/src/app.ts", "text/plain; charset=UTF-8", TypeScriptHandler},
-		{"image", "img", "horse.png", "/static/img/horse.png", "image/png", ImageHandler},
-		{"model", "model", "m.gltf", "/static/model/m.gltf", "model/gltf", ModelHandler},
+		{"script", "js/app.js", "/static/js/app.js", "application/javascript; charset=UTF-8", ScriptsHandler},
+		{"sourcemap", "js/app.js.map", "/static/js/app.js.map", "application/json; charset=UTF-8", ScriptsHandler},
+		{"css", "css/home.css", "/static/css/home.css", "text/css; charset=UTF-8", CSSHandler},
+		{"html", "html/frag.html", "/static/html/frag.html", "text/html; charset=UTF-8", HTMLHandler},
+		{"typescript", "src/app.ts", "/static/src/app.ts", "text/plain; charset=UTF-8", TypeScriptHandler},
+		{"image", "img/horse.png", "/static/img/horse.png", "image/png", ImageHandler},
+		{"model", "model/m.gltf", "/static/model/m.gltf", "model/gltf", ModelHandler},
 	}
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			writeTestFile(t, filepath.Join(root, c.sub, c.file), "data")
+			setupAssets(t, map[string]string{c.key: "data"})
 			rr := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodGet, c.urlPath, nil)
 			c.handler(0)(rr, req)
@@ -132,8 +126,7 @@ func TestStaticContentTypes(t *testing.T) {
 }
 
 func TestManifestServedFromSiteRoot(t *testing.T) {
-	root := setupStatic(t)
-	writeTestFile(t, filepath.Join(root, "manifest.json"), `{"name":"shmeeload"}`)
+	setupAssets(t, map[string]string{"manifest.json": `{"name":"shmeeload"}`})
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/manifest.json", nil)

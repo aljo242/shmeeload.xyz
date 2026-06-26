@@ -25,3 +25,13 @@ go.work.sum
 # env file
 .env
 
+# server binary
+/server
+
+# node / TypeScript build artifacts
+web_res/node_modules/
+web_res/dist/
+
+# runtime-generated static tree (legacy)
+/static/
+

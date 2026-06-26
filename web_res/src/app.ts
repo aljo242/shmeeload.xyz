@@ -1,6 +1,8 @@
+import { getElement } from "./dom.js";
+
 // type alias
 type Color = string;
-const black: Color = "#000000"
+const black: Color = "#000000";
 
 class ColorScheme {
     article_background: Color = black;
@@ -24,7 +26,7 @@ class ColorScheme {
     main_text: Color = black;
 }
 
-let scheme1 = new ColorScheme;
+const scheme1 = new ColorScheme();
 scheme1.article_background = "#f4a261";
 scheme1.nav_background = "#264653";
 scheme1.nav_header = "#e76f51";
@@ -33,7 +35,7 @@ scheme1.hr = black;
 scheme1.a_nav_link = "#14ff14";
 scheme1.a_text_link = "#e9c46a";
 
-let scheme2 = new ColorScheme;
+const scheme2 = new ColorScheme();
 scheme2.article_background = "#f0e68c";
 scheme2.nav_background = "#adff2f";
 scheme2.nav_header = "#ffc0cb";
@@ -42,7 +44,7 @@ scheme2.hr = black;
 scheme2.a_nav_link = "#f700ff";
 scheme2.a_text_link = "#f700ff";
 
-let scheme3 = new ColorScheme;
+const scheme3 = new ColorScheme();
 scheme3.article_background = "#e5e5e5";
 scheme3.nav_background = "#e5e5e5";
 scheme3.nav_header = "#fb8500";
@@ -51,7 +53,7 @@ scheme3.hr = black;
 scheme3.a_nav_link = "#52b788";
 scheme3.a_text_link = "#52b788";
 
-let scheme4 = new ColorScheme;
+const scheme4 = new ColorScheme();
 scheme4.article_background = "#e2fdff";
 scheme4.nav_background = "#bfd7ff";
 scheme4.nav_header = "#5465ff";
@@ -60,7 +62,7 @@ scheme4.hr = black;
 scheme4.a_nav_link = "#c32f27";
 scheme4.a_text_link = "#c32f27";
 
-let scheme5 = new ColorScheme;
+const scheme5 = new ColorScheme();
 scheme5.article_background = "#f28482";
 scheme5.article_opacity = ".975";
 scheme5.nav_background = "#84a59d";
@@ -71,7 +73,7 @@ scheme5.hr = black;
 scheme5.a_nav_link = "#14ff14";
 scheme5.a_text_link = "#14ff14";
 
-let scheme6 = new ColorScheme;
+const scheme6 = new ColorScheme();
 scheme6.article_background = "#ddc9b4";
 scheme6.article_opacity = ".95";
 scheme6.nav_background = "#bcac9b";
@@ -82,7 +84,7 @@ scheme6.hr = black;
 scheme6.a_nav_link = "#df2935";
 scheme6.a_text_link = "#df2935";
 
-let scheme7 = new ColorScheme;
+const scheme7 = new ColorScheme();
 scheme7.article_background = "#dddf00";
 scheme7.article_opacity = ".95";
 scheme7.nav_background = "#2b9348";
@@ -93,82 +95,41 @@ scheme7.hr = black;
 scheme7.a_nav_link = "#001d3d";
 scheme7.a_text_link = "#001d3d";
 
-// Register Service Worker
-if ("serviceWorker" in navigator) {
-    window.addEventListener("load", function() {
-      navigator.serviceWorker.register("/serviceWorker.js").then(function(registration) {
-        // Registration was successful
-        console.log("ServiceWorker registration successful with scope: ", registration.scope);
-      }, function(err) {
-        // registration failed :(
-        console.log("ServiceWorker registration failed: ", err);
-      });
-    });
-  }
-
-
-const msg = "Hello web"
-
-
-
-
-
-function printMessage(msg: string) {
-    console.log(msg)
-}
-
+// No service worker is registered: the previous one was empty, so it added
+// install/update churn and controlled scope "/" with no offline benefit.
+// Reintroduce a registration here only alongside a real caching worker.
 
 function applyColorScheme(scheme: ColorScheme) {
-  //console.log(scheme)
-  let header = document.getElementById("header")!;
-  header.style.backgroundColor = scheme.nav_header;
-  let nav = document.getElementById("nav")!;
-  nav.style.backgroundColor = scheme.nav_background;
-  nav.style.opacity =  scheme.nav_opacity;
-  let mainArticleBody = document.getElementById("mainArticleBody")!;
-  mainArticleBody.style.backgroundColor = scheme.article_background;
-  mainArticleBody.style.opacity = scheme.article_opacity;
-  
-  //let navLinks = document.getElementsByClassName("navLink")!;
-  //for (let item  of navLinks) {
-  //  let hmtlItem = <HTMLElement>item;
-  //  hmtlItem.style.color = scheme.a_nav_link;
-  //}
+    getElement("header").style.backgroundColor = scheme.nav_header;
 
-  //let textLinks = document.getElementsByClassName("textLink")!;
-  //for (let item  of textLinks) {
-  //  let hmtlItem = <HTMLElement>item;
-  //  hmtlItem.style.color = scheme.a_text_link;
-  //}
+    const nav = getElement("nav");
+    nav.style.backgroundColor = scheme.nav_background;
+    nav.style.opacity = scheme.nav_opacity;
 
-  let links = document.getElementsByTagName("a")!;
-  for (let item  of links) {
-    item.style.color = scheme.a_nav_link;
-  }
+    const mainArticleBody = getElement("mainArticleBody");
+    mainArticleBody.style.backgroundColor = scheme.article_background;
+    mainArticleBody.style.opacity = scheme.article_opacity;
+
+    for (const link of document.getElementsByTagName("a")) {
+        link.style.color = scheme.a_nav_link;
+    }
 }
 
 const colorSchemes = [scheme1, scheme2, scheme3, scheme4, scheme5, scheme6, scheme7];
 let currentSelection = 0;
 let prevSelection = 0;
 
-
 function applyRandomColorScheme() {
-  let random = Math.floor(Math.random() * colorSchemes.length);
-  // make sure we always choose a unique one
-  while (random === currentSelection || random === prevSelection) {
-    random = Math.floor(Math.random() * colorSchemes.length);
-  }
-  prevSelection = currentSelection;
-  currentSelection = random
-  console.log(currentSelection)
-  applyColorScheme(colorSchemes[currentSelection]);
+    let random = Math.floor(Math.random() * colorSchemes.length);
+    // make sure we always choose a unique one
+    while (random === currentSelection || random === prevSelection) {
+        random = Math.floor(Math.random() * colorSchemes.length);
+    }
+    prevSelection = currentSelection;
+    currentSelection = random;
+    applyColorScheme(colorSchemes[currentSelection]);
 }
 
 applyColorScheme(colorSchemes[currentSelection]);
 
-const homeButton = document.getElementById("secretButton")!
-homeButton.onclick = () => {
-    applyRandomColorScheme();
-};
-
-
+getElement("secretButton").addEventListener("click", applyRandomColorScheme);
