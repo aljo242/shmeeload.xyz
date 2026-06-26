@@ -153,3 +153,33 @@ func TestWebPNegotiation(t *testing.T) {
 		}
 	})
 }
+
+// TestWebPSiblingPairing checks that newStaticSite attaches a build-time
+// "<name>.webp" sibling to its source image and does not expose the sibling at
+// its own URL.
+func TestWebPSiblingPairing(t *testing.T) {
+	fsys := fstest.MapFS{
+		"static/img/y.png":      {Data: []byte("raw-png-bytes")},
+		"static/img/y.png.webp": {Data: []byte("webp-bytes")},
+	}
+	s, err := newStaticSite(fsys, 3600)
+	if err != nil {
+		t.Fatalf("newStaticSite: %v", err)
+	}
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/static/img/y.png", nil)
+	req.Header.Set("Accept", "image/webp")
+	s.serve(rr, req, req.URL.Path)
+	if got := rr.Header().Get("Content-Type"); got != mimeWebP {
+		t.Errorf("content-type = %q, want image/webp", got)
+	}
+	if got := rr.Body.String(); got != "webp-bytes" {
+		t.Errorf("body = %q, want webp-bytes", got)
+	}
+
+	// The sibling must not be servable on its own URL.
+	if s.serve(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/static/img/y.png.webp", nil), "/static/img/y.png.webp") {
+		t.Error("the .webp sibling should not be a standalone asset")
+	}
+}

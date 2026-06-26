@@ -21,11 +21,19 @@ export GO111MODULE = on
 
 all: lint build test 
 
-build:
+build: webp
 	@cd ./web_res && npm ci --no-audit --no-fund && npm run build
 	@go build -o ${BINARY_NAME}
 
-clean: 
+# Precompute WebP variants of the site images so the binary embeds them and
+# serves them without encoding anything at startup.
+webp:
+	@echo "--> Generating WebP image variants"
+	@go run ./cmd/genwebp ./site
+
+.PHONY: webp
+
+clean:
 ifneq ("$(wildcard ./web_res/dist/)", "")
 	@rm -rf ./web_res/dist/*
 endif
@@ -38,6 +46,7 @@ endif
 ifneq ("$(wildcard coverage.out)", "")
 	@rm coverage.out
 endif
+	@find ./site -name '*.webp' -delete 2>/dev/null || true
 	@go clean
 
 .PHONY: build clean

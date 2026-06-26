@@ -72,12 +72,12 @@ linters:
       - linters:
           - gosec
         text: Use of weak random number generator
-      # assets.go reads the app-owned web_res tree once at startup (not user
-      # input), so the WalkDir/ReadFile symlink-TOCTOU warning does not apply.
+      # cmd/genwebp is a build-time tool that walks and rewrites the app's own
+      # site tree (not user input), so the file-path/TOCTOU/perms warnings on
+      # ReadFile/WriteFile/WalkDir are noise here, not real risks.
       - linters:
           - gosec
-        path: assets\.go
-        text: 'G122'
+        path: cmd/genwebp/
       - linters:
           - golint
         text: comment on exported var

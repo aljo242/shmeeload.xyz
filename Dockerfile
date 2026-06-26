@@ -19,6 +19,8 @@ RUN go mod download
 COPY . .
 # Bring in the compiled JS so //go:embed site includes it.
 COPY --from=web /app/site/static/js ./site/static/js
+# Precompute WebP image variants so they are embedded too (no startup encoding).
+RUN go run ./cmd/genwebp ./site
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/server .
 
 # ---- Stage 3: runtime (the site is embedded in the binary) ----
