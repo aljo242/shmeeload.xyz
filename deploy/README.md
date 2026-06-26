@@ -11,11 +11,11 @@ phone / laptop  --https://shmee.lan-->  shmeeload binary (:443, TLS + HTTP/2 + H
 ```
 
 - The binary **embeds the whole site** (`//go:embed`). At startup it indexes the
-  embedded tree and precomputes, per asset, a content-hash ETag and
-  brotli/zstd/gzip variants for compressible text (kept only when smaller). It
-  serves the best encoding the client accepts (brotli > zstd > gzip) and answers
-  `If-None-Match` with 304. The chat websocket and `/donate` are the only dynamic
-  routes.
+  embedded tree and, per asset, **minifies text** (HTML/CSS/JS) and precomputes a
+  content-hash ETag plus brotli/zstd/gzip variants for compressible text (kept
+  only when smaller). It serves the best encoding the client accepts (brotli >
+  zstd > gzip) and answers `If-None-Match` with 304. The chat websocket and
+  `/donate` are the only dynamic routes.
 - **Images**: PNG/GIF assets ship with a lossless **WebP** variant generated at
   build time (`cmd/genwebp`, embedded as `<name>.webp` siblings). Clients that
   send `Accept: image/webp` get the smaller WebP; everyone else gets the
@@ -70,7 +70,7 @@ only trust it once per device. It is valid for 10 years.
 
 - The container runs read-only and unprivileged (`cap_drop: ALL`, only
   `NET_BIND_SERVICE` to bind :443), with the cert volume and `/tmp` writable.
-- Static assets are served with precomputed brotli/zstd/gzip, build-time WebP for
-  images, and content-hash ETags (`If-None-Match` → 304). `cacheMaxAge` in the
-  config tunes `Cache-Control`.
+- Static assets are minified (HTML/CSS/JS) and served with precomputed
+  brotli/zstd/gzip, build-time WebP for images, and content-hash ETags
+  (`If-None-Match` → 304). `cacheMaxAge` in the config tunes `Cache-Control`.
 - CI (build/test/lint/vuln) runs on a self-hosted x86 runner, not GitHub-hosted.

@@ -14,6 +14,12 @@ import (
 
 	"github.com/andybalholm/brotli"
 	"github.com/klauspost/compress/zstd"
+	"github.com/tdewolff/minify/v2"
+	"github.com/tdewolff/minify/v2/css"
+	"github.com/tdewolff/minify/v2/html"
+	"github.com/tdewolff/minify/v2/js"
+	"github.com/tdewolff/minify/v2/json"
+	"github.com/tdewolff/minify/v2/svg"
 )
 
 const (
@@ -21,6 +27,35 @@ const (
 	mimeGIF  = "image/gif"
 	mimeWebP = "image/webp"
 )
+
+// newMinifier configures a pure-Go minifier for the text asset types the site
+// serves. JS is minified per file (the modules import each other by name), so
+// exported and imported identifiers are preserved.
+func newMinifier() *minify.M {
+	m := minify.New()
+	m.AddFunc("text/css", css.Minify)
+	m.AddFunc("text/html", html.Minify)
+	m.AddFunc("image/svg+xml", svg.Minify)
+	m.AddFunc("application/json", json.Minify)
+	m.AddFunc("text/javascript", js.Minify)
+	m.AddFunc("application/javascript", js.Minify)
+	return m
+}
+
+// minifyBytes returns a minified copy for minifiable text types, or the input
+// unchanged when the type is not minifiable, minification errors, or the result
+// is not actually smaller.
+func minifyBytes(m *minify.M, contentType string, raw []byte) []byte {
+	base := contentType
+	if i := strings.IndexByte(base, ';'); i >= 0 {
+		base = base[:i]
+	}
+	out, err := m.Bytes(base, raw)
+	if err != nil || len(out) == 0 || len(out) >= len(raw) {
+		return raw
+	}
+	return out
+}
 
 // variant is an alternate encoding of an asset with its own content-hash ETag.
 type variant struct {
@@ -42,8 +77,9 @@ type staticAsset struct {
 	webp        *variant
 }
 
-// staticSite serves an embedded file tree with ETag revalidation, precompressed
-// text (brotli > zstd > gzip), and transparent WebP for images that shrink.
+// staticSite serves an embedded file tree with ETag revalidation, minified and
+// precompressed text (brotli > zstd > gzip), and transparent WebP for images
+// that shrink.
 type staticSite struct {
 	assets       map[string]*staticAsset
 	cacheControl string
@@ -73,6 +109,7 @@ func newStaticSite(fsys fs.FS, cacheMaxAge int) (*staticSite, error) {
 		return nil, err
 	}
 
+	m := newMinifier()
 	for p, b := range raw {
 		// ".webp" files are attached to their source image below, not served on their own.
 		if strings.HasSuffix(p, ".webp") {
@@ -82,6 +119,9 @@ func newStaticSite(fsys fs.FS, cacheMaxAge int) (*staticSite, error) {
 		if ct == "" {
 			ct = http.DetectContentType(b)
 		}
+		// Minify text assets before hashing and compressing, so the ETag and the
+		// br/zstd/gzip variants are all computed from the bytes actually served.
+		b = minifyBytes(m, ct, b)
 		a := &staticAsset{contentType: ct, etag: etagOf(b), raw: b}
 		if compressible(ct) {
 			a.br = smaller(brotliBytes(b), b)

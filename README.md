@@ -7,8 +7,8 @@ gorilla/websocket) that embeds the whole site, serves the static assets, and run
 shmeechat websocket hub. The frontend is TypeScript compiled to JavaScript at build time.
 
 - The whole site is embedded with `//go:embed`; the binary is the only artifact
-- Static assets served with precomputed brotli/zstd/gzip, build-time WebP for images,
-  and content-hash ETags (`If-None-Match` → 304)
+- Text assets minified (HTML/CSS/JS) and served with precomputed brotli/zstd/gzip;
+  build-time WebP for images; content-hash ETags (`If-None-Match` → 304)
 - Terminates TLS itself (self-signed cert), speaks HTTP/2, advertises HTTP/3 (QUIC)
 - WebSockets for shmeechat
 - Pages use origin-relative URLs, so the same build works at any host, port, or scheme

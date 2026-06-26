@@ -154,6 +154,28 @@ func TestWebPNegotiation(t *testing.T) {
 	})
 }
 
+// TestMinify checks that text assets are minified before being served.
+func TestMinify(t *testing.T) {
+	const css = "/* a comment */\nbody {\n    color: red;\n}\n"
+	fsys := fstest.MapFS{
+		"static/css/a.css": {Data: []byte(css)},
+	}
+	s, err := newStaticSite(fsys, 3600)
+	if err != nil {
+		t.Fatalf("newStaticSite: %v", err)
+	}
+
+	rr := httptest.NewRecorder()
+	s.serve(rr, httptest.NewRequest(http.MethodGet, "/static/css/a.css", nil), "/static/css/a.css")
+	got := rr.Body.String()
+	if len(got) >= len(css) {
+		t.Errorf("served %d bytes, want fewer than the %d-byte source", len(got), len(css))
+	}
+	if strings.Contains(got, "comment") {
+		t.Errorf("minified CSS still contains the comment: %q", got)
+	}
+}
+
 // TestWebPSiblingPairing checks that newStaticSite attaches a build-time
 // "<name>.webp" sibling to its source image and does not expose the sibling at
 // its own URL.
