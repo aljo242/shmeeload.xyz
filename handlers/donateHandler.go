@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"path"
+	"strings"
 
 	"github.com/aljo242/shmeeload.xyz/internal/log"
 )
@@ -20,8 +21,9 @@ var cryptoAddr = map[string]string{
 // Unknown currencies return 404. The address comes from a fixed internal map, so
 // it is safe to embed directly in the response.
 func DonateHandler(cacheMaxAge int) http.HandlerFunc {
+	cc := cacheControl(cacheMaxAge)
 	return func(w http.ResponseWriter, r *http.Request) {
-		currency := path.Base(r.URL.Path)
+		currency := strings.ToLower(path.Base(r.URL.Path))
 		log.Debug("incoming request", "handler", "DonateHandler", "currency", currency)
 
 		addr, ok := cryptoAddr[currency]
@@ -31,7 +33,7 @@ func DonateHandler(cacheMaxAge int) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Header().Set("Cache-Control", cacheControl(cacheMaxAge))
+		w.Header().Set("Cache-Control", cc)
 		fmt.Fprintf(w, "<h1>%s</h1>\n", addr)
 	}
 }

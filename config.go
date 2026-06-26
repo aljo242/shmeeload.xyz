@@ -8,7 +8,6 @@ import (
 
 // Config is the server configuration loaded from a JSON file.
 type Config struct {
-	Host        string `json:"host"`
 	Port        string `json:"port"`
 	IP          string `json:"IP"`
 	ChooseIP    bool   `json:"chooseIP"`

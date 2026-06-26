@@ -6,14 +6,7 @@ const DEFAULT_DECODING = "utf-8";
 // Use the page's own scheme to pick the matching websocket scheme.
 const websocketPrefix = window.location.protocol === "https:" ? "wss://" : "ws://";
 
-if (!("TextEncoder" in window)) {
-    alert("Sorry, this browser does not support TextEncoder!");
-}
 const encoder = new TextEncoder();
-
-if (!("TextDecoder" in window)) {
-    alert("Sorry, this browser does not support TextDecoder!");
-}
 const decoder = new TextDecoder(DEFAULT_DECODING);
 
 function encode(msg: string): ArrayBuffer {
@@ -39,16 +32,23 @@ class User {
     }
 
     broadcast(buf: ArrayBuffer) {
-        this.conn.send(buf);
+        // Sending on a closing/closed socket throws; skip if it isn't open.
+        if (this.conn.readyState === WebSocket.OPEN) {
+            this.conn.send(buf);
+        }
     }
 }
 
 function openPopUpForm() {
     getElement("popUpForm").style.display = "block";
+    // Move focus into the dialog so keyboard/AT users start inside it.
+    getElement<HTMLInputElement>("chatname").focus();
 }
 
 function closePopUpForm() {
     getElement("popUpForm").style.display = "none";
+    // Return focus to the message input now that the dialog is dismissed.
+    getElement<HTMLInputElement>("msg").focus();
 }
 
 function appendLog(item: HTMLDivElement) {
@@ -76,15 +76,24 @@ window.onload = () => {
 
     conn.onmessage = (evt) => {
         const item = document.createElement("div");
-        // Render as text, never HTML: messages are broadcast verbatim from other
-        // clients, so innerHTML here would be a stored XSS.
-        item.textContent = decode(evt.data as ArrayBuffer);
+        // The hub relays messages as text frames, so evt.data is a string; decode
+        // only if a binary frame ever arrives. Always render as text, never HTML:
+        // messages are broadcast verbatim from other clients, so innerHTML would
+        // be a stored XSS.
+        item.textContent =
+            typeof evt.data === "string" ? evt.data : decode(evt.data as ArrayBuffer);
         appendLog(item);
     };
 
     conn.onclose = () => {
         const item = document.createElement("div");
         item.textContent = "Connection to server closed.";
+        appendLog(item);
+    };
+
+    conn.onerror = () => {
+        const item = document.createElement("div");
+        item.textContent = "Could not connect to the chat server.";
         appendLog(item);
     };
 

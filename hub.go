@@ -14,6 +14,9 @@ type Hub struct {
 
 	// Unregister requests from clients
 	unregister chan *Client
+
+	// Closed to signal run to shut down and tear down all clients.
+	quit chan struct{}
 }
 
 func newHub() *Hub {
@@ -22,12 +25,20 @@ func newHub() *Hub {
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 		clients:    make(map[*Client]bool),
+		quit:       make(chan struct{}),
 	}
 }
 
 func (h *Hub) run() {
 	for {
 		select {
+		case <-h.quit:
+			// On shutdown close every client's send channel so its writePump
+			// emits a close frame and the connection is torn down.
+			for client := range h.clients {
+				close(client.send)
+			}
+			return
 		case client := <-h.register:
 			h.clients[client] = true
 		case client := <-h.unregister:
@@ -47,3 +58,6 @@ func (h *Hub) run() {
 		}
 	}
 }
+
+// stop signals run to close all client connections and return.
+func (h *Hub) stop() { close(h.quit) }

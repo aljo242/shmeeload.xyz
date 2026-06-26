@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ master ]
 
+# Least privilege: the job only needs to read the repo.
+permissions:
+  contents: read
+
 jobs:
   build-and-test:
     # Self-hosted x86 runner on foundry (dedicated instance for this repo).

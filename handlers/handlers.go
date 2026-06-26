@@ -24,28 +24,32 @@ func RedirectConstructionHandler() http.HandlerFunc {
 
 // ConstructionHandler serves the under-construction page.
 func ConstructionHandler(cacheMaxAge int) http.HandlerFunc {
+	cc := cacheControl(cacheMaxAge)
 	return func(w http.ResponseWriter, r *http.Request) {
-		servePage(w, r, "ConstructionHandler", "construction.html", cacheMaxAge)
+		servePage(w, r, "ConstructionHandler", "construction.html", cc)
 	}
 }
 
 // HomeHandler serves the home page.
 func HomeHandler(cacheMaxAge int) http.HandlerFunc {
+	cc := cacheControl(cacheMaxAge)
 	return func(w http.ResponseWriter, r *http.Request) {
-		servePage(w, r, "HomeHandler", "home.html", cacheMaxAge)
+		servePage(w, r, "HomeHandler", "home.html", cc)
 	}
 }
 
 // ResumeHomeHandler serves the resume page.
 func ResumeHomeHandler(cacheMaxAge int) http.HandlerFunc {
+	cc := cacheControl(cacheMaxAge)
 	return func(w http.ResponseWriter, r *http.Request) {
-		servePage(w, r, "ResumeHomeHandler", "resume.html", cacheMaxAge)
+		servePage(w, r, "ResumeHomeHandler", "resume.html", cc)
 	}
 }
 
 // HallofArtHomeHandler serves the hall-of-art page.
 func HallofArtHomeHandler(cacheMaxAge int) http.HandlerFunc {
+	cc := cacheControl(cacheMaxAge)
 	return func(w http.ResponseWriter, r *http.Request) {
-		servePage(w, r, "HallofArtHomeHandler", "shadow.html", cacheMaxAge)
+		servePage(w, r, "HallofArtHomeHandler", "shadow.html", cc)
 	}
 }
