@@ -30,7 +30,8 @@ go.work.sum
 
 # node / TypeScript build artifacts
 web_res/node_modules/
-web_res/dist/
+# TypeScript build output, embedded into the binary at build time.
+site/static/js/
 
 # runtime-generated static tree (legacy)
 /static/

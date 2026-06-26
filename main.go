@@ -10,7 +10,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/aljo242/ip_util"
 	"github.com/aljo242/shmeeload.xyz/handlers"
 	"github.com/aljo242/shmeeload.xyz/internal/log"
 	"github.com/gorilla/mux"
@@ -19,10 +18,6 @@ import (
 const (
 	// DefaultConfigFile is the default path to the JSON configuration file.
 	DefaultConfigFile string = "sample/sample_config.json"
-
-	// WebResourceDir holds the HTML/CSS/TS/image sources built into the in-memory
-	// asset map at startup.
-	WebResourceDir string = "./web_res"
 
 	// shutdownTimeout bounds how long graceful shutdown waits for in-flight requests.
 	shutdownTimeout = 10 * time.Second
@@ -41,42 +36,57 @@ func fatal(msg string, err error) {
 	os.Exit(1)
 }
 
-// buildRouter wires every route to its handler and installs shared middleware.
+// buildRouter wires the embedded static site, the chat websocket, and the donate
+// endpoint behind shared middleware. Static assets (/static/*, /files/*,
+// /manifest.json, …) are served straight from the embedded FS; the few pretty
+// page URLs map to their HTML file, and legacy placeholders redirect.
 func buildRouter(cfg Config, hub *Hub) *mux.Router {
 	r := mux.NewRouter()
 	r.Use(securityHeaders)
 
-	r.HandleFunc("/home", handlers.HomeHandler(cfg.CacheMaxAge))
-	r.HandleFunc("/", handlers.RedirectHome())
-	r.HandleFunc("/static/js/{scriptname}", handlers.ScriptsHandler(cfg.CacheMaxAge))
-	r.HandleFunc("/static/css/{filename}", handlers.CSSHandler(cfg.CacheMaxAge))
-	r.HandleFunc("/static/html/{filename}", handlers.HTMLHandler(cfg.CacheMaxAge))
-	r.HandleFunc("/static/src/{filename}", handlers.TypeScriptHandler(cfg.CacheMaxAge))
-	r.HandleFunc("/static/img/{filename}", handlers.ImageHandler(cfg.CacheMaxAge))
-	r.HandleFunc("/static/model/{filename}", handlers.ModelHandler(cfg.CacheMaxAge))
-	r.HandleFunc("/manifest.json", handlers.ManifestHandler(cfg.CacheMaxAge))
-	r.HandleFunc("/serviceWorker.js", handlers.ServiceWorkerHandler(cfg.CacheMaxAge))
-	r.HandleFunc("/serviceWorker.js.map", handlers.ServiceWorkerHandler(cfg.CacheMaxAge))
-	r.HandleFunc("/tunes/home", handlers.RedirectConstructionHandler())
-	r.HandleFunc("/shop/home", handlers.RedirectConstructionHandler())
+	site := siteFS()
 
-	// chat
-	r.HandleFunc("/chat/home", handlers.ChatHomeHandler(cfg.CacheMaxAge))
-	r.HandleFunc("/chat/ws", serveWs(hub))
-	r.HandleFunc("/chat/signup", handlers.RedirectConstructionHandler())
-	r.HandleFunc("/chat/signin", handlers.RedirectConstructionHandler())
+	page := func(name string) http.HandlerFunc {
+		return func(w http.ResponseWriter, rq *http.Request) {
+			if rq.Method != http.MethodGet && rq.Method != http.MethodHead {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			http.ServeFileFS(w, rq, site, name)
+		}
+	}
+	underConstruction := func(w http.ResponseWriter, rq *http.Request) {
+		http.Redirect(w, rq, "/under-construction", http.StatusTemporaryRedirect)
+	}
 
-	r.HandleFunc("/files/{filename}", handlers.MiscFileHandler(cfg.CacheMaxAge))
-	r.HandleFunc("/resume/home", handlers.ResumeHomeHandler(cfg.CacheMaxAge))
-	r.HandleFunc("/under-construction", handlers.ConstructionHandler(cfg.CacheMaxAge))
-	r.HandleFunc("/hall-of-art/home", handlers.HallofArtHomeHandler(cfg.CacheMaxAge))
+	// dynamic endpoints
 	r.HandleFunc("/donate/{cryptoname}", handlers.DonateHandler(cfg.CacheMaxAge))
+	r.HandleFunc("/chat/ws", serveWs(hub))
+
+	// pages (pretty URL -> embedded HTML)
+	r.HandleFunc("/", func(w http.ResponseWriter, rq *http.Request) {
+		http.Redirect(w, rq, "/home", http.StatusPermanentRedirect)
+	})
+	r.HandleFunc("/home", page("home.html"))
+	r.HandleFunc("/resume/home", page("resume.html"))
+	r.HandleFunc("/hall-of-art/home", page("shadow.html"))
+	r.HandleFunc("/chat/home", page("chat.html"))
+	r.HandleFunc("/under-construction", page("construction.html"))
+
+	// not-yet-built sections
+	r.HandleFunc("/tunes/home", underConstruction)
+	r.HandleFunc("/shop/home", underConstruction)
+	r.HandleFunc("/chat/signup", underConstruction)
+	r.HandleFunc("/chat/signin", underConstruction)
+
+	// everything else is a static asset from the embedded site
+	r.PathPrefix("/").Handler(http.FileServerFS(site))
 
 	return r
 }
 
-// initServer loads config, builds the in-memory assets, and returns a configured
-// (but not yet listening) http.Server along with the loaded config.
+// initServer loads config and returns a configured (but not yet listening)
+// http.Server with the chat hub running.
 func initServer() (*http.Server, *Hub, Config) {
 	cfg, err := LoadConfig(configFile)
 	if err != nil {
@@ -84,29 +94,11 @@ func initServer() (*http.Server, *Hub, Config) {
 	}
 	log.Setup(cfg.DebugLog)
 
-	hostIP := cfg.IP
-	if cfg.ChooseIP {
-		h, err := ip_util.HostInfo()
-		if err != nil {
-			fatal("error gathering host info", err)
-		}
-		hostIP, err = ip_util.SelectHost(h.InternalIPs)
-		if err != nil {
-			fatal("error choosing host IP", err)
-		}
-	}
-
-	assets, err := buildAssets(WebResourceDir)
-	if err != nil {
-		fatal("error building assets", err)
-	}
-	handlers.SetAssets(assets, time.Now())
-
 	hub := newHub()
 	go hub.run()
 
 	srv := &http.Server{
-		Addr:              hostIP + ":" + cfg.Port,
+		Addr:              cfg.IP + ":" + cfg.Port,
 		Handler:           buildRouter(cfg, hub),
 		ReadTimeout:       15 * time.Second,
 		ReadHeaderTimeout: 15 * time.Second,

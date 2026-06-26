@@ -3,9 +3,17 @@ package main
 import (
 	"errors"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"testing"
 )
+
+func mustWrite(t *testing.T, path, content string) {
+	t.Helper()
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write %s: %v", path, err)
+	}
+}
 
 func TestLoadConfig(t *testing.T) {
 	t.Run("valid config unmarshals", func(t *testing.T) {
