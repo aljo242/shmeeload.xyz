@@ -39,3 +39,7 @@ jobs:
       - name: Lint TypeScript
         # Runs ESLint (typescript-eslint) over web_res/src.
         run: make lint-web
+
+      - name: Vulnerability scan
+        # govulncheck flags known CVEs in Go dependencies.
+        run: make vuln

@@ -63,7 +63,11 @@ lint-web:
 	@echo "--> Running TypeScript linter"
 	@cd ./web_res && npm install --no-audit --no-fund && npm run lint
 
-.PHONY: lint lint-fix lint-web
+vuln:
+	@echo "--> Running govulncheck"
+	@go run golang.org/x/vuln/cmd/govulncheck@latest $(PACKAGES)
+
+.PHONY: lint lint-fix lint-web vuln
 
 ###############################################################################
 ###                                Testing                                  ###

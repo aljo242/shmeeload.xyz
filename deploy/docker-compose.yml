@@ -13,8 +13,17 @@ services:
       - "8080:8080"
     volumes:
       - ./config.local.json:/app/config.json:ro
+    # Hardening: the app serves assets from memory and never writes to disk, so it
+    # runs with a read-only root filesystem, no Linux capabilities, and no ability
+    # to gain new privileges. /tmp is a small tmpfs in case anything needs scratch.
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     # Resource caps so the site can never starve Pi-hole on this box.
-    # (Memory cap requires the memory cgroup enabled in the Pi's boot config.)
     deploy:
       resources:
         limits:
@@ -28,7 +37,7 @@ services:
       start_period: 10s
 
   caddy:
-    image: caddy:2-alpine
+    image: caddy:2-alpine@sha256:5f5c8640aae01df9654968d946d8f1a56c497f1dd5c5cda4cf95ab7c14d58648
     container_name: caddy
     restart: unless-stopped
     depends_on:
@@ -39,6 +48,17 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
+    # Hardening: read-only root with only the data/config volumes writable; drop
+    # all capabilities except NET_BIND_SERVICE (needed to bind :443).
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
     deploy:
       resources:
         limits:
