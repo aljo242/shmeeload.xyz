@@ -7,4 +7,4 @@ coverage.out
 coverage.html
 *.test
 web_res/node_modules
-web_res/dist
+site/static/js

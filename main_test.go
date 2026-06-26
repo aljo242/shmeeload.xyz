@@ -4,16 +4,14 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
-
-	"github.com/aljo242/shmeeload.xyz/handlers"
 )
 
 func TestBuildRouter(t *testing.T) {
-	handlers.SetAssets(map[string][]byte{"html/home.html": []byte("<html>home</html>")}, time.Time{})
-	t.Cleanup(func() { handlers.SetAssets(map[string][]byte{}, time.Time{}) })
-
-	r := buildRouter(Config{CacheMaxAge: 0}, newHub())
+	site, err := newStaticSite(siteFS(), 0)
+	if err != nil {
+		t.Fatalf("newStaticSite: %v", err)
+	}
+	r := buildRouter(Config{CacheMaxAge: 0}, newHub(), site)
 
 	cases := []struct {
 		name string
@@ -21,9 +19,10 @@ func TestBuildRouter(t *testing.T) {
 		want int
 	}{
 		{"root redirects to /home", "/", http.StatusPermanentRedirect},
-		{"home is served", "/home", http.StatusOK},
+		{"home page served from embed", "/home", http.StatusOK},
+		{"static css served from embed", "/static/css/home.css", http.StatusOK},
 		{"unknown donate currency 404s", "/donate/doge", http.StatusNotFound},
-		{"under-construction is wired", "/tunes/home", http.StatusTemporaryRedirect},
+		{"placeholder redirects to under-construction", "/tunes/home", http.StatusTemporaryRedirect},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

@@ -1,22 +1,21 @@
 # Homelab deployment (LAN)
 
-Runs shmeeload.xyz on the home network with self-hosted HTTPS. No public exposure,
-no third-party services.
+Runs shmeeload.xyz on the home network as a single self-contained Go binary that
+terminates TLS itself. No reverse proxy, no third-party services.
 
 ## Topology
 
 ```
-phone / laptop  --https://shmee.lan-->  Caddy (:443, internal CA)  -->  shmeeload (:8080)
-       \                                        on the Pi (192.168.68.56)
-        \--http://192.168.68.56:8080----------------------------------/ (direct HTTP fallback)
+phone / laptop  --https://shmee.lan-->  shmeeload binary (:443, TLS + HTTP/2)
+                                          on the Pi (192.168.68.56)
 ```
 
-- **shmeeload**: the Go server, in a container, unprivileged, on `:8080`.
-- **Caddy**: reverse proxy terminating TLS with its own internal CA (no public ACME,
-  so no domain is required). Serves `https://shmee.lan`.
-- **Pi-hole**: holds the local DNS record `shmee.lan -> 192.168.68.56` so devices on
-  the LAN resolve the name. A hostname (not a bare IP) is required so browsers send
-  SNI and Caddy can match the cert.
+- The binary **embeds the whole site** (`//go:embed`) and serves it with gzip +
+  ETag caching. The chat websocket and `/donate` are the only dynamic routes.
+- It terminates TLS directly with a **self-signed certificate** for `shmee.lan`,
+  generated on first boot into the `shmee_tls` volume (`/data`) and reused after.
+- **Pi-hole** holds the local DNS record `shmee.lan -> 192.168.68.56` so devices
+  on the LAN resolve the name.
 
 ## Deploy / update
 
@@ -24,40 +23,37 @@ From the repo root, sync to the Pi and rebuild:
 
 ```sh
 rsync -az --delete --exclude .git --exclude web_res/node_modules \
-  --exclude web_res/dist --exclude static --exclude server \
+  --exclude site/static/js --exclude server \
   ./ cozart@192.168.68.56:/opt/stacks/shmeeload/
 ssh cozart@192.168.68.56 'cd /opt/stacks/shmeeload/deploy && docker compose up -d --build'
 ```
 
-`restart: unless-stopped` + Docker enabled on boot means the stack comes back after a reboot.
+The TypeScript is compiled into `site/static/js` and embedded into the binary at
+build time; the runtime image ships only the binary (+ config + cert volume).
+`restart: unless-stopped` + Docker enabled on boot bring it back after a reboot.
 
-## Trust the internal CA on a device (one time, per device)
+## Trust the certificate on a device (one time, per device)
 
-Caddy's root cert is at `/data/caddy/pki/authorities/local/root.crt` inside the caddy
-container. Export it:
+Export the self-signed cert from the volume:
 
 ```sh
-ssh cozart@192.168.68.56 'docker exec caddy cat /data/caddy/pki/authorities/local/root.crt' > caddy-root-pi.crt
+ssh cozart@192.168.68.56 'docker exec shmeeload cat /data/cert.pem' > shmee-cert.pem
 ```
 
-- **iOS**: AirDrop/email the `.crt` to the phone, open it, then
-  Settings → General → VPN & Device Management → install the profile, then
-  Settings → General → About → Certificate Trust Settings → enable full trust for
-  "Caddy Local Authority". Browse `https://shmee.lan`.
-- **macOS**: `open caddy-root-pi.crt`, add to login keychain, set to "Always Trust".
-- **Android**: Settings → Security → Encryption & credentials → Install a certificate →
-  CA certificate. Browse `https://shmee.lan`.
+- **iOS**: AirDrop/email the `.pem`, install the profile (Settings → General →
+  VPN & Device Management), then enable full trust under Settings → General →
+  About → Certificate Trust Settings. Browse `https://shmee.lan`.
+- **macOS**: `open shmee-cert.pem`, add to the login keychain, set "Always Trust".
+- **Android**: Settings → Security → Encryption & credentials → Install a
+  certificate → CA certificate.
 
-The root cert persists in the `caddy_data` volume, so it survives restarts and you only
-install it on each device once.
+The cert lives in the `shmee_tls` Docker volume, so it survives restarts and you
+only trust it once per device. It is valid for 10 years.
 
 ## Notes
 
-- The site renders with origin-relative URLs, so the same deployment works at
-  `https://shmee.lan`, `http://192.168.68.56:8080`, or any future hostname with no
-  reconfiguration.
-- The container's CPU and memory caps are enforced. The Pi's kernel has the memory cgroup
-  enabled via `cgroup_enable=memory cgroup_memory=1` appended to
-  `/boot/firmware/cmdline.txt` (then a reboot) — without it the Raspberry Pi firmware
-  disables the memory controller by default and Docker silently drops the memory limit.
-- CI (build/test/lint) runs on a self-hosted x86 runner, not GitHub-hosted runners.
+- The container runs read-only and unprivileged (`cap_drop: ALL`, only
+  `NET_BIND_SERVICE` to bind :443), with the cert volume and `/tmp` writable.
+- Static assets are served with precomputed gzip and content-hash ETags
+  (`If-None-Match` → 304). `cacheMaxAge` in the config tunes `Cache-Control`.
+- CI (build/test/lint/vuln) runs on a self-hosted x86 runner, not GitHub-hosted.
