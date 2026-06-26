@@ -3,7 +3,6 @@ package handlers
 import (
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 )
 
@@ -49,19 +48,28 @@ func TestServeFile(t *testing.T) {
 		}
 	})
 
-	t.Run("path traversal collapses to a base name and cannot escape", func(t *testing.T) {
+	t.Run("path traversal collapses to a base name within the namespace", func(t *testing.T) {
 		setupAssets(t, map[string]string{"css/home.css": "safe"})
 		rr := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/static/css/placeholder", nil)
-		// Try to climb out of the css dir; path.Base reduces this to "home.css",
-		// which is only ever looked up inside the in-memory css namespace.
+		// path.Base reduces this to "home.css", looked up only inside the css
+		// namespace, so it serves the in-namespace asset and never escapes.
 		req.URL.Path = "/static/css/../../../../etc/home.css"
 		CSSHandler(0)(rr, req)
+		if rr.Code != http.StatusOK || rr.Body.String() != "safe" {
+			t.Fatalf("status=%d body=%q, want 200 %q", rr.Code, rr.Body.String(), "safe")
+		}
+	})
 
-		// It must not be possible to read anything outside the css namespace; the
-		// only thing that could match is the in-namespace "css/home.css".
-		if rr.Code == http.StatusOK && !strings.Contains(rr.Body.String(), "safe") {
-			t.Fatalf("traversal returned unexpected content: %q", rr.Body.String())
+	t.Run("traversal to an out-of-namespace basename is 404", func(t *testing.T) {
+		setupAssets(t, map[string]string{"css/home.css": "safe"})
+		rr := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/static/css/x", nil)
+		// Collapses to "passwd", which is not in the css namespace.
+		req.URL.Path = "/static/css/../../../../etc/passwd"
+		CSSHandler(0)(rr, req)
+		if rr.Code != http.StatusNotFound {
+			t.Fatalf("status=%d, want 404", rr.Code)
 		}
 	})
 }

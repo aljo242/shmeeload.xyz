@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -76,7 +77,7 @@ func buildRouter(cfg Config, hub *Hub) *mux.Router {
 
 // initServer loads config, builds the in-memory assets, and returns a configured
 // (but not yet listening) http.Server along with the loaded config.
-func initServer() (*http.Server, Config) {
+func initServer() (*http.Server, *Hub, Config) {
 	cfg, err := LoadConfig(configFile)
 	if err != nil {
 		fatal("error loading config", err)
@@ -110,9 +111,10 @@ func initServer() (*http.Server, Config) {
 		ReadTimeout:       15 * time.Second,
 		ReadHeaderTimeout: 15 * time.Second,
 		WriteTimeout:      15 * time.Second,
+		IdleTimeout:       60 * time.Second,
 		MaxHeaderBytes:    1 << 20,
 	}
-	return srv, cfg
+	return srv, hub, cfg
 }
 
 func main() {
@@ -125,21 +127,22 @@ func main() {
 // run starts the server and blocks until it stops, returning any non-graceful
 // error. It is separate from main so its deferred cleanup runs.
 func run() error {
-	srv, cfg := initServer()
+	srv, hub, cfg := initServer()
 
 	// Graceful shutdown on SIGINT/SIGTERM (e.g. `docker stop`): stop accepting
-	// new connections and let in-flight requests drain before exiting.
+	// new connections, drain in-flight requests, then tear down websockets.
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	shutdownErr := make(chan error, 1)
 	go func() {
 		<-ctx.Done()
 		log.Info("shutdown signal received")
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 		defer cancel()
-		if err := srv.Shutdown(shutdownCtx); err != nil {
-			log.Error("graceful shutdown failed", "err", err)
-		}
+		err := srv.Shutdown(shutdownCtx)
+		hub.stop() // close active websocket connections after the HTTP drain
+		shutdownErr <- err
 	}()
 
 	log.Info("starting server", "addr", srv.Addr, "https", cfg.HTTPS)
@@ -151,6 +154,10 @@ func run() error {
 	}
 	if err != nil && err != http.ErrServerClosed {
 		return err
+	}
+	// Block until graceful shutdown has finished draining before exiting.
+	if sErr := <-shutdownErr; sErr != nil {
+		return fmt.Errorf("graceful shutdown: %w", sErr)
 	}
 	log.Info("server stopped")
 	return nil

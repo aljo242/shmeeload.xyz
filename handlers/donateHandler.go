@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"path"
+	"strings"
 
 	"github.com/aljo242/shmeeload.xyz/internal/log"
 )
@@ -21,7 +22,7 @@ var cryptoAddr = map[string]string{
 // it is safe to embed directly in the response.
 func DonateHandler(cacheMaxAge int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		currency := path.Base(r.URL.Path)
+		currency := strings.ToLower(path.Base(r.URL.Path))
 		log.Debug("incoming request", "handler", "DonateHandler", "currency", currency)
 
 		addr, ok := cryptoAddr[currency]

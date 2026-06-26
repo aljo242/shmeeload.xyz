@@ -9,8 +9,9 @@ services:
     expose:
       - "8080"
     ports:
-      # Direct HTTP fallback on the LAN. Caddy (below) serves HTTPS on 443.
-      - "8080:8080"
+      # Loopback only (on-box debugging). LAN clients use https://shmee.lan via
+      # Caddy; this avoids serving cleartext across the LAN and bypassing TLS.
+      - "127.0.0.1:8080:8080"
     volumes:
       - ./config.local.json:/app/config.json:ro
     # Hardening: the app serves assets from memory and never writes to disk, so it

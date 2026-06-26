@@ -11,7 +11,7 @@ import (
 
 // serveFile serves the asset named by the request path's final element from the
 // given asset directory, choosing a Content-Type by extension and setting a
-// Cache-Control max-age. It writes 400 for non-GET requests and 404 when the
+// Cache-Control max-age. It writes 400 for methods other than GET/HEAD and 404 when the
 // asset is absent.
 //
 // path.Base strips any directory components from the request path, so a crafted
@@ -21,7 +21,7 @@ func serveFile(w http.ResponseWriter, r *http.Request, handlerName, dir string, 
 	name := path.Base(r.URL.Path)
 	log.Debug("incoming request", "handler", handlerName, "filename", name)
 
-	if r.Method != http.MethodGet {
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -39,11 +39,11 @@ func serveFile(w http.ResponseWriter, r *http.Request, handlerName, dir string, 
 }
 
 // servePage serves a fixed HTML page from the html asset directory. It writes
-// 400 for non-GET requests and 404 when the page is missing.
+// 400 for methods other than GET/HEAD and 404 when the page is missing.
 func servePage(w http.ResponseWriter, r *http.Request, handlerName, page string, cacheMaxAge int) {
 	log.Debug("incoming request", "handler", handlerName)
 
-	if r.Method != http.MethodGet {
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}

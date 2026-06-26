@@ -22,7 +22,7 @@ export GO111MODULE = on
 all: lint build test 
 
 build:
-	@cd ./web_res && npm install --no-audit --no-fund && npm run build
+	@cd ./web_res && npm ci --no-audit --no-fund && npm run build
 	@go build -o ${BINARY_NAME}
 
 clean: 
@@ -48,6 +48,7 @@ endif
 ###############################################################################
 golangci_lint_cmd=golangci-lint
 golangci_version=v2.12.2
+govulncheck_version=v1.5.0
 
 lint:
 	@echo "--> Running linter"
@@ -61,11 +62,11 @@ lint-fix:
 
 lint-web:
 	@echo "--> Running TypeScript linter"
-	@cd ./web_res && npm install --no-audit --no-fund && npm run lint
+	@cd ./web_res && npm ci --no-audit --no-fund && npm run lint
 
 vuln:
 	@echo "--> Running govulncheck"
-	@go run golang.org/x/vuln/cmd/govulncheck@latest $(PACKAGES)
+	@go run golang.org/x/vuln/cmd/govulncheck@$(govulncheck_version) $(PACKAGES)
 
 .PHONY: lint lint-fix lint-web vuln
 

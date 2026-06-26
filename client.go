@@ -69,7 +69,11 @@ type Client struct {
 // by executing all reads from this goroutine
 func (c *Client) readPump() {
 	defer func() {
-		c.hub.unregister <- c
+		// If the hub has stopped (server shutdown), don't block on unregister.
+		select {
+		case c.hub.unregister <- c:
+		case <-c.hub.quit:
+		}
 		if err := c.conn.Close(); err != nil {
 			log.Error("error closing WebSocket connection", "err", err)
 		}

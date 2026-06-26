@@ -39,7 +39,10 @@ class User {
     }
 
     broadcast(buf: ArrayBuffer) {
-        this.conn.send(buf);
+        // Sending on a closing/closed socket throws; skip if it isn't open.
+        if (this.conn.readyState === WebSocket.OPEN) {
+            this.conn.send(buf);
+        }
     }
 }
 
@@ -76,15 +79,24 @@ window.onload = () => {
 
     conn.onmessage = (evt) => {
         const item = document.createElement("div");
-        // Render as text, never HTML: messages are broadcast verbatim from other
-        // clients, so innerHTML here would be a stored XSS.
-        item.textContent = decode(evt.data as ArrayBuffer);
+        // The hub relays messages as text frames, so evt.data is a string; decode
+        // only if a binary frame ever arrives. Always render as text, never HTML:
+        // messages are broadcast verbatim from other clients, so innerHTML would
+        // be a stored XSS.
+        item.textContent =
+            typeof evt.data === "string" ? evt.data : decode(evt.data as ArrayBuffer);
         appendLog(item);
     };
 
     conn.onclose = () => {
         const item = document.createElement("div");
         item.textContent = "Connection to server closed.";
+        appendLog(item);
+    };
+
+    conn.onerror = () => {
+        const item = document.createElement("div");
+        item.textContent = "Could not connect to the chat server.";
         appendLog(item);
     };
 

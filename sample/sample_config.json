@@ -1,11 +1,10 @@
 {
-    "host": "localhost",
-    "port": "80",
-    "IP": "localhost",
+    "port": "8080",
+    "IP": "0.0.0.0",
     "chooseIP": false,
     "secure": false,
     "debugLog": true,
-    "shutdownCode": 3,
-    "userShutdown": true,
-    "cacheMaxAge": 0
+    "cacheMaxAge": 0,
+    "certFile": "",
+    "keyFile": ""
 }
