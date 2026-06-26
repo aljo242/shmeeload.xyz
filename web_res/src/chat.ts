@@ -1,21 +1,22 @@
-const DEFAULT_NAME : string = "anon";
-const DEFAULT_DECODING : string = "utf-8";
+import { getElement } from "./dom.js";
+
+const DEFAULT_NAME = "anon";
+const DEFAULT_DECODING = "utf-8";
 
 // Use the page's own scheme to pick the matching websocket scheme.
 const websocketPrefix = window.location.protocol === "https:" ? "wss://" : "ws://";
 
-
 if (!("TextEncoder" in window)) {
     alert("Sorry, this browser does not support TextEncoder!");
 }
-let encoder = new TextEncoder();
+const encoder = new TextEncoder();
 
 if (!("TextDecoder" in window)) {
-    alert("Sorry, this browser does not support TextEncoder!");
+    alert("Sorry, this browser does not support TextDecoder!");
 }
-let decoder = new TextDecoder(DEFAULT_DECODING);
+const decoder = new TextDecoder(DEFAULT_DECODING);
 
-function encode(msg : string): ArrayBuffer {
+function encode(msg: string): ArrayBuffer {
     return encoder.encode(msg).buffer as ArrayBuffer;
 }
 
@@ -23,84 +24,35 @@ function decode(buf: ArrayBuffer): string {
     return decoder.decode(buf);
 }
 
-
-if (!("WebSocket" in window)) {
-    alert("Sorry, this browser does not support WebSockets!");
-}
-
 class User {
     userName: string;
     conn: WebSocket;
 
     constructor(name: string, conn: WebSocket) {
-        console.log("Creating new User...")
-        console.log(this)
         this.userName = name;
         this.conn = conn;
-
         this.signIn();
     }
 
     signIn() {
-        const signInMessage = encode(`${this.userName} signed in.`);
-        this.broadcast(signInMessage);
+        this.broadcast(encode(`${this.userName} signed in.`));
     }
 
     broadcast(buf: ArrayBuffer) {
         this.conn.send(buf);
     }
-
-    p2pSend(msg: string, target: string) {
-        console.log(`Sending message to ${target}`);
-        console.log(msg);
-        this.conn.send(msg);
-    }
 }
 
-let loginPopUpOpen = false;
-
 function openPopUpForm() {
-    let form = document.getElementById("popUpForm");
-    if (form == null) {
-        console.log("Unable to access login form!");
-        return;
-    }  
-    form.style.display = "block";
-    loginPopUpOpen = true;
-    console.log("opening login pop up");
+    getElement("popUpForm").style.display = "block";
 }
 
 function closePopUpForm() {
-    let form = document.getElementById("popUpForm");
-    if (form == null) {
-        console.log("Unable to access login form!");
-        return;
-    }  
-    form.style.display = "none";
-    loginPopUpOpen = false;
-    console.log("closing login pop up");
+    getElement("popUpForm").style.display = "none";
 }
 
-//Since you know what type you are expecting, but the type 
-//system can't, to get this to work, you have to tell Typescript 
-//what type of element you expect to be selecting. You would do that 
-//through casting the type of the selected element as follows: 
-//const inputElement = <HTMLInputElement> document.getElementById("food-name-val"); 
-//or 
-//const inputElement = document.getElementById("food-name-val") as HTMLInputElement;
-
-
-
-
-//window.onclick = (event : MouseEvent) => {
-//    let modal = document.getElementById("popUpForm")!;
-//    if (event.target == modal) {
-//        closePopUpForm();
-//    }
-//}
-
-function appendLog(item : HTMLDivElement) {
-    let log = document.getElementById("log")!;
+function appendLog(item: HTMLDivElement) {
+    const log = getElement("log");
     const doScroll = log.scrollTop > log.scrollHeight - log.clientHeight - 1;
     log.appendChild(item);
     if (doScroll) {
@@ -109,83 +61,50 @@ function appendLog(item : HTMLDivElement) {
 }
 
 window.onload = () => {
-    openPopUpForm()
-    let conn: WebSocket;
-    let user: User;
-    let msg = document.getElementById("msg")! as HTMLInputElement;
+    openPopUpForm();
+    const msg = getElement<HTMLInputElement>("msg");
 
-    if (window["WebSocket"]) {
-        conn = new WebSocket(websocketPrefix + document.location.host + "/chat/ws");
-        conn.binaryType = "arraybuffer";
-        conn.onclose = () => {
-            let item = document.createElement("div");
-            item.innerHTML = "<b>Connection to server closed.</b>";
-            appendLog(item);
-            console.log("closing WS...")
-        };
-        conn.onmessage = (evt) => {
-            //console.log(evt);
-            let buf = evt.data as ArrayBuffer;
-            let item = document.createElement("div");
-            // Render as text, never HTML: messages are broadcast verbatim from
-            // other clients, so innerHTML here would be a stored XSS.
-            item.textContent = decode(buf);
-            appendLog(item);
-        };
-        conn.onclose = (evt) => {
-            console.log(evt);
-        };
-
-    } else {
-        let item = document.createElement("div");
-        item.innerHTML = "<b>Your browser does not support WebSockets.</b>";
+    if (!("WebSocket" in window)) {
+        const item = document.createElement("div");
+        item.textContent = "Your browser does not support WebSockets.";
         appendLog(item);
         return;
     }
 
-    let signInButton = document.getElementById("signInButton")!;
-    
-    let signIn = () => {
-        let userName = document.getElementById("chatname") as HTMLInputElement;
-        if (userName.value == "") {
-            console.error("USER INPUT ERROR");
-            userName.value = DEFAULT_NAME
+    const conn = new WebSocket(websocketPrefix + document.location.host + "/chat/ws");
+    conn.binaryType = "arraybuffer";
 
-        }
-        console.log(`user submitted to login form as: ${userName.value}`);
-        user = new User(userName.value, conn);
-        closePopUpForm(); 
+    conn.onmessage = (evt) => {
+        const item = document.createElement("div");
+        // Render as text, never HTML: messages are broadcast verbatim from other
+        // clients, so innerHTML here would be a stored XSS.
+        item.textContent = decode(evt.data as ArrayBuffer);
+        appendLog(item);
     };
-    signInButton.onclick = signIn;
 
-    //let formKeyCallback = (ev: KeyboardEvent) => {
-    //    if (loginPopUpOpen) {
-    //        const enterCode = "Enter";
-    //        const keyCode = ev.key;
-    //        if (keyCode === enterCode) {
-    //            // get form and submit it
-    //            console.log(`User hit ${enterCode}`)
-    //            signIn()
-    //        }
-    //    }
-    //}
+    conn.onclose = () => {
+        const item = document.createElement("div");
+        item.textContent = "Connection to server closed.";
+        appendLog(item);
+    };
 
-    //window.onkeypress = formKeyCallback;
+    let user: User | undefined;
 
-    let msgForm = document.getElementById("send_msg_form")!;
-    msgForm.onsubmit = () => {
-        if (!conn) {
-            return false;
+    getElement("signInButton").addEventListener("click", () => {
+        const userNameInput = getElement<HTMLInputElement>("chatname");
+        if (userNameInput.value === "") {
+            userNameInput.value = DEFAULT_NAME;
         }
-        if (!msg.value) {
-            return false;
+        user = new User(userNameInput.value, conn);
+        closePopUpForm();
+    });
+
+    getElement("send_msg_form").addEventListener("submit", (evt) => {
+        evt.preventDefault();
+        if (user === undefined || msg.value === "") {
+            return;
         }
-
-        const messageWithName = encode(`${user.userName}: ${msg.value}`);
-        user.broadcast(messageWithName);
-
+        user.broadcast(encode(`${user.userName}: ${msg.value}`));
         msg.value = "";
-        return false;
-    };
+    });
 };
-

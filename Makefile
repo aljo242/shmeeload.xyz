@@ -9,6 +9,10 @@ BINARY_NAME = server
 ARM = arm
 MY_ARCH = $(shell go env GOARCH)
 
+# Our Go packages, excluding anything under web_res (npm deps can ship stray
+# .go files, e.g. the "flatted" package, which would otherwise be built/linted).
+PACKAGES = $(shell go list ./... | grep -v /web_res/)
+
 export GO111MODULE = on
 
 ###############################################################################
@@ -18,7 +22,7 @@ export GO111MODULE = on
 all: lint build test 
 
 build:
-	@cd ./web_res && tsc
+	@cd ./web_res && npm install --no-audit --no-fund && npm run build
 	@go build -o ${BINARY_NAME}
 
 clean: 
@@ -55,7 +59,11 @@ lint-fix:
 	@go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(golangci_version)
 	@$(golangci_lint_cmd) run --timeout=10m --fix
 
-.PHONY: lint lint-fix
+lint-web:
+	@echo "--> Running TypeScript linter"
+	@cd ./web_res && npm install --no-audit --no-fund && npm run lint
+
+.PHONY: lint lint-fix lint-web
 
 ###############################################################################
 ###                                Testing                                  ###
@@ -66,9 +74,9 @@ test: test-unit
 test-unit:
 # cannot use "-race" flag on ARM systems
 ifeq ($(MY_ARCH), $(ARM))
-	@go test -v  -coverprofile=coverage.out
-else 
-	@go test -v -race -coverprofile=coverage.out
+	@go test -v -coverprofile=coverage.out $(PACKAGES)
+else
+	@go test -v -race -coverprofile=coverage.out $(PACKAGES)
 endif
 	@go tool cover -html coverage.out -o coverage.html
 

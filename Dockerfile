@@ -1,14 +1,12 @@
 # syntax=docker/dockerfile:1
 
 # ---- Stage 1: compile TypeScript -> JavaScript ----
-FROM node:20-alpine AS web
+FROM node:22-alpine AS web
 WORKDIR /web
 COPY web_res/package.json web_res/package-lock.json ./
 RUN npm install --no-audit --no-fund
 COPY web_res/ ./
-# Invoke the real TypeScript compiler directly. The "tsc" npm package listed in
-# package.json is a broken stub; node_modules/typescript/bin/tsc is the actual compiler.
-RUN node_modules/typescript/bin/tsc
+RUN npm run build
 
 # ---- Stage 2: build the Go server (static, no CGO) ----
 FROM golang:1.26-alpine AS build

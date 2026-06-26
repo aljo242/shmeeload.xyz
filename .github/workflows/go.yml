@@ -25,17 +25,17 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Install TypeScript
-        # make build runs `tsc`; install the real compiler globally so it is on PATH.
-        run: npm install -g typescript@^4.2.3
-
       - name: Build
+        # make build installs web_res deps and runs tsc, then builds the Go binary.
         run: make build
 
       - name: Test
         run: make test
 
-      - name: Lint
-        # Installs and runs golangci-lint (which includes gosec) per the Makefile,
-        # keeping CI identical to local `make lint`.
+      - name: Lint Go
+        # Installs and runs golangci-lint (which includes gosec) per the Makefile.
         run: make lint
+
+      - name: Lint TypeScript
+        # Runs ESLint (typescript-eslint) over web_res/src.
+        run: make lint-web
