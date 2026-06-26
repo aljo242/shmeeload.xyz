@@ -6,14 +6,7 @@ const DEFAULT_DECODING = "utf-8";
 // Use the page's own scheme to pick the matching websocket scheme.
 const websocketPrefix = window.location.protocol === "https:" ? "wss://" : "ws://";
 
-if (!("TextEncoder" in window)) {
-    alert("Sorry, this browser does not support TextEncoder!");
-}
 const encoder = new TextEncoder();
-
-if (!("TextDecoder" in window)) {
-    alert("Sorry, this browser does not support TextDecoder!");
-}
 const decoder = new TextDecoder(DEFAULT_DECODING);
 
 function encode(msg: string): ArrayBuffer {
@@ -48,10 +41,14 @@ class User {
 
 function openPopUpForm() {
     getElement("popUpForm").style.display = "block";
+    // Move focus into the dialog so keyboard/AT users start inside it.
+    getElement<HTMLInputElement>("chatname").focus();
 }
 
 function closePopUpForm() {
     getElement("popUpForm").style.display = "none";
+    // Return focus to the message input now that the dialog is dismissed.
+    getElement<HTMLInputElement>("msg").focus();
 }
 
 function appendLog(item: HTMLDivElement) {

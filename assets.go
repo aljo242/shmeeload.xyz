@@ -40,8 +40,7 @@ func buildAssets(baseDir string) (map[string][]byte, error) {
 			if err != nil {
 				return err
 			}
-			assets[path.Join("html", base)] = rendered
-			return nil
+			return putAsset(assets, path.Join("html", base), rendered, p)
 		case ".js", ".map":
 			// The service worker must live at the site root to control the whole scope.
 			if base == "serviceWorker.js" || base == "serviceWorker.js.map" {
@@ -72,13 +71,24 @@ func buildAssets(baseDir string) (map[string][]byte, error) {
 		if err != nil {
 			return fmt.Errorf("reading %s: %w", p, err)
 		}
-		assets[key] = content
-		return nil
+		return putAsset(assets, key, content, p)
 	})
 	if err != nil {
 		return nil, fmt.Errorf("building assets from %s: %w", baseDir, err)
 	}
 	return assets, nil
+}
+
+// putAsset stores content under key, refusing to silently overwrite an existing
+// entry. Because keys flatten the tree to "<type>/<basename>", two same-type
+// files sharing a basename across subdirectories would otherwise clobber each
+// other; surface that as an error instead.
+func putAsset(m map[string][]byte, key string, content []byte, src string) error {
+	if _, dup := m[key]; dup {
+		return fmt.Errorf("asset key collision %q (from %s): same-named files across subdirectories are not allowed", key, src)
+	}
+	m[key] = content
+	return nil
 }
 
 // renderHTML parses and executes the HTML template at p with an empty Host,

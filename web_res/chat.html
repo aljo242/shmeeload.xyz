@@ -34,9 +34,9 @@
 <div id="log"></div>
 
 <div class="loginPopUp">
-    <div class="formPopUp", id="popUpForm">
+    <div class="formPopUp" id="popUpForm" role="dialog" aria-modal="true" aria-labelledby="popUpTitle">
         <form class="formContainer">
-            <h2>Please Sign In:</h2>
+            <h2 id="popUpTitle">Please Sign In:</h2>
             <label for="chatname">
                 <strong>name</strong>
             </label>
@@ -46,8 +46,8 @@
     </div>
 </div>
 <form id="send_msg_form">
+    <input type="text" id="msg" size="64" aria-label="message" autofocus />
     <input type="submit" value="Send" />
-    <input type="text" id="msg" size="64" autofocus />
 </form>
 </body>
 </html>
