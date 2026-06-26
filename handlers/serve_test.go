@@ -3,16 +3,14 @@ package handlers
 import (
 	"net/http"
 	"net/http/httptest"
-	"path/filepath"
 	"strings"
 	"testing"
 )
 
 func TestServeFile(t *testing.T) {
-	root := setupStatic(t)
-	writeTestFile(t, filepath.Join(root, "css", "home.css"), "body{color:red}")
+	t.Run("serves an existing asset with content type and cache header", func(t *testing.T) {
+		setupAssets(t, map[string]string{"css/home.css": "body{color:red}"})
 
-	t.Run("serves existing file with content type and cache header", func(t *testing.T) {
 		rr := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/static/css/home.css", nil)
 		CSSHandler(3600)(rr, req)
@@ -31,7 +29,8 @@ func TestServeFile(t *testing.T) {
 		}
 	})
 
-	t.Run("missing file returns 404", func(t *testing.T) {
+	t.Run("missing asset returns 404", func(t *testing.T) {
+		setupAssets(t, nil)
 		rr := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/static/css/nope.css", nil)
 		CSSHandler(0)(rr, req)
@@ -41,6 +40,7 @@ func TestServeFile(t *testing.T) {
 	})
 
 	t.Run("non-GET returns 400", func(t *testing.T) {
+		setupAssets(t, map[string]string{"css/home.css": "x"})
 		rr := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodPost, "/static/css/home.css", nil)
 		CSSHandler(0)(rr, req)
@@ -49,20 +49,19 @@ func TestServeFile(t *testing.T) {
 		}
 	})
 
-	t.Run("path traversal cannot escape the static root", func(t *testing.T) {
-		// A secret file outside the static root.
-		secret := filepath.Join(t.TempDir(), "secret.txt")
-		writeTestFile(t, secret, "TOPSECRET")
-
+	t.Run("path traversal collapses to a base name and cannot escape", func(t *testing.T) {
+		setupAssets(t, map[string]string{"css/home.css": "safe"})
 		rr := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/static/css/placeholder", nil)
-		// Attempt to break out of cssDir up to the secret's absolute path.
-		req.URL.Path = "/static/css/../../../../.." + secret
-
+		// Try to climb out of the css dir; path.Base reduces this to "home.css",
+		// which is only ever looked up inside the in-memory css namespace.
+		req.URL.Path = "/static/css/../../../../etc/home.css"
 		CSSHandler(0)(rr, req)
 
-		if rr.Code == http.StatusOK && strings.Contains(rr.Body.String(), "TOPSECRET") {
-			t.Fatalf("path traversal served a file outside the static root: %q", rr.Body.String())
+		// It must not be possible to read anything outside the css namespace; the
+		// only thing that could match is the in-namespace "css/home.css".
+		if rr.Code == http.StatusOK && !strings.Contains(rr.Body.String(), "safe") {
+			t.Fatalf("traversal returned unexpected content: %q", rr.Body.String())
 		}
 	})
 }

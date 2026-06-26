@@ -34,13 +34,6 @@ endif
 ifneq ("$(wildcard coverage.out)", "")
 	@rm coverage.out
 endif
-ifneq ("$(wildcard serviceWorker.js)", "")
-	@rm -f serviceWorker.js 
-endif
-ifneq ("$(wildcard serviceWorker.js.map)", "")
-	@rm -f serviceWorker.js.map
-endif
-	@sudo rm -rf static/
 	@go clean
 
 .PHONY: build clean
@@ -87,7 +80,7 @@ endif
 ###############################################################################
 
 run: build
-	sudo ./${BINARY_NAME}
+	./${BINARY_NAME}
 
 .PHONY: run
 

@@ -93,18 +93,9 @@ scheme7.hr = black;
 scheme7.a_nav_link = "#001d3d";
 scheme7.a_text_link = "#001d3d";
 
-// Register Service Worker
-if ("serviceWorker" in navigator) {
-    window.addEventListener("load", function() {
-      navigator.serviceWorker.register("/serviceWorker.js").then(function(registration) {
-        // Registration was successful
-        console.log("ServiceWorker registration successful with scope: ", registration.scope);
-      }, function(err) {
-        // registration failed :(
-        console.log("ServiceWorker registration failed: ", err);
-      });
-    });
-  }
+// No service worker is registered: the previous one was empty, so it added
+// install/update churn and controlled scope "/" with no offline benefit.
+// Reintroduce a registration here only alongside a real caching worker.
 
 
 const msg = "Hello web"

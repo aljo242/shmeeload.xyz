@@ -3,13 +3,13 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/rs/zerolog/log"
+	"github.com/aljo242/shmeeload.xyz/internal/log"
 )
 
 // RedirectHome permanently redirects to /home.
 func RedirectHome() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		log.Debug().Str("Handler", "RedirectHome").Str("Request URL", r.URL.Path).Msg("incoming request")
+		log.Debug("incoming request", "handler", "RedirectHome", "url", r.URL.Path)
 		http.Redirect(w, r, "/home", http.StatusPermanentRedirect)
 	}
 }
@@ -17,7 +17,7 @@ func RedirectHome() http.HandlerFunc {
 // RedirectConstructionHandler temporarily redirects to /under-construction.
 func RedirectConstructionHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		log.Debug().Str("Handler", "RedirectConstructionHandler").Str("Request URL", r.URL.Path).Msg("incoming request")
+		log.Debug("incoming request", "handler", "RedirectConstructionHandler", "url", r.URL.Path)
 		http.Redirect(w, r, "/under-construction", http.StatusTemporaryRedirect)
 	}
 }

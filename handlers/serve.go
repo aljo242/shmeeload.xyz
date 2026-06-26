@@ -1,76 +1,67 @@
 package handlers
 
 import (
-	"errors"
-	"io/fs"
+	"bytes"
 	"net/http"
-	"os"
-	"path/filepath"
+	"path"
 	"strconv"
 
-	"github.com/rs/zerolog/log"
+	"github.com/aljo242/shmeeload.xyz/internal/log"
 )
 
-// serveFile serves the file named by the request path's final element from dir,
-// choosing a Content-Type by extension and setting a Cache-Control max-age. It
-// writes 400 for non-GET requests and 404 when the file is absent.
+// serveFile serves the asset named by the request path's final element from the
+// given asset directory, choosing a Content-Type by extension and setting a
+// Cache-Control max-age. It writes 400 for non-GET requests and 404 when the
+// asset is absent.
 //
-// filepath.Base strips any directory components from the request path, so a
-// crafted name like "../../etc/passwd" collapses to "passwd" and cannot escape
-// dir. This is the single choke point every static asset handler shares.
+// path.Base strips any directory components from the request path, so a crafted
+// name like "../../etc/passwd" collapses to "passwd" and can only ever hit the
+// in-memory map. This is the single choke point every static asset handler shares.
 func serveFile(w http.ResponseWriter, r *http.Request, handlerName, dir string, cacheMaxAge int, contentTypes map[string]string) {
-	name := filepath.Base(r.URL.Path)
-	log.Debug().Str("Handler", handlerName).Str("Filename", name).Msg("incoming request")
+	name := path.Base(r.URL.Path)
+	log.Debug("incoming request", "handler", handlerName, "filename", name)
 
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	wantFile := filepath.Join(dir, name)
-	if !fileExists(wantFile) {
+	content, ok := assets[path.Join(dir, name)]
+	if !ok {
 		w.WriteHeader(http.StatusNotFound)
-		log.Debug().Str("Filename", wantFile).Msg("file not found")
+		log.Debug("asset not found", "handler", handlerName, "filename", name)
 		return
 	}
 
-	setContentType(w, wantFile, contentTypes)
+	setContentType(w, name, contentTypes)
 	w.Header().Set("Cache-Control", cacheControl(cacheMaxAge))
-	http.ServeFile(w, r, wantFile)
+	http.ServeContent(w, r, name, assetModTime, bytes.NewReader(content))
 }
 
-// servePage serves a fixed HTML page from the html directory. It writes 400 for
-// non-GET requests and 404 when the page is missing.
+// servePage serves a fixed HTML page from the html asset directory. It writes
+// 400 for non-GET requests and 404 when the page is missing.
 func servePage(w http.ResponseWriter, r *http.Request, handlerName, page string, cacheMaxAge int) {
-	log.Debug().Str("Handler", handlerName).Msg("incoming request")
+	log.Debug("incoming request", "handler", handlerName)
 
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	wantFile := filepath.Join(htmlDir(), page)
-	if !fileExists(wantFile) {
+	content, ok := assets[path.Join(dirHTML, page)]
+	if !ok {
 		w.WriteHeader(http.StatusNotFound)
-		log.Error().Str("Filename", wantFile).Msg("page not found")
+		log.Error("page not found", "handler", handlerName, "page", page)
 		return
 	}
 
 	w.Header().Set("Content-Type", ctHTML)
 	w.Header().Set("Cache-Control", cacheControl(cacheMaxAge))
-	http.ServeFile(w, r, wantFile)
+	http.ServeContent(w, r, page, assetModTime, bytes.NewReader(content))
 }
 
-// fileExists reports whether path resolves to something on disk. A stat error
-// other than "not found" (e.g. a permission problem) is treated as existing and
-// left for http.ServeFile to surface.
-func fileExists(path string) bool {
-	_, err := os.Stat(path)
-	return !errors.Is(err, fs.ErrNotExist)
-}
-
-func setContentType(w http.ResponseWriter, path string, contentTypes map[string]string) {
-	if ct := contentTypes[filepath.Ext(path)]; ct != "" {
+func setContentType(w http.ResponseWriter, name string, contentTypes map[string]string) {
+	if ct := contentTypes[path.Ext(name)]; ct != "" {
 		w.Header().Set("Content-Type", ct)
 	}
 }

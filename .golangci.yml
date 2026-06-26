@@ -72,6 +72,12 @@ linters:
       - linters:
           - gosec
         text: Use of weak random number generator
+      # assets.go reads the app-owned web_res tree once at startup (not user
+      # input), so the WalkDir/ReadFile symlink-TOCTOU warning does not apply.
+      - linters:
+          - gosec
+        path: assets\.go
+        text: 'G122'
       - linters:
           - golint
         text: comment on exported var

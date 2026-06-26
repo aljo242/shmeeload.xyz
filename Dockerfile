@@ -27,7 +27,9 @@ RUN apk add --no-cache ca-certificates wget && adduser -D -u 10001 app
 WORKDIR /app
 COPY --from=build /out/server /app/server
 COPY --from=build /src/web_res /app/web_res
-# The server rebuilds ./static on startup, so /app must be writable by the run user.
+# The server reads web_res into an in-memory asset map at startup; it never writes
+# to disk, so this only needs to be readable by the run user (the container can
+# run with a read-only root filesystem).
 RUN chown -R app:app /app
 USER app
 EXPOSE 8080
