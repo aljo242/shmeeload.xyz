@@ -1,9 +1,6 @@
 package main
 
 import (
-	"bytes"
-	"image"
-	"image/png"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -11,26 +8,11 @@ import (
 	"testing/fstest"
 )
 
-// realPNG returns a small but compressible PNG (a flat color block) whose
-// lossless WebP encoding is smaller than the PNG.
-func realPNG(t *testing.T) []byte {
-	t.Helper()
-	img := image.NewRGBA(image.Rect(0, 0, 64, 64))
-	for i := range img.Pix {
-		img.Pix[i] = 0xAA
-	}
-	var buf bytes.Buffer
-	if err := png.Encode(&buf, img); err != nil {
-		t.Fatalf("png encode: %v", err)
-	}
-	return buf.Bytes()
-}
-
 func newTestSite(t *testing.T) *staticSite {
 	t.Helper()
 	fsys := fstest.MapFS{
 		"static/css/home.css": {Data: []byte(strings.Repeat("body{color:red}\n", 40))},
-		"static/img/x.png":    {Data: realPNG(t)},
+		"static/img/x.png":    {Data: []byte("\x89PNG not a decodable image")},
 	}
 	s, err := newStaticSite(fsys, 3600)
 	if err != nil {
@@ -112,14 +94,38 @@ func TestStaticSiteServe(t *testing.T) {
 			t.Fatal("expected serve to report a miss")
 		}
 	})
+}
 
-	t.Run("serves WebP for a PNG when the client accepts it", func(t *testing.T) {
+// TestWebPNegotiation drives the serve() image branch with a hand-built asset
+// so the test does not depend on whether a real encoder's WebP happens to beat
+// the source PNG (a flat-color fixture compresses smaller as PNG, so no variant
+// would be generated).
+func TestWebPNegotiation(t *testing.T) {
+	s := &staticSite{
+		cacheControl: "public, max-age=3600",
+		assets: map[string]*staticAsset{
+			"static/img/x.png": {
+				contentType: mimePNG,
+				etag:        `"png-etag"`,
+				raw:         []byte("raw-png-bytes"),
+				webp:        &variant{body: []byte("webp-bytes"), etag: `"webp-etag"`},
+			},
+		},
+	}
+
+	t.Run("serves WebP when the client accepts it", func(t *testing.T) {
 		rr := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/static/img/x.png", nil)
 		req.Header.Set("Accept", "image/avif,image/webp,image/*,*/*")
 		s.serve(rr, req, req.URL.Path)
-		if got := rr.Header().Get("Content-Type"); got != "image/webp" {
+		if got := rr.Header().Get("Content-Type"); got != mimeWebP {
 			t.Errorf("content-type = %q, want image/webp", got)
+		}
+		if got := rr.Header().Get("ETag"); got != `"webp-etag"` {
+			t.Errorf("etag = %q, want webp etag", got)
+		}
+		if got := rr.Body.String(); got != "webp-bytes" {
+			t.Errorf("body = %q, want webp-bytes", got)
 		}
 	})
 
@@ -128,8 +134,22 @@ func TestStaticSiteServe(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/static/img/x.png", nil)
 		req.Header.Set("Accept", "image/png,*/*")
 		s.serve(rr, req, req.URL.Path)
-		if got := rr.Header().Get("Content-Type"); got != "image/png" {
+		if got := rr.Header().Get("Content-Type"); got != mimePNG {
 			t.Errorf("content-type = %q, want image/png", got)
+		}
+		if got := rr.Body.String(); got != "raw-png-bytes" {
+			t.Errorf("body = %q, want raw-png-bytes", got)
+		}
+	})
+
+	t.Run("matching WebP If-None-Match yields 304", func(t *testing.T) {
+		rr := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/static/img/x.png", nil)
+		req.Header.Set("Accept", "image/webp")
+		req.Header.Set("If-None-Match", `"webp-etag"`)
+		s.serve(rr, req, req.URL.Path)
+		if rr.Code != http.StatusNotModified {
+			t.Fatalf("status = %d, want 304", rr.Code)
 		}
 	})
 }

@@ -21,6 +21,12 @@ import (
 	_ "image/png"
 )
 
+const (
+	mimePNG  = "image/png"
+	mimeGIF  = "image/gif"
+	mimeWebP = "image/webp"
+)
+
 // variant is an alternate encoding of an asset with its own content-hash ETag.
 type variant struct {
 	body []byte
@@ -71,7 +77,7 @@ func newStaticSite(fsys fs.FS, cacheMaxAge int) (*staticSite, error) {
 			a.gz = smaller(gzipBytes(raw), raw)
 		}
 		// Lossless WebP beats PNG/GIF; for JPEG (lossy photos) it is larger, so skip it.
-		if ct == "image/png" || ct == "image/gif" {
+		if ct == mimePNG || ct == mimeGIF {
 			if wb := webpBytes(raw); smaller(wb, raw) != nil {
 				a.webp = &variant{body: wb, etag: etagOf(wb)}
 			}
@@ -99,7 +105,7 @@ func (s *staticSite) serve(w http.ResponseWriter, r *http.Request, urlPath strin
 	// Image negotiation: serve the smaller WebP when the client accepts it.
 	if a.webp != nil && acceptsWebP(r) {
 		h.Add("Vary", "Accept")
-		h.Set("Content-Type", "image/webp")
+		h.Set("Content-Type", mimeWebP)
 		h.Set("ETag", a.webp.etag)
 		if r.Header.Get("If-None-Match") == a.webp.etag {
 			w.WriteHeader(http.StatusNotModified)
