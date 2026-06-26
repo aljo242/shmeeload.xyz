@@ -1,14 +1,16 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"syscall"
+	"time"
 
-	"github.com/aljo242/chef"
 	"github.com/aljo242/ip_util"
 	"github.com/aljo242/shmeeload.xyz/handlers"
 	"github.com/gorilla/mux"
@@ -25,6 +27,9 @@ const (
 
 	// TemplateOutputDir is the directory all outputs of SetupTemplates will fall under
 	TemplateOutputDir string = "./static"
+
+	// shutdownTimeout bounds how long graceful shutdown waits for in-flight requests.
+	shutdownTimeout = 10 * time.Second
 )
 
 var configFile string
@@ -125,47 +130,11 @@ func SetupTemplates() error {
 	return nil
 }
 
-func initServer() *chef.Server {
-	log.Printf("loading configuration in file: %v", configFile)
-	cfg, err := chef.LoadConfig(configFile)
-	if err != nil {
-		log.Fatal().Err(err).Msg("error loading config")
-		return nil
-	}
-	setupLogger(cfg)
-
-	cfg.Print()
-
-	var hostIP string
-	if cfg.ChooseIP {
-		h, err := ip_util.HostInfo()
-		if err != nil {
-			log.Fatal().Err(err).Msg("error creating Host Struct")
-			return nil
-		}
-
-		hostIP, err = ip_util.SelectHost(h.InternalIPs)
-		if err != nil {
-			log.Fatal().Err(err).Msg("error chosing host IP")
-			return nil
-		}
-	} else {
-		hostIP = cfg.IP
-	}
-
-	if err = SetupTemplates(); err != nil {
-		log.Fatal().Err(err).Msg("error setting up templates")
-		return nil
-	}
-
-	hub := newHub()
-	go hub.run()
-
-	addr := hostIP + ":" + cfg.Port
-
-	// create new gorilla mux router and attach each path to its handler
+// buildRouter wires every route to its handler and installs shared middleware.
+func buildRouter(cfg Config, hub *Hub) *mux.Router {
 	r := mux.NewRouter()
 	r.Use(securityHeaders)
+
 	r.HandleFunc("/home", handlers.HomeHandler(cfg.CacheMaxAge))
 	r.HandleFunc("/", handlers.RedirectHome())
 	r.HandleFunc("/static/js/{scriptname}", handlers.ScriptsHandler(cfg.CacheMaxAge))
@@ -192,29 +161,86 @@ func initServer() *chef.Server {
 	r.HandleFunc("/hall-of-art/home", handlers.HallofArtHomeHandler(cfg.CacheMaxAge))
 	r.HandleFunc("/donate/{cryptoname}", handlers.DonateHandler(cfg.CacheMaxAge))
 
-	fmt.Printf("\n")
-	log.Printf("starting Server at: %v...", addr)
-	return chef.NewServer(cfg, r)
+	return r
+}
+
+// initServer loads config, prepares the static assets, and returns a configured
+// (but not yet listening) http.Server along with the loaded config.
+func initServer() (*http.Server, Config) {
+	cfg, err := LoadConfig(configFile)
+	if err != nil {
+		log.Fatal().Err(err).Msg("error loading config")
+	}
+	setupLogger(cfg)
+
+	hostIP := cfg.IP
+	if cfg.ChooseIP {
+		h, err := ip_util.HostInfo()
+		if err != nil {
+			log.Fatal().Err(err).Msg("error gathering host info")
+		}
+		hostIP, err = ip_util.SelectHost(h.InternalIPs)
+		if err != nil {
+			log.Fatal().Err(err).Msg("error choosing host IP")
+		}
+	}
+
+	if err := SetupTemplates(); err != nil {
+		log.Fatal().Err(err).Msg("error setting up templates")
+	}
+
+	hub := newHub()
+	go hub.run()
+
+	srv := &http.Server{
+		Addr:              hostIP + ":" + cfg.Port,
+		Handler:           buildRouter(cfg, hub),
+		ReadTimeout:       15 * time.Second,
+		ReadHeaderTimeout: 15 * time.Second,
+		WriteTimeout:      15 * time.Second,
+		MaxHeaderBytes:    1 << 20,
+	}
+	return srv, cfg
 }
 
 func main() {
 	flag.Parse()
-	log.Printf("main: starting HTTP server...")
-	srv := initServer()
-	running := make(chan struct{})
+	if err := run(); err != nil {
+		log.Fatal().Err(err).Msg("server error")
+	}
+}
 
-	// Trigger a graceful shutdown on SIGINT/SIGTERM (e.g. `docker stop`), so the
-	// server drains in-flight requests instead of being SIGKILLed after a timeout.
+// run starts the server and blocks until it stops, returning any non-graceful
+// error. It is separate from main so its deferred cleanup runs (log.Fatal in
+// main would skip defers).
+func run() error {
+	srv, cfg := initServer()
+
+	// Graceful shutdown on SIGINT/SIGTERM (e.g. `docker stop`): stop accepting
+	// new connections and let in-flight requests drain before exiting.
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
 	go func() {
-		<-running // wait until the server is actually running before allowing Quit
-		sig := make(chan os.Signal, 1)
-		signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
-		s := <-sig
-		log.Info().Str("signal", s.String()).Msg("shutdown signal received")
-		if err := srv.Quit(); err != nil {
-			log.Error().Err(err).Msg("error initiating server shutdown")
+		<-ctx.Done()
+		log.Info().Msg("shutdown signal received")
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+		defer cancel()
+		if err := srv.Shutdown(shutdownCtx); err != nil {
+			log.Error().Err(err).Msg("graceful shutdown failed")
 		}
 	}()
 
-	srv.Run(running)
+	log.Info().Str("addr", srv.Addr).Bool("https", cfg.HTTPS).Msg("starting server")
+	var err error
+	if cfg.HTTPS {
+		err = srv.ListenAndServeTLS(cfg.CertFile, cfg.KeyFile)
+	} else {
+		err = srv.ListenAndServe()
+	}
+	if err != nil && err != http.ErrServerClosed {
+		return err
+	}
+	log.Info().Msg("server stopped")
+	return nil
 }

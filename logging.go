@@ -1,12 +1,11 @@
 package main
 
 import (
-	"github.com/aljo242/chef"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
-func setupLogger(cfg chef.ServerConfig) {
+func setupLogger(cfg Config) {
 	if cfg.DebugLog {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	} else {

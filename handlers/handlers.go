@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"net/http"
-	"path/filepath"
 
 	"github.com/rs/zerolog/log"
 )
@@ -33,32 +32,20 @@ func ConstructionHandler(cacheMaxAge int) http.HandlerFunc {
 // HomeHandler serves the home page.
 func HomeHandler(cacheMaxAge int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		servePage(w, r, "HomeHandler", "home.html", cacheMaxAge,
-			filepath.Join(cssDir(), "home.css"),
-			filepath.Join(jsDir(), "app.js"),
-			filepath.Join(imgDir(), "1favicon.ico"),
-			filepath.Join(imgDir(), "horse.jpg"),
-			filepath.Join(modelDir(), "kasa_obake.gltf"),
-		)
+		servePage(w, r, "HomeHandler", "home.html", cacheMaxAge)
 	}
 }
 
 // ResumeHomeHandler serves the resume page.
 func ResumeHomeHandler(cacheMaxAge int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		servePage(w, r, "ResumeHomeHandler", "resume.html", cacheMaxAge,
-			filepath.Join(cssDir(), "resume.css"),
-			filepath.Join(imgDir(), "1favicon.ico"),
-			filepath.Join(imgDir(), "cactus.jpg"),
-		)
+		servePage(w, r, "ResumeHomeHandler", "resume.html", cacheMaxAge)
 	}
 }
 
 // HallofArtHomeHandler serves the hall-of-art page.
 func HallofArtHomeHandler(cacheMaxAge int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		servePage(w, r, "HallofArtHomeHandler", "shadow.html", cacheMaxAge,
-			filepath.Join(cssDir(), "home.css"),
-		)
+		servePage(w, r, "HallofArtHomeHandler", "shadow.html", cacheMaxAge)
 	}
 }

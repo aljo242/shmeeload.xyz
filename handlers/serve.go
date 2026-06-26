@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/aljo242/chef"
 	"github.com/rs/zerolog/log"
 )
 
@@ -40,10 +39,9 @@ func serveFile(w http.ResponseWriter, r *http.Request, handlerName, dir string, 
 	http.ServeFile(w, r, wantFile)
 }
 
-// servePage serves a fixed HTML page from the html directory, optionally issuing
-// HTTP/2 server pushes for the given files first. It writes 400 for non-GET
-// requests and 404 when the page is missing.
-func servePage(w http.ResponseWriter, r *http.Request, handlerName, page string, cacheMaxAge int, pushFiles ...string) {
+// servePage serves a fixed HTML page from the html directory. It writes 400 for
+// non-GET requests and 404 when the page is missing.
+func servePage(w http.ResponseWriter, r *http.Request, handlerName, page string, cacheMaxAge int) {
 	log.Debug().Str("Handler", handlerName).Msg("incoming request")
 
 	if r.Method != http.MethodGet {
@@ -56,12 +54,6 @@ func servePage(w http.ResponseWriter, r *http.Request, handlerName, page string,
 		w.WriteHeader(http.StatusNotFound)
 		log.Error().Str("Filename", wantFile).Msg("page not found")
 		return
-	}
-
-	if len(pushFiles) > 0 {
-		if err := chef.PushFiles(w, pushFiles...); err != nil {
-			log.Error().Err(err).Msg("error pushing files")
-		}
 	}
 
 	w.Header().Set("Content-Type", ctHTML)
