@@ -24,8 +24,8 @@ import (
 
 const (
 	mimePNG  = "image/png"
-	mimeGIF  = "image/gif"
 	mimeWebP = "image/webp"
+	mimeAVIF = "image/avif"
 )
 
 // newMinifier configures a pure-Go minifier for the text asset types the site
@@ -65,8 +65,8 @@ type variant struct {
 
 // staticAsset is one served file, prepared once at startup: its content type, a
 // content-hash ETag, the raw bytes, precomputed brotli/zstd/gzip variants (for
-// compressible types), and a WebP variant (the build-time "<name>.webp" sibling,
-// when one was generated for a PNG/GIF).
+// compressible types), and WebP/AVIF variants (the build-time "<name>.webp" and
+// "<name>.avif" siblings, when generated for an image).
 type staticAsset struct {
 	contentType string
 	etag        string
@@ -75,11 +75,12 @@ type staticAsset struct {
 	zst         []byte // zstd; nil when not worth it
 	gz          []byte // gzip; nil when not worth it
 	webp        *variant
+	avif        *variant
 }
 
 // staticSite serves an embedded file tree with ETag revalidation, minified and
-// precompressed text (brotli > zstd > gzip), and transparent WebP for images
-// that shrink.
+// precompressed text (brotli > zstd > gzip), and transparent AVIF/WebP for
+// images that shrink.
 type staticSite struct {
 	assets       map[string]*staticAsset
 	cacheControl string
@@ -90,9 +91,9 @@ func newStaticSite(fsys fs.FS, cacheMaxAge int) (*staticSite, error) {
 		assets:       make(map[string]*staticAsset),
 		cacheControl: "public, max-age=" + strconv.Itoa(cacheMaxAge),
 	}
-	// First pass: read every file. WebP variants are precomputed at build time
-	// (see cmd/genwebp) and embedded as "<name>.webp" siblings, so collect the
-	// whole tree before pairing each image with its sibling.
+	// First pass: read every file. Image variants are precomputed at build time
+	// (see cmd/genimg) and embedded as "<name>.webp"/"<name>.avif" siblings, so
+	// collect the whole tree before pairing each image with its siblings.
 	raw := make(map[string][]byte)
 	err := fs.WalkDir(fsys, ".", func(p string, d fs.DirEntry, err error) error {
 		if err != nil || d.IsDir() {
@@ -111,8 +112,8 @@ func newStaticSite(fsys fs.FS, cacheMaxAge int) (*staticSite, error) {
 
 	m := newMinifier()
 	for p, b := range raw {
-		// ".webp" files are attached to their source image below, not served on their own.
-		if strings.HasSuffix(p, ".webp") {
+		// Generated image siblings are attached to their source below, not served on their own.
+		if strings.HasSuffix(p, ".webp") || strings.HasSuffix(p, ".avif") {
 			continue
 		}
 		ct := mime.TypeByExtension(path.Ext(p))
@@ -128,20 +129,23 @@ func newStaticSite(fsys fs.FS, cacheMaxAge int) (*staticSite, error) {
 			a.zst = smaller(zstdBytes(b), b)
 			a.gz = smaller(gzipBytes(b), b)
 		}
-		// Pair PNG/GIF with the smaller build-time WebP sibling, when present.
-		if ct == mimePNG || ct == mimeGIF {
-			if wb, ok := raw[p+".webp"]; ok {
-				a.webp = &variant{body: wb, etag: etagOf(wb)}
-			}
+		// Pair with the build-time image siblings, when present. Their existence
+		// already means they beat the source (cmd/genimg only keeps smaller ones).
+		if wb, ok := raw[p+".webp"]; ok {
+			a.webp = &variant{body: wb, etag: etagOf(wb)}
+		}
+		if av, ok := raw[p+".avif"]; ok {
+			a.avif = &variant{body: av, etag: etagOf(av)}
 		}
 		s.assets[p] = a
 	}
 	return s, nil
 }
 
-// serve writes the asset at urlPath if present (returning true). It serves WebP
-// when the client accepts it and a smaller variant exists, otherwise the raw
-// bytes with the best accepted compression. Returns false (writing nothing) on a miss.
+// serve writes the asset at urlPath if present (returning true). For images it
+// serves the smallest variant the client accepts (AVIF/WebP over the original);
+// otherwise it serves the raw bytes with the best accepted compression. Returns
+// false (writing nothing) on a miss.
 func (s *staticSite) serve(w http.ResponseWriter, r *http.Request, urlPath string) bool {
 	key := strings.TrimPrefix(path.Clean("/"+urlPath), "/")
 	a, ok := s.assets[key]
@@ -153,16 +157,17 @@ func (s *staticSite) serve(w http.ResponseWriter, r *http.Request, urlPath strin
 	h.Set("Cache-Control", s.cacheControl)
 	h.Add("Vary", "Accept-Encoding")
 
-	// Image negotiation: serve the smaller WebP when the client accepts it.
-	if a.webp != nil && acceptsWebP(r) {
+	// Image negotiation: serve the smallest variant the client accepts. Each
+	// present variant already beats the source, so any accepted one is a win.
+	if ct, v := a.bestImage(r); v != nil {
 		h.Add("Vary", "Accept")
-		h.Set("Content-Type", mimeWebP)
-		h.Set("ETag", a.webp.etag)
-		if r.Header.Get("If-None-Match") == a.webp.etag {
+		h.Set("Content-Type", ct)
+		h.Set("ETag", v.etag)
+		if r.Header.Get("If-None-Match") == v.etag {
 			w.WriteHeader(http.StatusNotModified)
 			return true
 		}
-		writeBody(w, r, a.webp.body)
+		writeBody(w, r, v.body)
 		return true
 	}
 
@@ -205,8 +210,19 @@ func (a *staticAsset) negotiate(acceptEncoding string) (body []byte, encoding st
 	}
 }
 
-func acceptsWebP(r *http.Request) bool {
-	return strings.Contains(r.Header.Get("Accept"), "image/webp")
+// bestImage returns the smallest image variant the client accepts, or nil when
+// the asset has no variants or the client accepts none of them.
+func (a *staticAsset) bestImage(r *http.Request) (contentType string, v *variant) {
+	accept := r.Header.Get("Accept")
+	if a.avif != nil && strings.Contains(accept, mimeAVIF) {
+		contentType, v = mimeAVIF, a.avif
+	}
+	if a.webp != nil && strings.Contains(accept, mimeWebP) {
+		if v == nil || len(a.webp.body) < len(v.body) {
+			contentType, v = mimeWebP, a.webp
+		}
+	}
+	return contentType, v
 }
 
 func parseList(header string) map[string]bool {
