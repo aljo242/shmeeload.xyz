@@ -1,0 +1,35 @@
+name: uptime
+
+# External uptime probe for the live site. Runs on a GitHub-hosted runner on
+# purpose (not the self-hosted foundry runner): the point is an outside vantage
+# that can also catch a home-network outage. A failed run emails the repo owner.
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe https://djinntek.space
+        run: |
+          set -e
+          # curl validates the TLS cert by default, so an expired/invalid cert
+          # also fails this. --http2 confirms the negotiated stack works.
+          code=$(curl -sS --http2 --max-time 25 -o /dev/null -w '%{http_code}' https://djinntek.space/home)
+          echo "GET /home -> HTTP $code"
+          if [ "$code" != "200" ]; then
+            echo "::error::djinntek.space returned $code (expected 200)"
+            exit 1
+          fi
+      - name: Check www redirect
+        run: |
+          set -e
+          code=$(curl -sS --max-time 25 -o /dev/null -w '%{http_code}' https://www.djinntek.space/home)
+          echo "GET www/home -> HTTP $code"
+          # 301 (redirect to apex) or 200 are both fine; anything else is a problem.
+          case "$code" in
+            200|301|308) ;;
+            *) echo "::error::www.djinntek.space returned $code"; exit 1 ;;
+          esac
