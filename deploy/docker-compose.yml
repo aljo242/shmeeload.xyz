@@ -12,6 +12,10 @@ services:
     volumes:
       - ./config.local.json:/app/config.json:ro
       - shmee_tls:/data
+    # So the container's own healthcheck hits the managed cert: it resolves the
+    # public hostname to loopback, giving SNI=djinntek.space to the local server.
+    extra_hosts:
+      - "djinntek.space:127.0.0.1"
     # Hardening: read-only root with only the cert volume + /tmp writable; drop all
     # capabilities except NET_BIND_SERVICE (needed to bind :443 as the non-root user).
     read_only: true
@@ -30,7 +34,7 @@ services:
           cpus: "0.50"
           memory: 256M
     healthcheck:
-      test: ["CMD", "wget", "--no-check-certificate", "-qO-", "https://127.0.0.1/home"]
+      test: ["CMD", "wget", "--no-check-certificate", "-qO-", "https://djinntek.space/home"]
       interval: 30s
       timeout: 5s
       retries: 3
