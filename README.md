@@ -2,14 +2,15 @@
 
 [![CI](https://github.com/aljo242/shmeeload.xyz/actions/workflows/go.yml/badge.svg)](https://github.com/aljo242/shmeeload.xyz/actions/workflows/go.yml) [![go report](https://goreportcard.com/badge/github.com/aljo242/shmeeload.xyz)](https://goreportcard.com/report/github.com/aljo242/shmeeload.xyz) [![license](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)](./LICENSE)
 
-My personal website. A single self-contained Go server (gorilla/mux +
+My personal website. A single self-contained Go server (stdlib `net/http` routing +
 gorilla/websocket) that embeds the whole site, serves the static assets, and runs the
 shmeechat websocket hub. The frontend is TypeScript compiled to JavaScript at build time.
 
 - The whole site is embedded with `//go:embed`; the binary is the only artifact
 - Text assets minified (HTML/CSS/JS) and served with precomputed brotli/zstd/gzip;
   build-time AVIF/WebP for images (smallest accepted variant wins); content-hash
-  ETags (`If-None-Match` → 304)
+  ETags (`If-None-Match` → 304). HTML is revalidated each load; other assets are cached
+- Per-IP rate limiting and websocket connection/message caps
 - Terminates TLS itself (self-signed cert), speaks HTTP/2, advertises HTTP/3 (QUIC)
 - WebSockets for shmeechat
 - Pages use origin-relative URLs, so the same build works at any host, port, or scheme

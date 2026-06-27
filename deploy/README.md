@@ -33,13 +33,13 @@ phone / laptop  --https://shmee.lan-->  shmeeload binary (:443, TLS + HTTP/2 + H
 From the repo root, sync to the Pi and rebuild:
 
 ```sh
-rsync -az --delete --exclude .git --exclude web_res/node_modules \
+# --chmod=F644 forces world-readable file modes on the Pi. Without it, rsync -a
+# carries the Mac's 0640 mode onto config.local.json, and the unprivileged
+# container user cannot read the :ro bind mount, so it crash-loops with
+# "reading config ...: permission denied".
+rsync -az --delete --chmod=F644 --exclude .git --exclude web_res/node_modules \
   --exclude site/static/js --exclude server \
   ./ cozart@192.168.68.56:/opt/stacks/shmeeload/
-# rsync -a carries the Mac's 0640 mode onto the config; the unprivileged
-# container user must be able to read the :ro bind mount, or it crash-loops
-# with "reading config ...: permission denied".
-ssh cozart@192.168.68.56 'chmod 644 /opt/stacks/shmeeload/deploy/config.local.json'
 ssh cozart@192.168.68.56 'cd /opt/stacks/shmeeload/deploy && docker compose up -d --build'
 ```
 
