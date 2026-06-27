@@ -44,8 +44,14 @@ func fatal(msg string, err error) {
 func buildRouter(cfg Config, hub *Hub, site *staticSite) *mux.Router {
 	r := mux.NewRouter()
 	r.Use(securityHeaders)
+	r.Use(newIPRateLimiter(httpRatePerSec, httpBurst).middleware)
 	if cfg.HTTPS {
 		r.Use(altSvc(cfg.Port))
+	}
+	// HSTS only once a publicly-trusted cert is in play (opt in via config);
+	// browsers ignore it over a self-signed/LAN setup.
+	if cfg.HSTS {
+		r.Use(hsts)
 	}
 
 	// serveAsset serves a named asset (GET/HEAD only), 404ing if absent.
@@ -66,8 +72,9 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) *mux.Router {
 	}
 
 	// dynamic endpoints
+	conns := newConnLimiter(wsMaxPerIP, wsMaxTotal)
 	r.HandleFunc("/donate/{cryptoname}", handlers.DonateHandler(cfg.CacheMaxAge))
-	r.HandleFunc("/chat/ws", serveWs(hub))
+	r.HandleFunc("/chat/ws", serveWs(hub, conns))
 
 	// pages (pretty URL -> embedded HTML)
 	r.HandleFunc("/", func(w http.ResponseWriter, rq *http.Request) {
