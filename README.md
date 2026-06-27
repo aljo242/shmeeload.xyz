@@ -54,8 +54,7 @@ docker compose up -d --build
 This builds the image (TypeScript compile + AVIF/WebP image generation + static Go binary) and
 serves the site over HTTPS. The single binary embeds the whole site and terminates TLS
 itself with a self-signed certificate, so there is no reverse proxy. See
-[deploy/README.md](deploy/README.md) for the full homelab setup (Raspberry Pi + Pi-hole
-DNS).
+[deploy/README.md](deploy/README.md) for the homelab deployment notes.
 
 ## CI
 

@@ -17,6 +17,14 @@ type Config struct {
 	KeyFile     string   `json:"keyFile"`
 	TLSHosts    []string `json:"tlsHosts"` // SANs for the self-signed cert generated when secure is true
 	HSTS        bool     `json:"hsts"`     // send Strict-Transport-Security; enable only with a publicly-trusted cert
+
+	// ACME (Let's Encrypt) for a publicly-trusted cert. When ACME is true the
+	// self-signed path is bypassed; CertFile/KeyFile are ignored.
+	ACME        bool     `json:"acme"`
+	ACMEStaging bool     `json:"acmeStaging"` // use the LE staging CA while testing
+	ACMEEmail   string   `json:"acmeEmail"`   // contact address for the ACME account
+	ACMEDir     string   `json:"acmeDir"`     // where managed certs are stored (a persistent dir)
+	Domains     []string `json:"domains"`     // hostnames to obtain/serve certs for
 }
 
 // LoadConfig reads and parses the JSON config at path. Unlike the previous
