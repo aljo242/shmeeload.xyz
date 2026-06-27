@@ -41,6 +41,8 @@ func securityHeaders(next http.Handler) http.Handler {
 		h.Set("X-Frame-Options", "DENY")
 		h.Set("Referrer-Policy", "no-referrer")
 		h.Set("Content-Security-Policy", csp)
+		// The site needs none of these powerful features; deny them all.
+		h.Set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), browsing-topics=()")
 		next.ServeHTTP(w, r)
 	})
 }
