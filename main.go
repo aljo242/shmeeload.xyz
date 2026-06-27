@@ -12,7 +12,6 @@ import (
 
 	"github.com/aljo242/shmeeload.xyz/handlers"
 	"github.com/aljo242/shmeeload.xyz/internal/log"
-	"github.com/gorilla/mux"
 	"github.com/quic-go/quic-go/http3"
 )
 
@@ -41,26 +40,16 @@ func fatal(msg string, err error) {
 // endpoint behind shared middleware. Static assets (/static/*, /files/*,
 // /manifest.json, …) are served straight from the embedded FS; the few pretty
 // page URLs map to their HTML file, and legacy placeholders redirect.
-func buildRouter(cfg Config, hub *Hub, site *staticSite) *mux.Router {
-	r := mux.NewRouter()
-	r.Use(securityHeaders)
-	r.Use(newIPRateLimiter(httpRatePerSec, httpBurst).middleware)
-	if cfg.HTTPS {
-		r.Use(altSvc(cfg.Port))
-	}
-	// HSTS only once a publicly-trusted cert is in play (opt in via config);
-	// browsers ignore it over a self-signed/LAN setup.
-	if cfg.HSTS {
-		r.Use(hsts)
-	}
+//
+// Routing uses the stdlib ServeMux: GET patterns match GET and HEAD (other
+// methods get a 405), "/{$}" matches the root exactly, and "/" is the
+// least-specific catch-all for everything else.
+func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
+	mux := http.NewServeMux()
 
-	// serveAsset serves a named asset (GET/HEAD only), 404ing if absent.
+	// serveAsset serves a named embedded asset, 404ing if absent.
 	serveAsset := func(name string) http.HandlerFunc {
 		return func(w http.ResponseWriter, rq *http.Request) {
-			if rq.Method != http.MethodGet && rq.Method != http.MethodHead {
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
 			if !site.serve(w, rq, name) {
 				http.NotFound(w, rq)
 			}
@@ -73,37 +62,44 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) *mux.Router {
 
 	// dynamic endpoints
 	conns := newConnLimiter(wsMaxPerIP, wsMaxTotal)
-	r.HandleFunc("/donate/{cryptoname}", handlers.DonateHandler(cfg.CacheMaxAge))
-	r.HandleFunc("/chat/ws", serveWs(hub, conns))
+	mux.HandleFunc("GET /donate/{cryptoname}", handlers.DonateHandler(cfg.CacheMaxAge))
+	mux.HandleFunc("GET /chat/ws", serveWs(hub, conns))
 
 	// pages (pretty URL -> embedded HTML)
-	r.HandleFunc("/", func(w http.ResponseWriter, rq *http.Request) {
+	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, rq *http.Request) {
 		http.Redirect(w, rq, "/home", http.StatusPermanentRedirect)
 	})
-	r.HandleFunc("/home", page("home.html"))
-	r.HandleFunc("/resume/home", page("resume.html"))
-	r.HandleFunc("/hall-of-art/home", page("shadow.html"))
-	r.HandleFunc("/chat/home", page("chat.html"))
-	r.HandleFunc("/under-construction", page("construction.html"))
+	mux.HandleFunc("GET /home", page("home.html"))
+	mux.HandleFunc("GET /resume/home", page("resume.html"))
+	mux.HandleFunc("GET /hall-of-art/home", page("shadow.html"))
+	mux.HandleFunc("GET /chat/home", page("chat.html"))
+	mux.HandleFunc("GET /under-construction", page("construction.html"))
 
 	// not-yet-built sections
-	r.HandleFunc("/tunes/home", underConstruction)
-	r.HandleFunc("/shop/home", underConstruction)
-	r.HandleFunc("/chat/signup", underConstruction)
-	r.HandleFunc("/chat/signin", underConstruction)
+	mux.HandleFunc("GET /tunes/home", underConstruction)
+	mux.HandleFunc("GET /shop/home", underConstruction)
+	mux.HandleFunc("GET /chat/signup", underConstruction)
+	mux.HandleFunc("GET /chat/signin", underConstruction)
 
 	// everything else is a static asset from the embedded site
-	r.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, rq *http.Request) {
-		if rq.Method != http.MethodGet && rq.Method != http.MethodHead {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
+	mux.HandleFunc("GET /", func(w http.ResponseWriter, rq *http.Request) {
 		if !site.serve(w, rq, rq.URL.Path) {
 			http.NotFound(w, rq)
 		}
 	})
 
-	return r
+	// Middleware, applied outermost first: security headers, then per-IP rate
+	// limiting, then the HTTPS-only Alt-Svc and (opt-in) HSTS headers.
+	var h http.Handler = mux
+	if cfg.HSTS {
+		h = hsts(h)
+	}
+	if cfg.HTTPS {
+		h = altSvc(cfg.Port)(h)
+	}
+	h = newIPRateLimiter(httpRatePerSec, httpBurst).middleware(h)
+	h = securityHeaders(h)
+	return h
 }
 
 // initServer loads config and returns a configured (but not yet listening)
@@ -134,9 +130,11 @@ func initServer() (*http.Server, *Hub, Config) {
 		Handler:           buildRouter(cfg, hub, site),
 		ReadTimeout:       15 * time.Second,
 		ReadHeaderTimeout: 15 * time.Second,
-		WriteTimeout:      15 * time.Second,
-		IdleTimeout:       60 * time.Second,
-		MaxHeaderBytes:    1 << 20,
+		// Generous enough to serve the largest original image to a slow client
+		// without truncating; ReadHeaderTimeout is what guards against slowloris.
+		WriteTimeout:   60 * time.Second,
+		IdleTimeout:    60 * time.Second,
+		MaxHeaderBytes: 1 << 20,
 	}
 	return srv, hub, cfg
 }

@@ -68,14 +68,15 @@ type variant struct {
 // compressible types), and WebP/AVIF variants (the build-time "<name>.webp" and
 // "<name>.avif" siblings, when generated for an image).
 type staticAsset struct {
-	contentType string
-	etag        string
-	raw         []byte
-	br          []byte // brotli; nil when not worth it
-	zst         []byte // zstd; nil when not worth it
-	gz          []byte // gzip; nil when not worth it
-	webp        *variant
-	avif        *variant
+	contentType  string
+	etag         string
+	raw          []byte
+	br           []byte // brotli; nil when not worth it
+	zst          []byte // zstd; nil when not worth it
+	gz           []byte // gzip; nil when not worth it
+	webp         *variant
+	avif         *variant
+	cacheControl string
 }
 
 // staticSite serves an embedded file tree with ETag revalidation, minified and
@@ -123,7 +124,12 @@ func newStaticSite(fsys fs.FS, cacheMaxAge int) (*staticSite, error) {
 		// Minify text assets before hashing and compressing, so the ETag and the
 		// br/zstd/gzip variants are all computed from the bytes actually served.
 		b = minifyBytes(m, ct, b)
-		a := &staticAsset{contentType: ct, etag: etagOf(b), raw: b}
+		a := &staticAsset{contentType: ct, etag: etagOf(b), raw: b, cacheControl: s.cacheControl}
+		// HTML carries the page content, which changes between deploys, so it is
+		// always revalidated (cheap via the ETag) rather than cached for a while.
+		if strings.HasPrefix(ct, "text/html") {
+			a.cacheControl = "no-cache"
+		}
 		if compressible(ct) {
 			a.br = smaller(brotliBytes(b), b)
 			a.zst = smaller(zstdBytes(b), b)
@@ -154,7 +160,7 @@ func (s *staticSite) serve(w http.ResponseWriter, r *http.Request, urlPath strin
 	}
 
 	h := w.Header()
-	h.Set("Cache-Control", s.cacheControl)
+	h.Set("Cache-Control", a.cacheControl)
 	h.Add("Vary", "Accept-Encoding")
 
 	// Image negotiation: serve the smallest variant the client accepts. Each
