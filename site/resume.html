@@ -3,17 +3,26 @@
 <head>
     <meta charset="utf-8"/>
     <base href="/"/>
-    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0 shrink-to-fit=no"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no"/>
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="Progressive Web app">
+    <meta name="apple-mobile-web-app-title" content="djinntek">
 
     <meta name="theme-color" content="#f0f8ff"/>
-    <meta name="description" content="Resume page for Alex Johnson.  Author: Alex Johnson">
+    <meta name="description" content="Resume of Cozart Shmoopler - projects, skills, and experience."/>
 
-    <title>alex's resume</title>
+    <!-- Open Graph / link previews. og:image is the old photo for now; replace with a new one. -->
+    <meta property="og:type" content="profile"/>
+    <meta property="og:site_name" content="djinntek"/>
+    <meta property="og:title" content="cozart shmoopler - resume"/>
+    <meta property="og:description" content="Resume of Cozart Shmoopler - projects, skills, and experience."/>
+    <meta property="og:url" content="https://djinntek.space/resume/home"/>
+    <meta property="og:image" content="https://djinntek.space/static/img/me.png"/>
+    <meta name="twitter:card" content="summary_large_image"/>
+    <link rel="canonical" href="https://djinntek.space/resume/home"/>
+
+    <title>cozart shmoopler - resume</title>
 
     <link rel='stylesheet' type='text/css'  href='/static/css/resume.css'>
     <link rel="manifest" href="/manifest.json">
@@ -33,7 +42,7 @@
 <body style="background-image: url('/static/img/cactus.jpg'); background-size: cover;">
     <section class= "scroll">
       <nav id="nav">
-        <header id="header">alex's resume</header>
+        <header id="header">cozart shmoopler</header>
         <ul>
           <li class="navLink"><a href="/files/alex_johnson_1page_resume.pdf" target="_blank">traditional resume</a></li>
           <li class="navLink"><a href="/resume/home#sec_projects">projects</a></li>
@@ -48,7 +57,7 @@
 
         <footer id="nav_footer">
             <div id="copy">
-              &copy; shmeelabs
+              &copy; djinntek
             </div>
             <div id="bonus_button">
               <!--<button id="testHomeButton" style="float:center;">Click Me!</button>-->
@@ -91,7 +100,7 @@
             <div id="subsec_shmeechain" class="resumeTextSubsection">
                 <h2 class="resumeHeader">shmeechain and shmeecoin</h2>
                 <p class="textLink">
-                   Ongoing project for learning and implementing a public blockchain and crypto ecosystem.  I am planning to use <a class="textLink" href="ipns://libp2p.io/ rel="noopener noreferrer"" target="_blank">libp2p</a> 
+                   Ongoing project for learning and implementing a public blockchain and crypto ecosystem.  I am planning to use <a class="textLink" href="https://libp2p.io" target="_blank" rel="noopener noreferrer">libp2p</a> 
                    as the core of the project to learn more about their ecosystem and its available transports like QUIC.  I currently have a basic blockchain with a Bitcoin-style proof of work consensus
                    mechanism with tuneable difficulty.  Current plans of the project are to fully flesh out the p2p networking stack so I can set up easily runnable nodes for my friends.
                 </p>
@@ -156,7 +165,6 @@
                 <ul class="resumeBullet">
                     <li class="resumeBullet"><em>Distributed Systems</em>: blockchains, smart contracts, proof-of-work, proof-of-stake, leader election</li>
                     <li class="resumeBullet"><em>Networking</em>: RPC, HTTP, TCP, UDP, QUIC, IBVerbs, RDMA</li>
-                    <li class="resumeBullet"><em>Machine Learning</em>: </li>
                     <li class="resumeBullet"><em>Rendering</em>: physically-based rendering, ray-tracing, distributed offline rendering</li>
                     <li class="resumeBullet"><em>Control</em>: adaptive control, PID, fuzzy logic, complex control</li>
                 </ul>
@@ -276,7 +284,7 @@
         <div id="sec_links" class="resumeListSubsection">
             <h1 class="resumeHeader">links</h1>
                 <ul class="textLink">
-                    <li><a href="mailto:alex.johnson@shmeeload.xyz">email</a></li>
+                    <li><a href="mailto:cozart@djinntek.space">email</a></li>
                     <li><a href="https://github.com/aljo242" target="_blank">github</a></li>
                     <li><a href="https://www.linkedin.com/in/alex-johnson-776180111/" target="_blank">linkedin</a></li>
                 </ul>
@@ -288,30 +296,7 @@
 
         <div id="sec_references" class="resumeListSubsection">
             <h1 class="resumeHeader">references</h1>
-                <ul>
-                <div id="subsec_adg">
-                    <p>Alan D. George, Ph.D.</p>
-                    <p><em>Department Chair, R&H Mickle Endowed Chair, and Professor of Electrical and Computer Engineering</em></p>
-                    <p class="textLink" ><a href="mailto:alan.george@pitt.edu ">email</a></p>
-                    <p>412.624.9664</p>
-                    <br>
-                </div>
-
-                <div id="subsec_zhm">
-                    <p>Zhi-Hong Mao, Ph.D.</p>
-                    <p><em>Professor of Electrical and Computer Engineering</em></p>
-                    <p class="textLink" ><a href="mailto:maozh@engr.pitt.edu">email</a></p>
-                    <p>412.624.9674</p>
-                    <br>
-                </div>
-
-                <div id="subsec_ahd">
-                    <p>Ahmed Dallal, Ph.D.</p>
-                    <p><em>Assistant Professor of Electrical and Computer Engineering</em></p>
-                    <p class="textLink" ><a href="mailto:ahd12@pitt.edu ">email</a></p>
-                    <p>412.383.4423</p>
-                    <br>
-                </div>
+                <p class="textLink">Available on request.</p>
         </div>
       </article>
     </section>
