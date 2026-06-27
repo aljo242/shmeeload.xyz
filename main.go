@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -98,8 +100,20 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 		h = altSvc(cfg.Port)(h)
 	}
 	h = newIPRateLimiter(httpRatePerSec, httpBurst).middleware(h)
+	h = redirectToApex(apexDomain(cfg.Domains))(h)
 	h = securityHeaders(h)
 	return h
+}
+
+// apexDomain returns the first non-www domain (the canonical apex), or "" when
+// none is configured.
+func apexDomain(domains []string) string {
+	for _, d := range domains {
+		if !strings.HasPrefix(d, "www.") {
+			return d
+		}
+	}
+	return ""
 }
 
 // initServer loads config and returns a configured (but not yet listening)
@@ -111,7 +125,9 @@ func initServer() (*http.Server, *Hub, Config) {
 	}
 	log.Setup(cfg.DebugLog)
 
-	if cfg.HTTPS {
+	// With ACME on, certmagic manages the certificate; otherwise generate a
+	// self-signed one for LAN use.
+	if cfg.HTTPS && !cfg.ACME {
 		if err := ensureCert(cfg.CertFile, cfg.KeyFile, cfg.TLSHosts); err != nil {
 			fatal("error preparing TLS certificate", err)
 		}
@@ -156,13 +172,31 @@ func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	// TLS source: ACME-managed (certmagic) when enabled, else the self-signed
+	// cert files. A non-nil tlsConfig means ACME is in play.
+	var tlsConfig *tls.Config
+	if cfg.HTTPS && cfg.ACME {
+		var err error
+		tlsConfig, err = acmeTLSConfig(cfg)
+		if err != nil {
+			fatal("error setting up ACME", err)
+		}
+		srv.TLSConfig = tlsConfig
+	}
+
 	// HTTP/3 (QUIC) over UDP alongside the TCP h1/h2 listener, sharing the cert
 	// and handler. Clients learn about it from the Alt-Svc header and upgrade.
 	var h3 *http3.Server
 	if cfg.HTTPS {
-		h3 = &http3.Server{Addr: srv.Addr, Handler: srv.Handler}
+		h3 = &http3.Server{Addr: srv.Addr, Handler: srv.Handler, TLSConfig: tlsConfig}
 		go func() {
-			if err := h3.ListenAndServeTLS(cfg.CertFile, cfg.KeyFile); err != nil && err != http.ErrServerClosed {
+			var err error
+			if tlsConfig != nil {
+				err = h3.ListenAndServe()
+			} else {
+				err = h3.ListenAndServeTLS(cfg.CertFile, cfg.KeyFile)
+			}
+			if err != nil && err != http.ErrServerClosed {
 				log.Error("http3 server error", "err", err)
 			}
 		}()
@@ -182,11 +216,15 @@ func run() error {
 		shutdownErr <- err
 	}()
 
-	log.Info("starting server", "addr", srv.Addr, "https", cfg.HTTPS)
+	log.Info("starting server", "addr", srv.Addr, "https", cfg.HTTPS, "acme", cfg.ACME)
 	var err error
-	if cfg.HTTPS {
+	switch {
+	case tlsConfig != nil:
+		// Cert comes from srv.TLSConfig (certmagic), so no files are passed.
+		err = srv.ListenAndServeTLS("", "")
+	case cfg.HTTPS:
 		err = srv.ListenAndServeTLS(cfg.CertFile, cfg.KeyFile)
-	} else {
+	default:
 		err = srv.ListenAndServe()
 	}
 	if err != nil && err != http.ErrServerClosed {

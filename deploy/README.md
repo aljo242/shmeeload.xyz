@@ -71,6 +71,37 @@ ssh cozart@192.168.68.56 'docker exec shmeeload cat /data/cert.pem' > shmee-cert
 The cert lives in the `shmee_tls` Docker volume, so it survives restarts and you
 only trust it once per device. It is valid for 10 years.
 
+## Going public (ACME / Let's Encrypt)
+
+For a real publicly-trusted cert, the binary speaks ACME directly (certmagic) and
+auto-renews; no Caddy, no manual certs. Set in the config:
+
+```json
+"acme": true,
+"acmeStaging": true,
+"acmeEmail": "cozart@djinntek.space",
+"acmeDir": "/data/certmagic",
+"domains": ["djinntek.space", "www.djinntek.space"]
+```
+
+When `acme` is true the self-signed path is bypassed (`certFile`/`keyFile`
+ignored), `www.djinntek.space` 301s to the apex, and certs are stored under
+`acmeDir` on the `/data` volume so they survive restarts. Issuance uses the
+TLS-ALPN-01 challenge on :443, so only :443 needs to be reachable (no :80).
+
+Prerequisites:
+- DNS (Cloudflare): `A @` and `A www` -> the home public IP, **DNS only (grey
+  cloud)** so traffic reaches the Pi directly and TLS is not terminated upstream.
+- Router: forward **TCP 443 and UDP 443** to the Pi (UDP for HTTP/3).
+- A DDNS updater keeps the A record current when the home IP changes.
+
+Go-live order: deploy with `acmeStaging: true` first to confirm issuance against
+the LE staging CA (browsers will warn on the staging cert, but a cert appearing
+means the flow works), then set `acmeStaging: false` and `hsts: true` for the
+production cert. LAN clients reach the same name via a Pi-hole split-horizon
+record (`djinntek.space -> 192.168.68.56`), so the self-signed cert and per-device
+trust are no longer needed.
+
 ## Notes
 
 - The container runs read-only and unprivileged (`cap_drop: ALL`, only
