@@ -39,3 +39,6 @@ site/**/*.avif
 # runtime-generated static tree (legacy)
 /static/
 
+
+# Env-specific deploy config (kept local; see config.example.json)
+deploy/config.local.json

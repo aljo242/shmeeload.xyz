@@ -7,7 +7,7 @@ terminates TLS itself. No reverse proxy, no third-party services.
 
 ```
 phone / laptop  --https://shmee.lan-->  shmeeload binary (:443, TLS + HTTP/2 + HTTP/3)
-                                          on the Pi (192.168.68.56)
+                                          on the Pi (<pi-lan-ip>)
 ```
 
 - The binary **embeds the whole site** (`//go:embed`). At startup it indexes the
@@ -25,7 +25,7 @@ phone / laptop  --https://shmee.lan-->  shmeeload binary (:443, TLS + HTTP/2 + H
   generated on first boot into the `shmee_tls` volume (`/data`) and reused after.
   It speaks **HTTP/2** over TCP and advertises **HTTP/3** (QUIC over UDP 443) via
   `Alt-Svc`, so capable clients upgrade.
-- **Pi-hole** holds the local DNS record `shmee.lan -> 192.168.68.56` so devices
+- **Pi-hole** holds the local DNS record `shmee.lan -> <pi-lan-ip>` so devices
   on the LAN resolve the name.
 
 ## Deploy / update
@@ -35,8 +35,8 @@ From the repo root, sync to the Pi and rebuild:
 ```sh
 rsync -az --delete --exclude .git --exclude web_res/node_modules \
   --exclude site/static/js --exclude server \
-  ./ cozart@192.168.68.56:/opt/stacks/shmeeload/
-ssh cozart@192.168.68.56 'cd /opt/stacks/shmeeload/deploy && docker compose up -d --build'
+  ./ $PI:/opt/stacks/shmeeload/
+ssh $PI 'cd /opt/stacks/shmeeload/deploy && docker compose up -d --build'
 ```
 
 `config.local.json` must stay world-readable (`644`): the unprivileged container
@@ -58,7 +58,7 @@ bring it back after a reboot.
 Export the self-signed cert from the volume:
 
 ```sh
-ssh cozart@192.168.68.56 'docker exec shmeeload cat /data/cert.pem' > shmee-cert.pem
+ssh $PI 'docker exec shmeeload cat /data/cert.pem' > shmee-cert.pem
 ```
 
 - **iOS**: AirDrop/email the `.pem`, install the profile (Settings → General →
@@ -99,7 +99,7 @@ Go-live order: deploy with `acmeStaging: true` first to confirm issuance against
 the LE staging CA (browsers will warn on the staging cert, but a cert appearing
 means the flow works), then set `acmeStaging: false` and `hsts: true` for the
 production cert. LAN clients reach the same name via a Pi-hole split-horizon
-record (`djinntek.space -> 192.168.68.56`), so the self-signed cert and per-device
+record (`djinntek.space -> <pi-lan-ip>`), so the self-signed cert and per-device
 trust are no longer needed.
 
 ## Notes

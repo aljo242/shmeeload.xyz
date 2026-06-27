@@ -1,0 +1,16 @@
+{
+    "port": "443",
+    "IP": "0.0.0.0",
+    "secure": true,
+    "hsts": false,
+    "debugLog": false,
+    "cacheMaxAge": 3600,
+    "certFile": "/data/cert.pem",
+    "keyFile": "/data/key.pem",
+    "tlsHosts": ["<lan-host>", "127.0.0.1"],
+    "acme": false,
+    "acmeStaging": true,
+    "acmeEmail": "you@example.com",
+    "acmeDir": "/data/certmagic",
+    "domains": ["example.com", "www.example.com"]
+}
