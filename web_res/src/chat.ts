@@ -1,4 +1,5 @@
 import { getElement } from "./dom.js";
+import { initTheme } from "./theme.js";
 
 const DEFAULT_NAME = "anon";
 const DEFAULT_DECODING = "utf-8";
@@ -20,11 +21,11 @@ function decode(buf: ArrayBuffer): string {
 let userName = DEFAULT_NAME;
 let conn: WebSocket | undefined;
 
-function appendLog(text: string) {
+function appendLog(text: string, cls = "logLine") {
     const log = getElement("log");
     const doScroll = log.scrollTop > log.scrollHeight - log.clientHeight - 1;
     const item = document.createElement("div");
-    item.className = "logLine";
+    item.className = cls;
     // Always render as text, never HTML: messages are broadcast verbatim from
     // other clients (and replayed from history), so innerHTML would be XSS.
     item.textContent = text;
@@ -39,7 +40,8 @@ function clearLog() {
 }
 
 // connectRoom switches to a room: it closes any current connection, clears the
-// log, opens a new socket scoped to the room, and announces the join.
+// log, and opens a new socket scoped to the room (carrying the display name, so
+// the server can stamp messages and announce joins/leaves).
 function connectRoom(room: string) {
     if (conn) {
         conn.onclose = null; // a deliberate switch should not log "disconnected"
@@ -51,16 +53,16 @@ function connectRoom(room: string) {
         b.classList.toggle("active", b.dataset.room === room);
     });
 
-    const c = new WebSocket(
-        `${websocketPrefix}${document.location.host}/chat/ws?room=${encodeURIComponent(room)}`,
-    );
+    const url =
+        `${websocketPrefix}${document.location.host}/chat/ws` +
+        `?room=${encodeURIComponent(room)}&name=${encodeURIComponent(userName)}`;
+    const c = new WebSocket(url);
     c.binaryType = "arraybuffer";
     c.onmessage = (evt) => {
         appendLog(typeof evt.data === "string" ? evt.data : decode(evt.data as ArrayBuffer));
     };
-    c.onopen = () => c.send(encode(`${userName} joined.`));
-    c.onclose = () => appendLog("— disconnected —");
-    c.onerror = () => appendLog("— connection error —");
+    c.onclose = () => appendLog("— disconnected —", "statusLine");
+    c.onerror = () => appendLog("— connection error —", "statusLine");
     conn = c;
 }
 
@@ -85,6 +87,8 @@ function closePopUpForm() {
 }
 
 window.onload = async () => {
+    initTheme(); // shmee-man button cycles themes, same as the other pages
+
     if (!("WebSocket" in window)) {
         appendLog("Your browser does not support WebSockets.");
         return;
@@ -119,7 +123,7 @@ window.onload = async () => {
         if (conn === undefined || conn.readyState !== WebSocket.OPEN || msg.value === "") {
             return;
         }
-        conn.send(encode(`${userName}: ${msg.value}`));
+        conn.send(encode(msg.value)); // raw text; the server stamps time + name
         msg.value = "";
     });
 };

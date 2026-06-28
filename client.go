@@ -13,6 +13,12 @@ import (
 )
 
 const (
+	// chatTimeFormat prefixes every chat line with a server-side timestamp.
+	chatTimeFormat = "Jan 2 15:04"
+
+	// maxNameLen caps a client-supplied display name.
+	maxNameLen = 24
+
 	// Time allowed to write a message to peer
 	writeWait = 10 * time.Second
 
@@ -35,6 +41,31 @@ var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 	CheckOrigin:     sameOriginCheck,
+}
+
+// chatLine prefixes text with a server timestamp, so message times are
+// consistent and survive in persisted history.
+func chatLine(text string) []byte {
+	return []byte("[" + time.Now().Format(chatTimeFormat) + "] " + text)
+}
+
+// sanitizeName makes a client-supplied name safe to display: printable,
+// single-line, length-capped, defaulting to "anon".
+func sanitizeName(name string) string {
+	name = strings.Map(func(r rune) rune {
+		if r < 0x20 || r == 0x7f { // strip control chars (including newlines)
+			return -1
+		}
+		return r
+	}, name)
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return "anon"
+	}
+	if r := []rune(name); len(r) > maxNameLen {
+		name = string(r[:maxNameLen])
+	}
+	return name
 }
 
 // sameOriginCheck only allows websocket upgrades whose Origin host matches the
@@ -62,8 +93,9 @@ type Client struct {
 	// Buffered channel of outbound messages
 	send chan []byte
 
-	// room this client is joined to.
+	// room this client is joined to; name is its display name (from the join URL).
 	room string
+	name string
 
 	// ip and conns release this connection's slot in the per-IP/global cap when
 	// the connection closes.
@@ -81,7 +113,12 @@ type Client struct {
 // by executing all reads from this goroutine
 func (c *Client) readPump() {
 	defer func() {
-		// If the hub has stopped (server shutdown), don't block on unregister.
+		// Announce the departure to the room, then unregister. Both are guarded
+		// so they don't block once the hub has stopped (server shutdown).
+		select {
+		case c.hub.broadcast <- roomMessage{room: c.room, body: chatLine("* " + c.name + " left *"), system: true}:
+		case <-c.hub.quit:
+		}
 		select {
 		case c.hub.unregister <- c:
 		case <-c.hub.quit:
@@ -117,7 +154,9 @@ func (c *Client) readPump() {
 		}
 
 		message = bytes.TrimSpace(bytes.ReplaceAll(message, newline, space))
-		c.hub.broadcast <- roomMessage{room: c.room, body: message}
+		// The server stamps the time and the (trusted) connection name, so they
+		// cannot be spoofed per message and are consistent across clients.
+		c.hub.broadcast <- roomMessage{room: c.room, body: chatLine(c.name + ": " + string(message))}
 	}
 }
 
@@ -200,6 +239,7 @@ func serveWs(hub *Hub, conns *connLimiter, rooms map[string]bool) func(http.Resp
 			http.Error(w, "unknown room", http.StatusNotFound)
 			return
 		}
+		name := sanitizeName(r.URL.Query().Get("name"))
 
 		ip := clientIP(r)
 		// Cap concurrent connections before upgrading so a flood is rejected cheaply.
@@ -236,6 +276,7 @@ func serveWs(hub *Hub, conns *connLimiter, rooms map[string]bool) func(http.Resp
 			conn:       conn,
 			send:       make(chan []byte, 256),
 			room:       room,
+			name:       name,
 			ip:         ip,
 			conns:      conns,
 			msgLimiter: rate.NewLimiter(wsMsgPerSec, wsMsgBurst),
@@ -246,5 +287,11 @@ func serveWs(hub *Hub, conns *connLimiter, rooms map[string]bool) func(http.Resp
 		go client.writePump()
 		go client.readPump()
 		client.hub.register <- client
+
+		// Announce the arrival to the room (broadcast, not persisted).
+		select {
+		case hub.broadcast <- roomMessage{room: room, body: chatLine("* " + name + " joined *"), system: true}:
+		case <-hub.quit:
+		}
 	}
 }
