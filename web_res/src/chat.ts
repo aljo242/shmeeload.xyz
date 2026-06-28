@@ -17,103 +17,109 @@ function decode(buf: ArrayBuffer): string {
     return decoder.decode(buf);
 }
 
-class User {
-    userName: string;
-    conn: WebSocket;
+let userName = DEFAULT_NAME;
+let conn: WebSocket | undefined;
 
-    constructor(name: string, conn: WebSocket) {
-        this.userName = name;
-        this.conn = conn;
-        this.signIn();
-    }
-
-    signIn() {
-        this.broadcast(encode(`${this.userName} signed in.`));
-    }
-
-    broadcast(buf: ArrayBuffer) {
-        // Sending on a closing/closed socket throws; skip if it isn't open.
-        if (this.conn.readyState === WebSocket.OPEN) {
-            this.conn.send(buf);
-        }
-    }
-}
-
-function openPopUpForm() {
-    getElement("popUpForm").style.display = "block";
-    // Move focus into the dialog so keyboard/AT users start inside it.
-    getElement<HTMLInputElement>("chatname").focus();
-}
-
-function closePopUpForm() {
-    getElement("popUpForm").style.display = "none";
-    // Return focus to the message input now that the dialog is dismissed.
-    getElement<HTMLInputElement>("msg").focus();
-}
-
-function appendLog(item: HTMLDivElement) {
+function appendLog(text: string) {
     const log = getElement("log");
     const doScroll = log.scrollTop > log.scrollHeight - log.clientHeight - 1;
+    const item = document.createElement("div");
+    item.className = "logLine";
+    // Always render as text, never HTML: messages are broadcast verbatim from
+    // other clients (and replayed from history), so innerHTML would be XSS.
+    item.textContent = text;
     log.appendChild(item);
     if (doScroll) {
         log.scrollTop = log.scrollHeight - log.clientHeight;
     }
 }
 
-window.onload = () => {
-    openPopUpForm();
-    const msg = getElement<HTMLInputElement>("msg");
+function clearLog() {
+    getElement("log").textContent = "";
+}
 
+// connectRoom switches to a room: it closes any current connection, clears the
+// log, opens a new socket scoped to the room, and announces the join.
+function connectRoom(room: string) {
+    if (conn) {
+        conn.onclose = null; // a deliberate switch should not log "disconnected"
+        conn.close();
+    }
+    clearLog();
+
+    document.querySelectorAll<HTMLButtonElement>("#rooms button").forEach((b) => {
+        b.classList.toggle("active", b.dataset.room === room);
+    });
+
+    const c = new WebSocket(
+        `${websocketPrefix}${document.location.host}/chat/ws?room=${encodeURIComponent(room)}`,
+    );
+    c.binaryType = "arraybuffer";
+    c.onmessage = (evt) => {
+        appendLog(typeof evt.data === "string" ? evt.data : decode(evt.data as ArrayBuffer));
+    };
+    c.onopen = () => c.send(encode(`${userName} joined.`));
+    c.onclose = () => appendLog("— disconnected —");
+    c.onerror = () => appendLog("— connection error —");
+    conn = c;
+}
+
+async function loadRooms(): Promise<string[]> {
+    try {
+        const resp = await fetch("/chat/rooms");
+        const rooms = (await resp.json()) as string[];
+        return Array.isArray(rooms) ? rooms : [];
+    } catch {
+        return [];
+    }
+}
+
+function openPopUpForm() {
+    getElement("popUpForm").style.display = "block";
+    getElement<HTMLInputElement>("chatname").focus();
+}
+
+function closePopUpForm() {
+    getElement("popUpForm").style.display = "none";
+    getElement<HTMLInputElement>("msg").focus();
+}
+
+window.onload = async () => {
     if (!("WebSocket" in window)) {
-        const item = document.createElement("div");
-        item.textContent = "Your browser does not support WebSockets.";
-        appendLog(item);
+        appendLog("Your browser does not support WebSockets.");
         return;
     }
 
-    const conn = new WebSocket(websocketPrefix + document.location.host + "/chat/ws");
-    conn.binaryType = "arraybuffer";
+    const rooms = await loadRooms();
+    const roomsEl = getElement("rooms");
+    for (const room of rooms) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "roomBtn";
+        btn.textContent = room;
+        btn.dataset.room = room;
+        btn.addEventListener("click", () => connectRoom(room));
+        roomsEl.appendChild(btn);
+    }
 
-    conn.onmessage = (evt) => {
-        const item = document.createElement("div");
-        // The hub relays messages as text frames, so evt.data is a string; decode
-        // only if a binary frame ever arrives. Always render as text, never HTML:
-        // messages are broadcast verbatim from other clients, so innerHTML would
-        // be a stored XSS.
-        item.textContent =
-            typeof evt.data === "string" ? evt.data : decode(evt.data as ArrayBuffer);
-        appendLog(item);
-    };
-
-    conn.onclose = () => {
-        const item = document.createElement("div");
-        item.textContent = "Connection to server closed.";
-        appendLog(item);
-    };
-
-    conn.onerror = () => {
-        const item = document.createElement("div");
-        item.textContent = "Could not connect to the chat server.";
-        appendLog(item);
-    };
-
-    let user: User | undefined;
+    openPopUpForm();
 
     getElement("signInButton").addEventListener("click", () => {
         const userNameInput = getElement<HTMLInputElement>("chatname");
-        if (userNameInput.value === "") {
-            userNameInput.value = DEFAULT_NAME;
-        }
-        user = new User(userNameInput.value, conn);
+        userName = userNameInput.value === "" ? DEFAULT_NAME : userNameInput.value;
         closePopUpForm();
+        if (rooms.length > 0) {
+            connectRoom(rooms[0]); // auto-join the first room
+        }
     });
 
     getElement("send_msg_form").addEventListener("submit", (evt) => {
         evt.preventDefault();
-        if (user === undefined || msg.value === "") {
+        const msg = getElement<HTMLInputElement>("msg");
+        if (conn === undefined || conn.readyState !== WebSocket.OPEN || msg.value === "") {
             return;
         }
-        user.broadcast(encode(`${user.userName}: ${msg.value}`));
+        conn.send(encode(`${userName}: ${msg.value}`));
         msg.value = "";
     });
 };

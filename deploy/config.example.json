@@ -12,5 +12,8 @@
     "acmeStaging": true,
     "acmeEmail": "you@example.com",
     "acmeDir": "/data/certmagic",
-    "domains": ["example.com", "www.example.com"]
+    "domains": ["example.com", "www.example.com"],
+    "chatRooms": ["general", "music", "art", "tech"],
+    "chatDBPath": "/data/chat.db",
+    "chatRetentionDays": 14
 }

@@ -25,6 +25,11 @@ type Config struct {
 	ACMEEmail   string   `json:"acmeEmail"`   // contact address for the ACME account
 	ACMEDir     string   `json:"acmeDir"`     // where managed certs are stored (a persistent dir)
 	Domains     []string `json:"domains"`     // hostnames to obtain/serve certs for
+
+	// Chat: a fixed set of rooms, message persistence, and retention-based cleanup.
+	ChatRooms         []string `json:"chatRooms"`         // curated room names (defaults applied if empty)
+	ChatDBPath        string   `json:"chatDBPath"`        // SQLite file for persisted messages (defaults to <acmeDir parent>/chat.db)
+	ChatRetentionDays int      `json:"chatRetentionDays"` // delete messages older than this many days (default 14)
 }
 
 // LoadConfig reads and parses the JSON config at path. Unlike the previous

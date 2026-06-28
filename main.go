@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"net/http"
@@ -64,8 +65,14 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 
 	// dynamic endpoints
 	conns := newConnLimiter(wsMaxPerIP, wsMaxTotal)
+	rooms := chatRoomsOf(cfg)
 	mux.HandleFunc("GET /donate/{cryptoname}", handlers.DonateHandler(cfg.CacheMaxAge))
-	mux.HandleFunc("GET /chat/ws", serveWs(hub, conns))
+	mux.HandleFunc("GET /chat/ws", serveWs(hub, conns, roomSet(rooms)))
+	mux.HandleFunc("GET /chat/rooms", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Cache-Control", "no-cache")
+		_ = json.NewEncoder(w).Encode(rooms)
+	})
 
 	// pages (pretty URL -> embedded HTML)
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, rq *http.Request) {
@@ -116,6 +123,67 @@ func apexDomain(domains []string) string {
 	return ""
 }
 
+// Chat defaults, applied when the config leaves a field empty.
+var defaultChatRooms = []string{"general", "music", "art", "tech"}
+
+const (
+	defaultChatRetentionDays = 14
+	defaultChatDBPath        = "/data/chat.db"
+)
+
+func chatRoomsOf(cfg Config) []string {
+	if len(cfg.ChatRooms) > 0 {
+		return cfg.ChatRooms
+	}
+	return defaultChatRooms
+}
+
+func chatRetentionDaysOf(cfg Config) int {
+	if cfg.ChatRetentionDays > 0 {
+		return cfg.ChatRetentionDays
+	}
+	return defaultChatRetentionDays
+}
+
+func chatDBPathOf(cfg Config) string {
+	if cfg.ChatDBPath != "" {
+		return cfg.ChatDBPath
+	}
+	return defaultChatDBPath
+}
+
+func roomSet(rooms []string) map[string]bool {
+	m := make(map[string]bool, len(rooms))
+	for _, r := range rooms {
+		m[r] = true
+	}
+	return m
+}
+
+// runChatCleanup deletes messages past the retention window, once at startup and
+// then daily, until ctx is cancelled.
+func runChatCleanup(ctx context.Context, store *chatStore, retentionDays int) {
+	window := time.Duration(retentionDays) * 24 * time.Hour
+	purge := func() {
+		if n, err := store.purgeOlderThan(window); err != nil {
+			log.Error("chat cleanup failed", "err", err)
+		} else if n > 0 {
+			log.Info("chat cleanup", "deleted", n)
+		}
+	}
+	purge()
+	t := time.NewTicker(24 * time.Hour)
+	defer t.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+			purge()
+		}
+	}
+}
+
 // initServer loads config and returns a configured (but not yet listening)
 // http.Server with the chat hub running.
 func initServer() (*http.Server, *Hub, Config) {
@@ -138,7 +206,16 @@ func initServer() (*http.Server, *Hub, Config) {
 		fatal("error indexing embedded site", err)
 	}
 
-	hub := newHub()
+	// Chat persistence is best-effort: if the DB cannot be opened (e.g. /data is
+	// missing in a dev run), the chat still works, just without history.
+	var store *chatStore
+	if s, err := newChatStore(chatDBPathOf(cfg)); err != nil {
+		log.Error("chat persistence disabled", "err", err)
+	} else {
+		store = s
+	}
+
+	hub := newHub(store)
 	go hub.run()
 
 	srv := &http.Server{
@@ -171,6 +248,11 @@ func run() error {
 	// new connections, drain in-flight requests, then tear down websockets.
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	// Prune persisted messages past the retention window, daily.
+	if hub.store != nil {
+		go runChatCleanup(ctx, hub.store, chatRetentionDaysOf(cfg))
+	}
 
 	// TLS source: ACME-managed (certmagic) when enabled, else the self-signed
 	// cert files. A non-nil tlsConfig means ACME is in play.
@@ -213,6 +295,9 @@ func run() error {
 			_ = h3.Close()
 		}
 		hub.stop() // close active websocket connections after the HTTP drain
+		if hub.store != nil {
+			_ = hub.store.close()
+		}
 		shutdownErr <- err
 	}()
 
