@@ -2,10 +2,12 @@ package main
 
 import "github.com/aljo242/shmeeload.xyz/internal/log"
 
-// roomMessage is a message bound for a single room.
+// roomMessage is a message bound for a single room. System messages (joins,
+// leaves) are broadcast but not persisted, so they stay out of replayed history.
 type roomMessage struct {
-	room string
-	body []byte
+	room   string
+	body   []byte
+	system bool
 }
 
 // Hub keeps the set of connected clients per room and fans messages out within
@@ -66,7 +68,7 @@ func (h *Hub) run() {
 			}
 
 		case m := <-h.broadcast:
-			if h.store != nil {
+			if h.store != nil && !m.system {
 				if err := h.store.save(m.room, m.body); err != nil {
 					log.Error("error persisting chat message", "room", m.room, "err", err)
 				}

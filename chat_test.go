@@ -31,7 +31,25 @@ func newChatTestServer(t *testing.T) *httptest.Server {
 }
 
 func wsURL(srv *httptest.Server) string {
-	return "ws" + strings.TrimPrefix(srv.URL, "http") + "/chat/ws?room=general"
+	return "ws" + strings.TrimPrefix(srv.URL, "http") + "/chat/ws?room=general&name=tester"
+}
+
+// readContaining reads frames (skipping join/system notices) until one contains
+// want, or fails on timeout.
+func readContaining(t *testing.T, c *websocket.Conn, want string) {
+	t.Helper()
+	if err := c.SetReadDeadline(time.Now().Add(2 * time.Second)); err != nil {
+		t.Fatalf("set deadline: %v", err)
+	}
+	for {
+		_, msg, err := c.ReadMessage()
+		if err != nil {
+			t.Fatalf("did not receive a frame containing %q: %v", want, err)
+		}
+		if strings.Contains(string(msg), want) {
+			return
+		}
+	}
 }
 
 func newChatServerWithStore(t *testing.T, store *chatStore) *httptest.Server {
@@ -69,7 +87,7 @@ func TestWebSocketHistoryReplay(t *testing.T) {
 	}
 	defer store.close()
 	srv := newChatServerWithStore(t, store)
-	url := "ws" + strings.TrimPrefix(srv.URL, "http") + "/chat/ws?room=general"
+	url := wsURL(srv) // room=general&name=tester
 
 	// First client posts a message, which should be persisted.
 	c1, _, err := websocket.DefaultDialer.Dial(url, nil)
@@ -77,10 +95,13 @@ func TestWebSocketHistoryReplay(t *testing.T) {
 		t.Fatalf("dial c1: %v", err)
 	}
 	time.Sleep(100 * time.Millisecond) // registered
-	if err := c1.WriteMessage(websocket.TextMessage, []byte("alex: hello")); err != nil {
+	if err := c1.WriteMessage(websocket.TextMessage, []byte("hello")); err != nil {
 		t.Fatalf("write: %v", err)
 	}
 	time.Sleep(200 * time.Millisecond) // let it persist
+	if got, _ := store.recent("general", 10); len(got) != 1 {
+		t.Fatalf("message not persisted: recent = %q", got)
+	}
 	_ = c1.Close()
 
 	// A new client joining the room should be replayed that message as history.
@@ -89,16 +110,8 @@ func TestWebSocketHistoryReplay(t *testing.T) {
 		t.Fatalf("dial c2: %v", err)
 	}
 	defer func() { _ = c2.Close() }()
-	if err := c2.SetReadDeadline(time.Now().Add(2 * time.Second)); err != nil {
-		t.Fatalf("set deadline: %v", err)
-	}
-	_, msg, err := c2.ReadMessage()
-	if err != nil {
-		t.Fatalf("read history: %v", err)
-	}
-	if string(msg) != "alex: hello" {
-		t.Errorf("history = %q, want \"alex: hello\"", msg)
-	}
+	// The persisted, server-stamped message is replayed to the new client.
+	readContaining(t, c2, "tester: hello")
 }
 
 func TestWebSocketConnectionCap(t *testing.T) {
@@ -144,16 +157,8 @@ func TestWebSocketEcho(t *testing.T) {
 	if err := c.WriteMessage(websocket.TextMessage, []byte("hello")); err != nil {
 		t.Fatalf("write: %v", err)
 	}
-	if err := c.SetReadDeadline(time.Now().Add(2 * time.Second)); err != nil {
-		t.Fatalf("set deadline: %v", err)
-	}
-	_, msg, err := c.ReadMessage()
-	if err != nil {
-		t.Fatalf("read: %v", err)
-	}
-	if string(msg) != "hello" {
-		t.Errorf("echoed %q, want \"hello\"", msg)
-	}
+	// The server stamps the time and the connection's name.
+	readContaining(t, c, "tester: hello")
 }
 
 func TestWebSocketMessageRateLimit(t *testing.T) {
