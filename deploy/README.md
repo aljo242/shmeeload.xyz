@@ -79,7 +79,7 @@ auto-renews; no Caddy, no manual certs. Set in the config:
 ```json
 "acme": true,
 "acmeStaging": true,
-"acmeEmail": "cozart@djinntek.space",
+"acmeEmail": "info@djinntek.space",
 "acmeDir": "/data/certmagic",
 "domains": ["djinntek.space", "www.djinntek.space"]
 ```
