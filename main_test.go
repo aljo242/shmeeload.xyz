@@ -11,7 +11,7 @@ func TestBuildRouter(t *testing.T) {
 	if err != nil {
 		t.Fatalf("newStaticSite: %v", err)
 	}
-	r := buildRouter(Config{CacheMaxAge: 0}, newHub(), site)
+	r := buildRouter(Config{CacheMaxAge: 0}, newHub(nil), site)
 
 	cases := []struct {
 		name string

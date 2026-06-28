@@ -16,7 +16,7 @@ import (
 // and the chat hub) over httptest's loopback listener.
 func newChatTestServer(t *testing.T) *httptest.Server {
 	t.Helper()
-	hub := newHub()
+	hub := newHub(nil)
 	go hub.run()
 	site, err := newStaticSite(fstest.MapFS{}, 60)
 	if err != nil {
@@ -31,7 +31,74 @@ func newChatTestServer(t *testing.T) *httptest.Server {
 }
 
 func wsURL(srv *httptest.Server) string {
-	return "ws" + strings.TrimPrefix(srv.URL, "http") + "/chat/ws"
+	return "ws" + strings.TrimPrefix(srv.URL, "http") + "/chat/ws?room=general"
+}
+
+func newChatServerWithStore(t *testing.T, store *chatStore) *httptest.Server {
+	t.Helper()
+	hub := newHub(store)
+	go hub.run()
+	site, err := newStaticSite(fstest.MapFS{}, 60)
+	if err != nil {
+		t.Fatalf("newStaticSite: %v", err)
+	}
+	srv := httptest.NewServer(buildRouter(Config{Port: "0"}, hub, site))
+	t.Cleanup(func() {
+		srv.Close()
+		hub.stop()
+	})
+	return srv
+}
+
+func TestWebSocketUnknownRoom(t *testing.T) {
+	srv := newChatTestServer(t)
+	url := "ws" + strings.TrimPrefix(srv.URL, "http") + "/chat/ws?room=does-not-exist"
+	_, resp, err := websocket.DefaultDialer.Dial(url, nil)
+	if err == nil {
+		t.Fatal("dialing an unknown room should be rejected")
+	}
+	if resp == nil || resp.StatusCode != http.StatusNotFound {
+		t.Errorf("unknown-room status = %v, want 404", resp)
+	}
+}
+
+func TestWebSocketHistoryReplay(t *testing.T) {
+	store, err := newChatStore(t.TempDir() + "/chat.db")
+	if err != nil {
+		t.Fatalf("newChatStore: %v", err)
+	}
+	defer store.close()
+	srv := newChatServerWithStore(t, store)
+	url := "ws" + strings.TrimPrefix(srv.URL, "http") + "/chat/ws?room=general"
+
+	// First client posts a message, which should be persisted.
+	c1, _, err := websocket.DefaultDialer.Dial(url, nil)
+	if err != nil {
+		t.Fatalf("dial c1: %v", err)
+	}
+	time.Sleep(100 * time.Millisecond) // registered
+	if err := c1.WriteMessage(websocket.TextMessage, []byte("alex: hello")); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	time.Sleep(200 * time.Millisecond) // let it persist
+	_ = c1.Close()
+
+	// A new client joining the room should be replayed that message as history.
+	c2, _, err := websocket.DefaultDialer.Dial(url, nil)
+	if err != nil {
+		t.Fatalf("dial c2: %v", err)
+	}
+	defer func() { _ = c2.Close() }()
+	if err := c2.SetReadDeadline(time.Now().Add(2 * time.Second)); err != nil {
+		t.Fatalf("set deadline: %v", err)
+	}
+	_, msg, err := c2.ReadMessage()
+	if err != nil {
+		t.Fatalf("read history: %v", err)
+	}
+	if string(msg) != "alex: hello" {
+		t.Errorf("history = %q, want \"alex: hello\"", msg)
+	}
 }
 
 func TestWebSocketConnectionCap(t *testing.T) {

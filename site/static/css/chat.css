@@ -1,110 +1,133 @@
-html {
-    overflow: hidden;
+/* Chat-specific styling. The base nav/article/link/header styles come from
+   home.css, so this only lays out the room tabs, the message log, and the
+   compose form, in the same Courier/garish palette. */
+
+#mainArticleBody {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    padding: 10px;
 }
 
-body {
-    overflow: hidden;
-    padding: 0;
-    margin: 0;
-    width: 100%;
-    height: 100%;
-    background: salmon;
-    font-family: "Andale Mono", monospace;
+#rooms {
+    text-align: center;
+    padding: 10px 0;
 }
 
-* {
-    box-sizing: border-box;
+.roomBtn {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 100%;
+    background: pink;
+    color: rgb(247, 0, 255);
+    border: 2px solid black;
+    padding: 4px 12px;
+    margin: 2px;
+    cursor: pointer;
+}
+
+.roomBtn:hover {
+    background: rgb(255, 208, 56);
+}
+
+.roomBtn.active {
+    background: greenyellow;
+    color: black;
+    font-weight: bold;
 }
 
 #log {
-    background: blanchedalmond;
-    color: blueviolet;
-    margin: 0;
-    padding: 0.5em 0.5em 0.5em 0.5em;
-    position: absolute;
-    top: 0.5em;
-    left: 0.5em;
-    right: 0.5em;
-    bottom: 3em;
-    overflow: auto;
-    font-family: "Andale Mono", monospace;
+    flex: 1 1 auto;
+    background: #fffbe6;
+    color: rgb(247, 0, 255);
+    border: 3px solid black;
+    margin: 10px;
+    padding: 10px;
+    overflow-y: auto;
+    text-align: left;
+    min-height: 50vh;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+.logLine {
+    padding: 1px 0;
+    word-break: break-word;
 }
 
 #send_msg_form {
-    color: black;
-    padding: 0 0.5em 0 0.5em;
-    margin: 0;
-    position: absolute;
-    bottom: 1em;
-    left: 0px;
-    width: 100%;
-    overflow: hidden;
-    font-family: "Andale Mono", monospace;
-}
-
-.openBtn {
     display: flex;
-    justify-content: left;
+    gap: 8px;
+    padding: 0 10px 10px 10px;
 }
 
-.openButton {
-    border: none;
-    border-radius: 5px;
-    background-color: #1c87c9;
-    color: white;
-    padding: 14px 20px;
+#send_msg_form #msg {
+    flex: 1 1 auto;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 100%;
+    padding: 6px;
+    border: 2px solid black;
+    background: #fffbe6;
+}
+
+#send_msg_form input[type=submit] {
+    font-family: 'Courier New', Courier, monospace;
+    background: greenyellow;
+    color: black;
+    border: 2px solid black;
+    padding: 6px 16px;
     cursor: pointer;
-    position: fixed;
-    font-family: "Andale Mono", monospace;
 }
 
+#send_msg_form input[type=submit]:hover {
+    background: rgb(255, 208, 56);
+}
+
+/* sign-in popup */
 .loginPopUp {
-    position: relative;
     text-align: center;
-    width: 100%;
-    font-family: "Andale Mono", monospace;
+    font-family: 'Courier New', Courier, monospace;
 }
 
 .formPopUp {
     display: none;
     position: fixed;
-    left: 45%;
-    top: 5%;
-    transform: translate(-50%, 5%);
-    border: 3px solid #999999;
+    left: 50%;
+    top: 20%;
+    transform: translateX(-50%);
+    border: 3px solid black;
     z-index: 9;
-    font-family: "Andale Mono", monospace;
+    background: pink;
 }
 
 .formContainer {
     max-width: 300px;
     padding: 20px;
-    background-color: #fff;
-    font-family: "Andale Mono", monospace;
+    background: pink;
+    font-family: 'Courier New', Courier, monospace;
 }
 
-.formContainer input[type=text]:focus,
-.formContainer input[type=password] {
-    background-color: #ddd;
-    outline: none;
+.formContainer h2 {
+    margin-top: 0;
+}
+
+.formContainer input[type=text] {
+    width: 100%;
+    padding: 8px;
+    margin: 8px 0;
+    border: 2px solid black;
+    background: #fffbe6;
+    font-family: 'Courier New', Courier, monospace;
 }
 
 .formContainer .btn {
-    padding: 12px 20px;
-    border: none;
-    background-color: #8ebf42;
-    color: #fff;
+    padding: 10px 20px;
+    border: 2px solid black;
+    background: greenyellow;
+    color: black;
     cursor: pointer;
     width: 100%;
-    margin-bottom: 15px;
-    opacity: 0.8;
+    font-family: 'Courier New', Courier, monospace;
 }
 
-.formContainer .cancel {
-    background-color: #cc0000;
-}
-
-.formContainer .btn:hover,
-.openButton:hover {
-    opacity: 1;
+.formContainer .btn:hover {
+    background: rgb(255, 208, 56);
 }

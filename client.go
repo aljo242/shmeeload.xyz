@@ -62,6 +62,9 @@ type Client struct {
 	// Buffered channel of outbound messages
 	send chan []byte
 
+	// room this client is joined to.
+	room string
+
 	// ip and conns release this connection's slot in the per-IP/global cap when
 	// the connection closes.
 	ip    string
@@ -114,7 +117,7 @@ func (c *Client) readPump() {
 		}
 
 		message = bytes.TrimSpace(bytes.ReplaceAll(message, newline, space))
-		c.hub.broadcast <- message
+		c.hub.broadcast <- roomMessage{room: c.room, body: message}
 	}
 }
 
@@ -188,9 +191,16 @@ func (c *Client) writePump() {
 	}
 }
 
-// serveWs handles websocket requests from the peer.
-func serveWs(hub *Hub, conns *connLimiter) func(http.ResponseWriter, *http.Request) {
+// serveWs handles websocket requests from the peer. The room comes from the
+// "room" query parameter and must be one of the curated rooms.
+func serveWs(hub *Hub, conns *connLimiter, rooms map[string]bool) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		room := r.URL.Query().Get("room")
+		if !rooms[room] {
+			http.Error(w, "unknown room", http.StatusNotFound)
+			return
+		}
+
 		ip := clientIP(r)
 		// Cap concurrent connections before upgrading so a flood is rejected cheaply.
 		if !conns.acquire(ip) {
@@ -205,10 +215,27 @@ func serveWs(hub *Hub, conns *connLimiter) func(http.ResponseWriter, *http.Reque
 			return
 		}
 
+		// Replay recent history before the pumps start, so each past message is
+		// its own frame (the writePump batches whatever is queued together).
+		if hub.store != nil {
+			history, err := hub.store.recent(room, chatHistoryLimit)
+			if err != nil {
+				log.Error("error loading chat history", "room", room, "err", err)
+			} else {
+				_ = conn.SetWriteDeadline(time.Now().Add(writeWait))
+				for _, body := range history {
+					if err := conn.WriteMessage(websocket.TextMessage, body); err != nil {
+						break
+					}
+				}
+			}
+		}
+
 		client := &Client{
 			hub:        hub,
 			conn:       conn,
 			send:       make(chan []byte, 256),
+			room:       room,
 			ip:         ip,
 			conns:      conns,
 			msgLimiter: rate.NewLimiter(wsMsgPerSec, wsMsgBurst),

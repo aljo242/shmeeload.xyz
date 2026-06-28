@@ -8,13 +8,13 @@ import (
 // TestHubBroadcast verifies a registered client receives broadcasts and that
 // unregistering closes its send channel.
 func TestHubBroadcast(t *testing.T) {
-	h := newHub()
+	h := newHub(nil)
 	go h.run()
 
 	c := &Client{hub: h, send: make(chan []byte, 1)}
 	h.register <- c
 
-	h.broadcast <- []byte("hello")
+	h.broadcast <- roomMessage{body: []byte("hello")}
 	select {
 	case msg := <-c.send:
 		if string(msg) != "hello" {
@@ -38,7 +38,7 @@ func TestHubBroadcast(t *testing.T) {
 // TestHubDropsSlowClient verifies the hub drops (and closes) a client whose send
 // buffer is full rather than blocking the broadcast loop.
 func TestHubDropsSlowClient(t *testing.T) {
-	h := newHub()
+	h := newHub(nil)
 	go h.run()
 
 	// Pre-fill the (size-1) buffer so the hub's non-blocking send cannot enqueue
@@ -47,7 +47,7 @@ func TestHubDropsSlowClient(t *testing.T) {
 	c.send <- []byte("backlog")
 	h.register <- c
 
-	h.broadcast <- []byte("dropped")
+	h.broadcast <- roomMessage{body: []byte("dropped")}
 
 	// Registering another client forces the single hub goroutine through another
 	// select iteration, which guarantees the broadcast above is fully processed

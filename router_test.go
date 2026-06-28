@@ -9,7 +9,7 @@ import (
 
 func newRouterTestServer(t *testing.T) *httptest.Server {
 	t.Helper()
-	hub := newHub()
+	hub := newHub(nil)
 	go hub.run()
 	site, err := newStaticSite(fstest.MapFS{
 		"home.html":        {Data: []byte("<!doctype html><title>home</title>")},

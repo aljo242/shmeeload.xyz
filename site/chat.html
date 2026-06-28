@@ -21,6 +21,7 @@
 
     <title>shmeechat</title>
 
+    <link rel="stylesheet" type="text/css"  href="/static/css/home.css">
     <link rel="stylesheet" type="text/css"  href="/static/css/chat.css">
     <link rel="manifest" href="/manifest.json">
     <link rel="shortcut icon" href="/static/img/1favicon.ico" type="image/x-icon" />
@@ -37,23 +38,43 @@
     <script type="module" src="/static/js/chat.js"></script>
 </head>
 <body>
-<div id="log"></div>
+  <section class="scroll">
+    <nav id="nav">
+      <header id="header">shmeechat</header>
+      <ul>
+        <li class="navLink"><a href="/home">home</a></li>
+        <li class="navLink"><a href="/resume/home">resume</a></li>
+        <li class="navLink"><a href="/hall-of-art/home">hall of art</a></li>
+        <li class="navLink"><a href="https://github.com/aljo242" target="_blank" rel="noopener noreferrer">github</a></li>
+      </ul>
+      <footer id="nav_footer">
+        <div id="copy">&copy; djinntek</div>
+        <div id="bonus_button">
+          <input width="100" height="100" type="image" id="secretButton" src="/static/img/turbo_shadow_pixel_OG5.png" alt="shhhhh its a secret"/>
+        </div>
+      </footer>
+    </nav>
 
-<div class="loginPopUp">
+    <article id="mainArticleBody">
+      <h1 class="Header">shmeechat</h1>
+      <div id="rooms" aria-label="chat rooms"></div>
+      <div id="log" aria-live="polite"></div>
+      <form id="send_msg_form">
+        <input type="text" id="msg" size="64" aria-label="message" autocomplete="off" autofocus />
+        <input type="submit" value="send" />
+      </form>
+    </article>
+  </section>
+
+  <div class="loginPopUp">
     <div class="formPopUp" id="popUpForm" role="dialog" aria-modal="true" aria-labelledby="popUpTitle">
-        <form class="formContainer">
-            <h2 id="popUpTitle">Please Sign In:</h2>
-            <label for="chatname">
-                <strong>name</strong>
-            </label>
-            <input type="text" id="chatname" placeholder="big boss ben" name="chatname" required>
-            <button type="button" id="signInButton" class="btn">sign in</button>
-        </form>
+      <form class="formContainer">
+        <h2 id="popUpTitle">pick a name</h2>
+        <label for="chatname"><strong>name</strong></label>
+        <input type="text" id="chatname" placeholder="big boss ben" name="chatname" required>
+        <button type="button" id="signInButton" class="btn">enter</button>
+      </form>
     </div>
-</div>
-<form id="send_msg_form">
-    <input type="text" id="msg" size="64" aria-label="message" autofocus />
-    <input type="submit" value="Send" />
-</form>
+  </div>
 </body>
 </html>

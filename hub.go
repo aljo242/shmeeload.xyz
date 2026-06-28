@@ -1,31 +1,35 @@
 package main
 
-// Hub maintains the set of active clients and broadcasts messages
-// to the clients
-type Hub struct {
-	// Registered Clients
-	clients map[*Client]bool
+import "github.com/aljo242/shmeeload.xyz/internal/log"
 
-	// Inbound messages from the clients
-	broadcast chan []byte
-
-	// Register requests from the clients
-	register chan *Client
-
-	// Unregister requests from clients
-	unregister chan *Client
-
-	// Closed to signal run to shut down and tear down all clients.
-	quit chan struct{}
+// roomMessage is a message bound for a single room.
+type roomMessage struct {
+	room string
+	body []byte
 }
 
-func newHub() *Hub {
+// Hub keeps the set of connected clients per room and fans messages out within
+// a room. Messages are persisted (when a store is configured) before broadcast.
+type Hub struct {
+	// room name -> set of clients in that room
+	rooms map[string]map[*Client]bool
+
+	register   chan *Client
+	unregister chan *Client
+	broadcast  chan roomMessage
+	quit       chan struct{}
+
+	store *chatStore // nil disables persistence
+}
+
+func newHub(store *chatStore) *Hub {
 	return &Hub{
-		broadcast:  make(chan []byte),
+		rooms:      make(map[string]map[*Client]bool),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
-		clients:    make(map[*Client]bool),
+		broadcast:  make(chan roomMessage),
 		quit:       make(chan struct{}),
+		store:      store,
 	}
 }
 
@@ -35,25 +39,49 @@ func (h *Hub) run() {
 		case <-h.quit:
 			// On shutdown close every client's send channel so its writePump
 			// emits a close frame and the connection is torn down.
-			for client := range h.clients {
-				close(client.send)
+			for _, clients := range h.rooms {
+				for client := range clients {
+					close(client.send)
+				}
 			}
 			return
+
 		case client := <-h.register:
-			h.clients[client] = true
-		case client := <-h.unregister:
-			if _, ok := h.clients[client]; ok {
-				delete(h.clients, client)
-				close(client.send)
+			clients := h.rooms[client.room]
+			if clients == nil {
+				clients = make(map[*Client]bool)
+				h.rooms[client.room] = clients
 			}
-		case message := <-h.broadcast:
-			for client := range h.clients {
+			clients[client] = true
+
+		case client := <-h.unregister:
+			if clients, ok := h.rooms[client.room]; ok {
+				if _, ok := clients[client]; ok {
+					delete(clients, client)
+					close(client.send)
+					if len(clients) == 0 {
+						delete(h.rooms, client.room)
+					}
+				}
+			}
+
+		case m := <-h.broadcast:
+			if h.store != nil {
+				if err := h.store.save(m.room, m.body); err != nil {
+					log.Error("error persisting chat message", "room", m.room, "err", err)
+				}
+			}
+			clients := h.rooms[m.room]
+			for client := range clients {
 				select {
-				case client.send <- message:
+				case client.send <- m.body:
 				default:
 					close(client.send)
-					delete(h.clients, client)
+					delete(clients, client)
 				}
+			}
+			if len(clients) == 0 {
+				delete(h.rooms, m.room)
 			}
 		}
 	}
