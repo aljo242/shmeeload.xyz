@@ -32,6 +32,8 @@ type Config struct {
 	ChatRetentionDays int      `json:"chatRetentionDays"` // delete messages older than this many days (default 14)
 
 	TunesDir string `json:"tunesDir"` // directory of MP3s served on the tunes page (default /tunes)
+
+	Dev bool `json:"dev"` // dev mode: serve site/ from disk (no embed/minify); also set by -dev
 }
 
 // LoadConfig reads and parses the JSON config at path. Unlike the previous

@@ -1,0 +1,10 @@
+{
+  "port": "8080",
+  "IP": "",
+  "secure": false,
+  "dev": true,
+  "debugLog": true,
+  "cacheMaxAge": 0,
+  "chatDBPath": "dev-chat.db",
+  "tunesDir": "dev-tunes"
+}
