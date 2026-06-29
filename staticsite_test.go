@@ -40,8 +40,8 @@ func TestStaticSiteServe(t *testing.T) {
 		if got := rr.Header().Get("Content-Encoding"); got != "br" {
 			t.Errorf("content-encoding = %q, want br", got)
 		}
-		if got := rr.Header().Get("Cache-Control"); got != "public, max-age=3600" {
-			t.Errorf("cache-control = %q", got)
+		if got := rr.Header().Get("Cache-Control"); got != noCacheControl {
+			t.Errorf("cache-control = %q, want no-cache (CSS revalidates)", got)
 		}
 	})
 
