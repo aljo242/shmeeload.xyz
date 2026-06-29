@@ -4,9 +4,9 @@ go 1.26.0
 
 require (
 	github.com/HugoSmits86/nativewebp v1.3.0
-	github.com/andybalholm/brotli v1.2.1
+	github.com/andybalholm/brotli v1.2.2
 	github.com/caddyserver/certmagic v0.25.4
-	github.com/gen2brain/avif v0.5.1
+	github.com/gen2brain/avif v0.5.2
 	github.com/gorilla/websocket v1.5.3
 	github.com/klauspost/compress v1.18.6
 	github.com/quic-go/quic-go v0.60.0
