@@ -12,6 +12,9 @@ services:
     volumes:
       - ./config.local.json:/app/config.json:ro
       - shmee_tls:/data
+      # MP3s for the tunes page. Drop files into /home/cozart/tunes on the host;
+      # served read-only, no rebuild needed to add or remove songs.
+      - /home/cozart/tunes:/tunes:ro
     # So the container's own healthcheck hits the managed cert: it resolves the
     # public hostname to loopback, giving SNI=djinntek.space to the local server.
     extra_hosts:

@@ -22,11 +22,12 @@
     <title>tunes</title>
 
     <link rel="stylesheet" type="text/css"  href="/static/css/home.css">
+    <link rel="stylesheet" type="text/css"  href="/static/css/tunes.css">
     <link rel="manifest" href="/manifest.json">
     <link rel="shortcut icon" href="/static/img/1favicon.ico" type="image/x-icon"/>
-    <script type="module" src="/static/js/app.js"></script>
+    <script type="module" src="/static/js/tunes.js"></script>
 </head>
-<body style="background-image: url('/static/img/cactus.jpg'); background-size: cover;">
+<body style="background: url('/static/img/cactus.jpg') center center / cover no-repeat fixed;">
   <section class="scroll">
     <nav id="nav">
       <header id="header">tunes</header>
@@ -46,8 +47,24 @@
 
     <article id="mainArticleBody">
       <h1 class="Header">tunes</h1>
-      <div class="TextSubsection">
-        <p>Music projects are on the way. Check back soon.</p>
+
+      <div id="player">
+        <div id="display">
+          <div id="nowPlaying"><span id="trackName">— select a track —</span></div>
+          <div id="timeRow">
+            <span id="elapsed">0:00</span>
+            <div id="seek" role="slider" aria-label="seek" tabindex="0"><div id="seekFill"></div></div>
+            <span id="duration">0:00</span>
+          </div>
+        </div>
+        <div id="transport">
+          <button id="prev" class="tbtn" type="button" aria-label="previous">◀◀</button>
+          <button id="play" class="tbtn" type="button" aria-label="play or pause">▶</button>
+          <button id="stop" class="tbtn" type="button" aria-label="stop">■</button>
+          <button id="next" class="tbtn" type="button" aria-label="next">▶▶</button>
+          <span id="volWrap"><label for="vol">vol</label><input id="vol" type="range" min="0" max="100" value="80" aria-label="volume"></span>
+        </div>
+        <ol id="playlist" aria-label="playlist"></ol>
       </div>
     </article>
   </section>

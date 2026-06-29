@@ -81,6 +81,9 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 		w.Header().Set("Cache-Control", "no-cache")
 		_ = json.NewEncoder(w).Encode(rooms)
 	})
+	tunesDir := tunesDirOf(cfg)
+	mux.HandleFunc("GET /tunes/list", tunesListHandler(tunesDir))
+	mux.HandleFunc("GET /tunes/file/{name}", tunesFileHandler(tunesDir))
 
 	// pages (pretty URL -> embedded HTML)
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, rq *http.Request) {

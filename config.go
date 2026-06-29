@@ -30,6 +30,8 @@ type Config struct {
 	ChatRooms         []string `json:"chatRooms"`         // curated room names (defaults applied if empty)
 	ChatDBPath        string   `json:"chatDBPath"`        // SQLite file for persisted messages (defaults to <acmeDir parent>/chat.db)
 	ChatRetentionDays int      `json:"chatRetentionDays"` // delete messages older than this many days (default 14)
+
+	TunesDir string `json:"tunesDir"` // directory of MP3s served on the tunes page (default /tunes)
 }
 
 // LoadConfig reads and parses the JSON config at path. Unlike the previous
