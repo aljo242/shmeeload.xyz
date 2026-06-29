@@ -39,8 +39,8 @@ func TestRouting(t *testing.T) {
 		wantCacheControl   string
 	}{
 		{"root redirects to home", http.MethodGet, "/", http.StatusPermanentRedirect, ""},
-		{"home page, uncached", http.MethodGet, "/home", http.StatusOK, "no-cache"},
-		{"static asset, cached", http.MethodGet, "/static/css/x.css", http.StatusOK, "public, max-age=3600"},
+		{"home page, uncached", http.MethodGet, "/home", http.StatusOK, noCacheControl},
+		{"css revalidates", http.MethodGet, "/static/css/x.css", http.StatusOK, noCacheControl},
 		{"missing asset", http.MethodGet, "/nope.xyz", http.StatusNotFound, ""},
 		{"non-GET is rejected", http.MethodPost, "/home", http.StatusMethodNotAllowed, ""},
 		{"donate known currency", http.MethodGet, "/donate/btc", http.StatusOK, ""},

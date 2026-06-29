@@ -87,6 +87,11 @@ type staticSite struct {
 	cacheControl string
 }
 
+// noCacheControl forces revalidation: the browser may cache but must check the
+// ETag each time, so a deploy's new content is served immediately (304 when
+// unchanged). Used for content that changes between deploys (HTML/CSS/JS).
+const noCacheControl = "no-cache"
+
 func newStaticSite(fsys fs.FS, cacheMaxAge int) (*staticSite, error) {
 	s := &staticSite{
 		assets:       make(map[string]*staticAsset),
@@ -125,10 +130,12 @@ func newStaticSite(fsys fs.FS, cacheMaxAge int) (*staticSite, error) {
 		// br/zstd/gzip variants are all computed from the bytes actually served.
 		b = minifyBytes(m, ct, b)
 		a := &staticAsset{contentType: ct, etag: etagOf(b), raw: b, cacheControl: s.cacheControl}
-		// HTML carries the page content, which changes between deploys, so it is
-		// always revalidated (cheap via the ETag) rather than cached for a while.
-		if strings.HasPrefix(ct, "text/html") {
-			a.cacheControl = "no-cache"
+		// HTML, CSS, and JS change between deploys, so they are always revalidated
+		// (cheap via the ETag: a 304 when unchanged) rather than cached for a while.
+		// Otherwise a deploy's new CSS/JS would be invisible until the cache expired.
+		// Images, fonts, etc. keep the long cache since they rarely change.
+		if strings.HasPrefix(ct, "text/html") || strings.HasPrefix(ct, "text/css") || strings.Contains(ct, "javascript") {
+			a.cacheControl = noCacheControl
 		}
 		if compressible(ct) {
 			a.br = smaller(brotliBytes(b), b)
