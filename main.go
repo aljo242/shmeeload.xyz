@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -34,10 +35,14 @@ Preferred-Languages: en
 Canonical: https://djinntek.space/.well-known/security.txt
 `
 
-var configFile string
+var (
+	configFile string
+	devMode    bool
+)
 
 func init() {
 	flag.StringVar(&configFile, "c", DefaultConfigFile, "Full path to JSON configuration file")
+	flag.BoolVar(&devMode, "dev", false, "dev mode: serve site/ from disk (no embed/minify) for local preview")
 }
 
 // fatal logs an error and exits. Kept out of functions with deferred cleanup so
@@ -58,9 +63,18 @@ func fatal(msg string, err error) {
 func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 	mux := http.NewServeMux()
 
-	// serveAsset serves a named embedded asset, 404ing if absent.
+	// In dev mode, site/ is served straight from disk (fresh each request, no
+	// embed/minify/compress) so HTML/CSS/JS edits show on a browser refresh
+	// without rebuilding. Production serves the optimized embedded site.
+	devStatic := http.FileServer(http.Dir("site"))
+
+	// serveAsset serves a named asset, 404ing if absent.
 	serveAsset := func(name string) http.HandlerFunc {
 		return func(w http.ResponseWriter, rq *http.Request) {
+			if cfg.Dev {
+				http.ServeFile(w, rq, filepath.Join("site", name))
+				return
+			}
 			if !site.serve(w, rq, name) {
 				http.NotFound(w, rq)
 			}
@@ -110,6 +124,10 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 
 	// everything else is a static asset from the embedded site
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, rq *http.Request) {
+		if cfg.Dev {
+			devStatic.ServeHTTP(w, rq)
+			return
+		}
 		if !site.serve(w, rq, rq.URL.Path) {
 			http.NotFound(w, rq)
 		}
@@ -209,6 +227,7 @@ func initServer() (*http.Server, *Hub, Config) {
 	if err != nil {
 		fatal("error loading config", err)
 	}
+	cfg.Dev = cfg.Dev || devMode
 	log.Setup(cfg.DebugLog)
 
 	// With ACME on, certmagic manages the certificate; otherwise generate a
@@ -219,9 +238,13 @@ func initServer() (*http.Server, *Hub, Config) {
 		}
 	}
 
-	site, err := newStaticSite(siteFS(), cfg.CacheMaxAge)
-	if err != nil {
-		fatal("error indexing embedded site", err)
+	// In dev mode the site is served from disk, so skip indexing the embed.
+	var site *staticSite
+	if !cfg.Dev {
+		site, err = newStaticSite(siteFS(), cfg.CacheMaxAge)
+		if err != nil {
+			fatal("error indexing embedded site", err)
+		}
 	}
 
 	// Chat persistence is best-effort: if the DB cannot be opened (e.g. /data is

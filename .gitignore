@@ -42,3 +42,7 @@ site/**/*.avif
 
 # Env-specific deploy config (kept local; see config.example.json)
 deploy/config.local.json
+
+# Local dev preview (make dev) runtime data; config.dev.json itself is tracked
+dev-chat.db*
+dev-tunes/

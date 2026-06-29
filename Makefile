@@ -104,6 +104,16 @@ endif
 run: build
 	./${BINARY_NAME}
 
+# Local preview at http://localhost:8080. Serves site/ straight from disk, so
+# HTML/CSS edits show on a browser refresh with no rebuild. For live TypeScript,
+# run `cd web_res && npx tsc --watch` in another terminal. Drop MP3s in dev-tunes/
+# to exercise the player. Stop with Ctrl-C.
+.PHONY: dev
+dev:
+	@mkdir -p dev-tunes
+	@cd ./web_res && npm run build
+	@go run . -dev -c config.dev.json
+
 .PHONY: run
 
 
