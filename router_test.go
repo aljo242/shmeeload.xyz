@@ -45,7 +45,8 @@ func TestRouting(t *testing.T) {
 		{"non-GET is rejected", http.MethodPost, "/home", http.StatusMethodNotAllowed, ""},
 		{"donate known currency", http.MethodGet, "/donate/btc", http.StatusOK, ""},
 		{"donate unknown currency", http.MethodGet, "/donate/zzz", http.StatusNotFound, ""},
-		{"not-yet-built redirects", http.MethodGet, "/tunes/home", http.StatusTemporaryRedirect, ""},
+		{"not-yet-built redirects", http.MethodGet, "/chat/signup", http.StatusTemporaryRedirect, ""},
+		{"security.txt", http.MethodGet, "/.well-known/security.txt", http.StatusOK, ""},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
