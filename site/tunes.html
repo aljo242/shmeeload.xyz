@@ -46,9 +46,8 @@
     </nav>
 
     <article id="mainArticleBody">
-      <h1 class="Header">tunes</h1>
-
       <div id="player">
+        <div id="titlebar"><span>tunes</span><span id="dragHint">drag</span></div>
         <div id="display">
           <div id="nowPlaying"><span id="trackName">— select a track —</span></div>
           <div id="timeRow">
@@ -62,6 +61,8 @@
           <button id="play" class="tbtn" type="button" aria-label="play or pause">▶</button>
           <button id="stop" class="tbtn" type="button" aria-label="stop">■</button>
           <button id="next" class="tbtn" type="button" aria-label="next">▶▶</button>
+          <button id="shuffle" class="tbtn toggle" type="button" aria-label="shuffle" aria-pressed="false">shuf</button>
+          <button id="repeat" class="tbtn toggle" type="button" aria-label="repeat" aria-pressed="false">rpt</button>
           <span id="volWrap"><label for="vol">vol</label><input id="vol" type="range" min="0" max="100" value="80" aria-label="volume"></span>
         </div>
         <ol id="playlist" aria-label="playlist"></ol>
