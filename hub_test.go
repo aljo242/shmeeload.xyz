@@ -11,8 +11,9 @@ func TestHubBroadcast(t *testing.T) {
 	h := newHub(nil)
 	go h.run()
 
-	c := &Client{hub: h, send: make(chan []byte, 1)}
+	c := &Client{hub: h, send: make(chan []byte, 8)}
 	h.register <- c
+	<-c.send // drain the roster (presence) frame sent on join
 
 	h.broadcast <- roomMessage{body: []byte("hello")}
 	select {
@@ -41,19 +42,19 @@ func TestHubDropsSlowClient(t *testing.T) {
 	h := newHub(nil)
 	go h.run()
 
-	// Pre-fill the (size-1) buffer so the hub's non-blocking send cannot enqueue
-	// the broadcast and must take the default case: close and drop the client.
 	c := &Client{hub: h, send: make(chan []byte, 1)}
-	c.send <- []byte("backlog")
 	h.register <- c
+	<-c.send // drain the roster frame, leaving the size-1 buffer empty
 
+	// Re-fill the buffer so the hub's non-blocking send cannot enqueue the
+	// broadcast and must take the default case: close and drop the client.
+	c.send <- []byte("backlog")
 	h.broadcast <- roomMessage{body: []byte("dropped")}
 
 	// Registering another client forces the single hub goroutine through another
 	// select iteration, which guarantees the broadcast above is fully processed
-	// (and c already dropped) before we inspect c.send. This avoids racing the
-	// hub's send against our read.
-	h.register <- &Client{hub: h, send: make(chan []byte, 1)}
+	// (and c already dropped) before we inspect c.send.
+	h.register <- &Client{hub: h, send: make(chan []byte, 8)}
 
 	if got, ok := <-c.send; !ok || string(got) != "backlog" {
 		t.Fatalf("first read = (%q, %v), want (\"backlog\", true)", got, ok)

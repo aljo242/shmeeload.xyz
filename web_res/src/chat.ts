@@ -4,6 +4,10 @@ import { initTheme } from "./theme.js";
 const DEFAULT_NAME = "anon";
 const DEFAULT_DECODING = "utf-8";
 
+// A frame starting with this NUL byte is a presence (roster) update, not a chat
+// line; the server never puts a NUL in a chat line.
+const ROSTER_PREFIX = 0;
+
 // Use the page's own scheme to pick the matching websocket scheme.
 const websocketPrefix = window.location.protocol === "https:" ? "wss://" : "ws://";
 
@@ -18,36 +22,67 @@ function decode(buf: ArrayBuffer): string {
     return decoder.decode(buf);
 }
 
+const urlPattern = /https?:\/\/[^\s]+/g;
+
 let userName = DEFAULT_NAME;
+let currentRoom = "";
 let conn: WebSocket | undefined;
 
+// appendLog renders one line, turning URLs into safe anchor elements. It never
+// uses innerHTML: messages are untrusted (from other clients and history).
 function appendLog(text: string, cls = "logLine") {
     const log = getElement("log");
     const doScroll = log.scrollTop > log.scrollHeight - log.clientHeight - 1;
     const item = document.createElement("div");
     item.className = cls;
-    // Always render as text, never HTML: messages are broadcast verbatim from
-    // other clients (and replayed from history), so innerHTML would be XSS.
-    item.textContent = text;
+
+    let last = 0;
+    for (const match of text.matchAll(urlPattern)) {
+        const start = match.index ?? 0;
+        if (start > last) {
+            item.appendChild(document.createTextNode(text.slice(last, start)));
+        }
+        const a = document.createElement("a");
+        a.href = match[0]; // only http(s) URLs match, so this is safe
+        a.textContent = match[0];
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        item.appendChild(a);
+        last = start + match[0].length;
+    }
+    if (last < text.length) {
+        item.appendChild(document.createTextNode(text.slice(last)));
+    }
+
     log.appendChild(item);
     if (doScroll) {
         log.scrollTop = log.scrollHeight - log.clientHeight;
     }
 }
 
+function renderRoster(json: string) {
+    let names: string[] = [];
+    try {
+        names = JSON.parse(json) as string[];
+    } catch {
+        return;
+    }
+    const el = getElement("roster");
+    el.textContent = names.length > 0 ? `online (${names.length}): ${names.join(", ")}` : "online (0)";
+}
+
 function clearLog() {
     getElement("log").textContent = "";
 }
 
-// connectRoom switches to a room: it closes any current connection, clears the
-// log, and opens a new socket scoped to the room (carrying the display name, so
-// the server can stamp messages and announce joins/leaves).
 function connectRoom(room: string) {
     if (conn) {
         conn.onclose = null; // a deliberate switch should not log "disconnected"
         conn.close();
     }
+    currentRoom = room;
     clearLog();
+    getElement("roster").textContent = "";
 
     document.querySelectorAll<HTMLButtonElement>("#rooms button").forEach((b) => {
         b.classList.toggle("active", b.dataset.room === room);
@@ -59,7 +94,12 @@ function connectRoom(room: string) {
     const c = new WebSocket(url);
     c.binaryType = "arraybuffer";
     c.onmessage = (evt) => {
-        appendLog(typeof evt.data === "string" ? evt.data : decode(evt.data as ArrayBuffer));
+        const text = typeof evt.data === "string" ? evt.data : decode(evt.data as ArrayBuffer);
+        if (text.charCodeAt(0) === ROSTER_PREFIX) {
+            renderRoster(text.slice(1));
+            return;
+        }
+        appendLog(text);
     };
     c.onclose = () => appendLog("— disconnected —", "statusLine");
     c.onerror = () => appendLog("— connection error —", "statusLine");
@@ -120,10 +160,24 @@ window.onload = async () => {
     getElement("send_msg_form").addEventListener("submit", (evt) => {
         evt.preventDefault();
         const msg = getElement<HTMLInputElement>("msg");
-        if (conn === undefined || conn.readyState !== WebSocket.OPEN || msg.value === "") {
+        const text = msg.value;
+        if (text === "") {
             return;
         }
-        conn.send(encode(msg.value)); // raw text; the server stamps time + name
+        // "/nick <name>" changes the display name by reconnecting to the room.
+        if (text.startsWith("/nick ")) {
+            const newName = text.slice("/nick ".length).trim();
+            if (newName !== "" && currentRoom !== "") {
+                userName = newName;
+                connectRoom(currentRoom);
+            }
+            msg.value = "";
+            return;
+        }
+        if (conn === undefined || conn.readyState !== WebSocket.OPEN) {
+            return;
+        }
+        conn.send(encode(text)); // raw text; the server stamps time + name
         msg.value = "";
     });
 };

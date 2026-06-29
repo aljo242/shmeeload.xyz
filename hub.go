@@ -1,6 +1,15 @@
 package main
 
-import "github.com/aljo242/shmeeload.xyz/internal/log"
+import (
+	"encoding/json"
+	"sort"
+
+	"github.com/aljo242/shmeeload.xyz/internal/log"
+)
+
+// rosterPrefix marks a frame as a presence (room roster) update rather than a
+// chat message. It is a NUL byte, which never appears in a chat line.
+const rosterPrefix = "\x00"
 
 // roomMessage is a message bound for a single room. System messages (joins,
 // leaves) are broadcast but not persisted, so they stay out of replayed history.
@@ -55,6 +64,7 @@ func (h *Hub) run() {
 				h.rooms[client.room] = clients
 			}
 			clients[client] = true
+			h.broadcastRoster(client.room)
 
 		case client := <-h.unregister:
 			if clients, ok := h.rooms[client.room]; ok {
@@ -63,6 +73,8 @@ func (h *Hub) run() {
 					close(client.send)
 					if len(clients) == 0 {
 						delete(h.rooms, client.room)
+					} else {
+						h.broadcastRoster(client.room)
 					}
 				}
 			}
@@ -85,6 +97,35 @@ func (h *Hub) run() {
 			if len(clients) == 0 {
 				delete(h.rooms, m.room)
 			}
+		}
+	}
+}
+
+// broadcastRoster sends the room's current set of (unique, sorted) member names
+// to everyone in it, as a roster frame. Not persisted: it is live presence.
+func (h *Hub) broadcastRoster(room string) {
+	clients := h.rooms[room]
+	seen := make(map[string]bool, len(clients))
+	names := make([]string, 0, len(clients))
+	for client := range clients {
+		if !seen[client.name] {
+			seen[client.name] = true
+			names = append(names, client.name)
+		}
+	}
+	sort.Strings(names)
+	payload, err := json.Marshal(names)
+	if err != nil {
+		log.Error("error encoding roster", "room", room, "err", err)
+		return
+	}
+	frame := append([]byte(rosterPrefix), payload...)
+	for client := range clients {
+		select {
+		case client.send <- frame:
+		default:
+			close(client.send)
+			delete(clients, client)
 		}
 	}
 }
