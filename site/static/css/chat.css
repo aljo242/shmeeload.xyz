@@ -1,6 +1,14 @@
 /* Chat-specific styling. The base nav/article/link/header styles come from
-   home.css, so this only lays out the room tabs, the message log, and the
-   compose form, in the same Courier/garish palette. */
+   home.css; this lays out the room tabs, roster, message log, and compose form.
+   Colors follow the active theme via the --scheme-* variables that theme.ts
+   sets (with fallbacks here matching the default scheme). */
+
+:root {
+    --scheme-header: #e76f51;
+    --scheme-nav: #264653;
+    --scheme-article: #f4a261;
+    --scheme-link: #14ff14;
+}
 
 #mainArticleBody {
     display: flex;
@@ -14,31 +22,48 @@
     padding: 10px 0;
 }
 
-.roomBtn {
+/* Buttons follow the theme: nav background with bright link-colored text, the
+   same relationship the site nav uses, so they stay readable in every scheme. */
+.roomBtn,
+#send_msg_form input[type=submit],
+.formContainer .btn {
     font-family: 'Courier New', Courier, monospace;
     font-size: 100%;
-    background: pink;
-    color: rgb(247, 0, 255);
+    background: var(--scheme-nav);
+    color: var(--scheme-link);
     border: 2px solid black;
-    padding: 4px 12px;
-    margin: 2px;
     cursor: pointer;
 }
 
-.roomBtn:hover {
-    background: rgb(255, 208, 56);
+.roomBtn {
+    padding: 4px 12px;
+    margin: 2px;
+}
+
+.roomBtn:hover,
+#send_msg_form input[type=submit]:hover,
+.formContainer .btn:hover,
+.roomBtn.active {
+    background: var(--scheme-link);
+    color: var(--scheme-nav);
 }
 
 .roomBtn.active {
-    background: greenyellow;
-    color: black;
     font-weight: bold;
+}
+
+#roster {
+    text-align: center;
+    padding: 4px 0;
+    font-style: italic;
+    opacity: 0.85;
+    word-break: break-word;
 }
 
 #log {
     flex: 1 1 auto;
     background: #fffbe6;
-    color: rgb(247, 0, 255);
+    color: var(--scheme-nav);
     border: 3px solid black;
     margin: 10px;
     padding: 10px;
@@ -53,22 +78,14 @@
     word-break: break-word;
 }
 
+.logLine a {
+    text-decoration: underline;
+}
+
 .statusLine {
     padding: 1px 0;
     font-style: italic;
     opacity: 0.7;
-}
-
-#roster {
-    text-align: center;
-    padding: 4px 0;
-    font-style: italic;
-    opacity: 0.85;
-    word-break: break-word;
-}
-
-.logLine a {
-    text-decoration: underline;
 }
 
 #send_msg_form {
@@ -87,39 +104,35 @@
 }
 
 #send_msg_form input[type=submit] {
-    font-family: 'Courier New', Courier, monospace;
-    background: greenyellow;
-    color: black;
-    border: 2px solid black;
     padding: 6px 16px;
-    cursor: pointer;
 }
 
-#send_msg_form input[type=submit]:hover {
-    background: rgb(255, 208, 56);
-}
-
-/* sign-in popup */
+/* Sign-in popup, centered over the chat area (the article, right of the nav). */
 .loginPopUp {
-    text-align: center;
+    position: fixed;
+    left: 30%;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 9;
     font-family: 'Courier New', Courier, monospace;
 }
 
 .formPopUp {
     display: none;
-    position: fixed;
-    left: 50%;
-    top: 20%;
-    transform: translateX(-50%);
+    pointer-events: auto;
     border: 3px solid black;
-    z-index: 9;
-    background: pink;
+    background: var(--scheme-article);
 }
 
 .formContainer {
     max-width: 300px;
     padding: 20px;
-    background: pink;
+    background: var(--scheme-article);
     font-family: 'Courier New', Courier, monospace;
 }
 
@@ -138,14 +151,11 @@
 
 .formContainer .btn {
     padding: 10px 20px;
-    border: 2px solid black;
-    background: greenyellow;
-    color: black;
-    cursor: pointer;
     width: 100%;
-    font-family: 'Courier New', Courier, monospace;
 }
 
-.formContainer .btn:hover {
-    background: rgb(255, 208, 56);
+@media (max-width: 600px) {
+    .loginPopUp {
+        left: 0;
+    }
 }

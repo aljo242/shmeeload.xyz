@@ -111,6 +111,14 @@ function applyColorScheme(scheme: ColorScheme) {
     for (const link of document.getElementsByTagName("a")) {
         link.style.color = scheme.a_nav_link;
     }
+
+    // Expose the scheme as CSS variables so other elements (e.g. the chat room
+    // buttons, sign-in popup, send button) can follow the theme too.
+    const root = document.documentElement.style;
+    root.setProperty("--scheme-header", scheme.nav_header);
+    root.setProperty("--scheme-nav", scheme.nav_background);
+    root.setProperty("--scheme-article", scheme.article_background);
+    root.setProperty("--scheme-link", scheme.a_nav_link);
 }
 
 const colorSchemes = [scheme1, scheme2, scheme3, scheme4, scheme5, scheme6, scheme7];
