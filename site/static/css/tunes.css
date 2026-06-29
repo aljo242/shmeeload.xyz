@@ -2,18 +2,63 @@
    display. Self-contained (fixed colors), so it stays "skinned" regardless of
    the site theme behind it. */
 
+/* The player floats over the page and can be dragged by its title bar. JS sets
+   left/top once dragged (and restores them); these are the starting spot. */
 #player {
-    max-width: 540px;
-    margin: 10px auto;
-    padding: 10px;
+    position: fixed;
+    top: 90px;
+    left: 360px;
+    width: 540px;
+    max-width: 92vw;
+    padding: 0 10px 10px 10px;
     background: linear-gradient(#3c3c3c, #1d1d1d);
     border: 2px solid #000;
     border-top-color: #5a5a5a;
     border-left-color: #5a5a5a;
-    box-shadow: inset 0 0 0 1px #111, 0 3px 8px rgba(0, 0, 0, .6);
+    box-shadow: inset 0 0 0 1px #111, 0 4px 14px rgba(0, 0, 0, .7);
     color: #ffb24d;
     font-family: 'Courier New', Courier, monospace;
     text-align: left;
+    z-index: 20;
+}
+
+#titlebar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0 -10px 8px -10px;
+    padding: 3px 10px;
+    background: linear-gradient(#ffc46b, #ff8c00);
+    color: #1a1a1a;
+    font-weight: bold;
+    font-size: 90%;
+    letter-spacing: 2px;
+    cursor: move;
+    user-select: none;
+}
+
+#dragHint {
+    font-weight: normal;
+    font-size: 78%;
+    letter-spacing: 1px;
+    opacity: .65;
+}
+
+/* On the tunes page the player floats over the background image, so the themed
+   article frame behind it is hidden (overrides the inline style theme.ts sets). */
+#mainArticleBody {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.toggle {
+    opacity: .5;
+}
+
+.toggle.active {
+    opacity: 1;
+    box-shadow: 0 0 6px #ffd27f, inset 0 0 4px #000;
 }
 
 #display {

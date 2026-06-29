@@ -7,8 +7,12 @@ interface Tune {
     size: number;
 }
 
+type RepeatMode = "off" | "all" | "one";
+
 let tunes: Tune[] = [];
 let current = -1;
+let shuffle = false;
+let repeat: RepeatMode = "off";
 const audio = new Audio();
 audio.preload = "none";
 
@@ -19,6 +23,10 @@ function fmtTime(seconds: number): string {
     const m = Math.floor(seconds / 60);
     const s = Math.floor(seconds % 60);
     return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+function clamp(v: number, min: number, max: number): number {
+    return Math.max(min, Math.min(max, v));
 }
 
 function fileURL(t: Tune): string {
@@ -50,12 +58,79 @@ function load(i: number, play = true) {
     }
 }
 
+// pickIndex chooses the next track, honoring shuffle and repeat. auto is true
+// when the current track ended on its own (vs the user pressing next): only then
+// does "repeat one" replay and "repeat off" stop (-1) at the end of the list.
+function pickIndex(auto: boolean): number {
+    if (tunes.length === 0) {
+        return -1;
+    }
+    if (auto && repeat === "one") {
+        return current;
+    }
+    if (shuffle) {
+        if (tunes.length === 1) {
+            return current;
+        }
+        let r = current;
+        while (r === current) {
+            r = Math.floor(Math.random() * tunes.length);
+        }
+        return r;
+    }
+    if (current >= tunes.length - 1) {
+        return auto && repeat === "off" ? -1 : 0;
+    }
+    return current + 1;
+}
+
 function next() {
-    load(current >= tunes.length - 1 ? 0 : current + 1);
+    const i = pickIndex(false);
+    if (i >= 0) {
+        load(i);
+    }
 }
 
 function prev() {
     load(current <= 0 ? tunes.length - 1 : current - 1);
+}
+
+function onEnded() {
+    const i = pickIndex(true);
+    if (i >= 0) {
+        load(i);
+    }
+}
+
+function updateToggles() {
+    const sh = getElement("shuffle");
+    sh.classList.toggle("active", shuffle);
+    sh.setAttribute("aria-pressed", shuffle ? "true" : "false");
+    const rp = getElement("repeat");
+    rp.classList.toggle("active", repeat !== "off");
+    rp.setAttribute("aria-pressed", repeat !== "off" ? "true" : "false");
+    rp.textContent = repeat === "one" ? "rpt 1" : "rpt";
+    rp.title = `repeat: ${repeat}`;
+}
+
+function loadPrefs() {
+    try {
+        shuffle = localStorage.getItem("tunes.shuffle") === "1";
+        const r = localStorage.getItem("tunes.repeat");
+        if (r === "all" || r === "one") {
+            repeat = r;
+        }
+    } catch {
+        // localStorage may be unavailable (private mode); defaults are fine.
+    }
+}
+
+function savePref(key: string, value: string) {
+    try {
+        localStorage.setItem(key, value);
+    } catch {
+        // ignore
+    }
 }
 
 function buildPlaylist() {
@@ -103,8 +178,57 @@ async function loadList() {
     buildPlaylist();
 }
 
+// makeDraggable lets the player be moved by its title bar, persisting the spot.
+function makeDraggable() {
+    const player = getElement("player");
+    const handle = getElement("titlebar");
+    let dragging = false;
+    let offX = 0;
+    let offY = 0;
+
+    try {
+        const x = localStorage.getItem("tunes.x");
+        const y = localStorage.getItem("tunes.y");
+        if (x !== null && y !== null) {
+            player.style.left = `${clamp(Number(x), 0, window.innerWidth - 80)}px`;
+            player.style.top = `${clamp(Number(y), 0, window.innerHeight - 40)}px`;
+        }
+    } catch {
+        // ignore
+    }
+
+    handle.addEventListener("pointerdown", (e) => {
+        dragging = true;
+        const rect = player.getBoundingClientRect();
+        offX = e.clientX - rect.left;
+        offY = e.clientY - rect.top;
+        handle.setPointerCapture(e.pointerId);
+        e.preventDefault();
+    });
+    handle.addEventListener("pointermove", (e) => {
+        if (!dragging) {
+            return;
+        }
+        player.style.left = `${clamp(e.clientX - offX, 0, window.innerWidth - player.offsetWidth)}px`;
+        player.style.top = `${clamp(e.clientY - offY, 0, window.innerHeight - 40)}px`;
+    });
+    const end = () => {
+        if (!dragging) {
+            return;
+        }
+        dragging = false;
+        savePref("tunes.x", String(parseInt(player.style.left, 10) || 0));
+        savePref("tunes.y", String(parseInt(player.style.top, 10) || 0));
+    };
+    handle.addEventListener("pointerup", end);
+    handle.addEventListener("pointercancel", end);
+}
+
 window.onload = async () => {
     initTheme();
+    loadPrefs();
+    updateToggles();
+    makeDraggable();
     await loadList();
 
     getElement("play").addEventListener("click", () => {
@@ -126,6 +250,16 @@ window.onload = async () => {
     });
     getElement("prev").addEventListener("click", prev);
     getElement("next").addEventListener("click", next);
+    getElement("shuffle").addEventListener("click", () => {
+        shuffle = !shuffle;
+        savePref("tunes.shuffle", shuffle ? "1" : "0");
+        updateToggles();
+    });
+    getElement("repeat").addEventListener("click", () => {
+        repeat = repeat === "off" ? "all" : repeat === "all" ? "one" : "off";
+        savePref("tunes.repeat", repeat);
+        updateToggles();
+    });
 
     const vol = getElement<HTMLInputElement>("vol");
     audio.volume = Number(vol.value) / 100;
@@ -156,5 +290,5 @@ window.onload = async () => {
     audio.addEventListener("pause", () => {
         getElement("play").textContent = "▶";
     });
-    audio.addEventListener("ended", next);
+    audio.addEventListener("ended", onEnded);
 };
