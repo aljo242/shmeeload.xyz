@@ -190,31 +190,10 @@ func (c *Client) writePump() {
 				return
 			}
 
-			w, err := c.conn.NextWriter(websocket.TextMessage)
-			if err != nil {
-				log.Error("error getting WebSocket writer", "err", err)
-				return
-			}
-			if _, err = w.Write(message); err != nil {
+			// One frame per message, so the client can distinguish roster
+			// frames from chat lines (they are never concatenated).
+			if err := c.conn.WriteMessage(websocket.TextMessage, message); err != nil {
 				log.Error("error writing WebSocket message", "err", err)
-				return
-			}
-
-			// Add queued chat messages to the current websocket message
-			n := len(c.send)
-			for i := 0; i < n; i++ {
-				if _, err = w.Write(newline); err != nil {
-					log.Error("error writing WebSocket message", "err", err)
-					return
-				}
-				if _, err := w.Write(<-c.send); err != nil {
-					log.Error("error writing WebSocket message", "err", err)
-					return
-				}
-			}
-
-			if err := w.Close(); err != nil {
-				log.Error("error closing WebSocket writer", "err", err)
 				return
 			}
 		case <-ticker.C:

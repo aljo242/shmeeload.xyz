@@ -59,6 +59,18 @@
     opacity: 0.7;
 }
 
+#roster {
+    text-align: center;
+    padding: 4px 0;
+    font-style: italic;
+    opacity: 0.85;
+    word-break: break-word;
+}
+
+.logLine a {
+    text-decoration: underline;
+}
+
 #send_msg_form {
     display: flex;
     gap: 8px;

@@ -68,6 +68,55 @@ func newChatServerWithStore(t *testing.T, store *chatStore) *httptest.Server {
 	return srv
 }
 
+// readRosterWith reads frames until a roster (presence) frame contains all the
+// given names.
+func readRosterWith(t *testing.T, c *websocket.Conn, names ...string) {
+	t.Helper()
+	if err := c.SetReadDeadline(time.Now().Add(2 * time.Second)); err != nil {
+		t.Fatalf("set deadline: %v", err)
+	}
+	for {
+		_, msg, err := c.ReadMessage()
+		if err != nil {
+			t.Fatalf("did not receive a roster with %v: %v", names, err)
+		}
+		if len(msg) == 0 || msg[0] != 0 { // roster frames start with a NUL byte
+			continue
+		}
+		s := string(msg[1:])
+		all := true
+		for _, n := range names {
+			if !strings.Contains(s, n) {
+				all = false
+				break
+			}
+		}
+		if all {
+			return
+		}
+	}
+}
+
+func TestWebSocketPresenceRoster(t *testing.T) {
+	srv := newChatTestServer(t)
+	base := "ws" + strings.TrimPrefix(srv.URL, "http") + "/chat/ws?room=general&name="
+
+	c1, _, err := websocket.DefaultDialer.Dial(base+"alice", nil)
+	if err != nil {
+		t.Fatalf("dial alice: %v", err)
+	}
+	defer func() { _ = c1.Close() }()
+
+	c2, _, err := websocket.DefaultDialer.Dial(base+"bob", nil)
+	if err != nil {
+		t.Fatalf("dial bob: %v", err)
+	}
+	defer func() { _ = c2.Close() }()
+
+	// Once bob joins, alice's connection should receive a roster listing both.
+	readRosterWith(t, c1, "alice", "bob")
+}
+
 func TestWebSocketUnknownRoom(t *testing.T) {
 	srv := newChatTestServer(t)
 	url := "ws" + strings.TrimPrefix(srv.URL, "http") + "/chat/ws?room=does-not-exist"
