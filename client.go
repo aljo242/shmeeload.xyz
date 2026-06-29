@@ -58,12 +58,13 @@ func sanitizeName(name string) string {
 		}
 		return r
 	}, name)
+	// Cap length before trimming, so a truncation can't leave trailing space.
+	if r := []rune(name); len(r) > maxNameLen {
+		name = string(r[:maxNameLen])
+	}
 	name = strings.TrimSpace(name)
 	if name == "" {
 		return "anon"
-	}
-	if r := []rune(name); len(r) > maxNameLen {
-		name = string(r[:maxNameLen])
 	}
 	return name
 }
