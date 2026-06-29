@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ---- Stage 1: compile TypeScript into site/static/js ----
-FROM node:22-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2 AS web
+FROM node:26-alpine@sha256:725aeba2364a9b16beae49e180d83bd597dbd0b15c47f1f28875c290bfd255b9 AS web
 WORKDIR /app
 COPY web_res/package.json web_res/package-lock.json ./web_res/
 RUN --mount=type=cache,target=/root/.npm cd web_res && npm ci --no-audit --no-fund
