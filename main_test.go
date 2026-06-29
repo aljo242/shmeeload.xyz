@@ -22,7 +22,12 @@ func TestBuildRouter(t *testing.T) {
 		{"home page served from embed", "/home", http.StatusOK},
 		{"static css served from embed", "/static/css/home.css", http.StatusOK},
 		{"unknown donate currency 404s", "/donate/doge", http.StatusNotFound},
-		{"placeholder redirects to under-construction", "/tunes/home", http.StatusTemporaryRedirect},
+		{"tunes page served from embed", "/tunes/home", http.StatusOK},
+		{"shop page served from embed", "/shop/home", http.StatusOK},
+		{"robots.txt served", "/robots.txt", http.StatusOK},
+		{"sitemap.xml served", "/sitemap.xml", http.StatusOK},
+		{"security.txt served", "/.well-known/security.txt", http.StatusOK},
+		{"placeholder redirects to under-construction", "/chat/signup", http.StatusTemporaryRedirect},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

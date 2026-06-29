@@ -26,6 +26,14 @@ const (
 	shutdownTimeout = 10 * time.Second
 )
 
+// securityTxt is the vulnerability-disclosure contact served at
+// /.well-known/security.txt (RFC 9116). Update Expires before it lapses.
+const securityTxt = `Contact: mailto:info@djinntek.space
+Expires: 2028-01-01T00:00:00Z
+Preferred-Languages: en
+Canonical: https://djinntek.space/.well-known/security.txt
+`
+
 var configFile string
 
 func init() {
@@ -82,11 +90,18 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 	mux.HandleFunc("GET /resume/home", page("resume.html"))
 	mux.HandleFunc("GET /hall-of-art/home", page("shadow.html"))
 	mux.HandleFunc("GET /chat/home", page("chat.html"))
+	mux.HandleFunc("GET /tunes/home", page("tunes.html"))
+	mux.HandleFunc("GET /shop/home", page("shop.html"))
 	mux.HandleFunc("GET /under-construction", page("construction.html"))
 
-	// not-yet-built sections
-	mux.HandleFunc("GET /tunes/home", underConstruction)
-	mux.HandleFunc("GET /shop/home", underConstruction)
+	// security.txt for vulnerability-disclosure contact (RFC 9116).
+	mux.HandleFunc("GET /.well-known/security.txt", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.Header().Set("Cache-Control", "public, max-age=86400")
+		_, _ = w.Write([]byte(securityTxt))
+	})
+
+	// not-yet-built placeholders
 	mux.HandleFunc("GET /chat/signup", underConstruction)
 	mux.HandleFunc("GET /chat/signin", underConstruction)
 
