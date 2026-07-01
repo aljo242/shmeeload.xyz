@@ -152,7 +152,10 @@ window.onload = async () => {
 
     openPopUpForm();
 
-    getElement("signInButton").addEventListener("click", () => {
+    // Handle submit (not the button's click) so pressing Enter in the name field
+    // runs this instead of the form's native submission, which reloads the page.
+    getElement("signInForm").addEventListener("submit", (evt) => {
+        evt.preventDefault();
         const userNameInput = getElement<HTMLInputElement>("chatname");
         userName = userNameInput.value === "" ? DEFAULT_NAME : userNameInput.value;
         closePopUpForm();
