@@ -27,7 +27,8 @@
     <link rel="shortcut icon" href="/static/img/1favicon.ico" type="image/x-icon"/>
     <script type="module" src="/static/js/tunes.js"></script>
 </head>
-<body style="background: url('/static/img/cactus.jpg') center center / cover no-repeat fixed;">
+<body>
+  <div id="pageBg"></div>
   <section class="scroll">
     <nav id="nav">
       <header id="header">tunes</header>
@@ -47,13 +48,16 @@
 
     <article id="mainArticleBody">
       <div id="player">
-        <div id="titlebar"><span>tunes</span><span id="dragHint">drag</span></div>
         <div id="display">
           <div id="nowPlaying"><span id="trackName">— select a track —</span></div>
           <div id="timeRow">
             <span id="elapsed">0:00</span>
             <div id="seek" role="slider" aria-label="seek" tabindex="0"><div id="seekFill"></div></div>
             <span id="duration">0:00</span>
+          </div>
+          <div id="scope">
+            <canvas id="viz" aria-hidden="true"></canvas>
+            <button id="vizMode" type="button" class="vizModeBtn" title="oscilloscope / bars">scope</button>
           </div>
         </div>
         <div id="transport">
@@ -63,11 +67,16 @@
           <button id="next" class="tbtn" type="button" aria-label="next">▶▶</button>
           <button id="shuffle" class="tbtn toggle" type="button" aria-label="shuffle" aria-pressed="false">shuf</button>
           <button id="repeat" class="tbtn toggle" type="button" aria-label="repeat" aria-pressed="false">rpt</button>
+          <button id="copyLink" class="tbtn" type="button" aria-label="copy a link to this track">link</button>
           <span id="volWrap"><label for="vol">vol</label><input id="vol" type="range" min="0" max="100" value="80" aria-label="volume"></span>
         </div>
         <ol id="playlist" aria-label="playlist"></ol>
       </div>
     </article>
   </section>
+  <canvas id="vizOverlay" aria-hidden="true"></canvas>
+
+
+
 </body>
 </html>

@@ -2,6 +2,48 @@
     box-sizing: border-box;
 }
 
+/* Decorative sparkles scattered around the site (transparent PNGs blended as
+   light). Purely cosmetic, never interactive, and twinkling gently out of sync
+   (per-element --op sets its peak, animation-duration/-delay vary the phase). */
+.flare {
+    position: fixed;
+    pointer-events: none;
+    z-index: 50;
+    /* Gold sparkles drawn normally (screen vanishes on light backgrounds) with a
+       dark halo so they read on any page, bright or dark. */
+    filter: drop-shadow(0 0 3px rgba(0, 0, 0, .5));
+    user-select: none;
+    transform-origin: center;
+    animation: twinkle 5s ease-in-out infinite;
+}
+
+/* Fade profiles: all fade fully out at each end (so sparkles.ts can relocate
+   invisibly) with a gentle fade-in; the peak position varies the fade-out
+   length — symmetric, lingering (slow out), or quick (fast out). */
+@keyframes twinkle {
+    0% { opacity: 0; transform: scale(.4) rotate(0deg); }
+    55% { opacity: var(--op, .7); transform: scale(1) rotate(4deg); }
+    100% { opacity: 0; transform: scale(.4) rotate(8deg); }
+}
+
+@keyframes twinkleLinger {
+    0% { opacity: 0; transform: scale(.4) rotate(0deg); }
+    42% { opacity: var(--op, .7); transform: scale(1) rotate(4deg); }
+    100% { opacity: 0; transform: scale(.4) rotate(8deg); }
+}
+
+@keyframes twinkleQuick {
+    0% { opacity: 0; transform: scale(.4) rotate(0deg); }
+    72% { opacity: var(--op, .7); transform: scale(1) rotate(4deg); }
+    100% { opacity: 0; transform: scale(.4) rotate(8deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .flare {
+        animation: none;
+    }
+}
+
 body {
     font-family: 'Courier New', Courier, monospace;
     background-color: #14ff14;  
