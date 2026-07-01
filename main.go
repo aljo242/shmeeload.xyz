@@ -65,14 +65,21 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 
 	// In dev mode, site/ is served straight from disk (fresh each request, no
 	// embed/minify/compress) so HTML/CSS/JS edits show on a browser refresh
-	// without rebuilding. Production serves the optimized embedded site.
+	// without rebuilding. no-cache forces revalidation so the browser never holds
+	// a stale asset mid-iteration. Production serves the optimized embedded site.
 	devStatic := http.FileServer(http.Dir("site"))
+	devServe := func(w http.ResponseWriter, rq *http.Request, h http.Handler) {
+		w.Header().Set("Cache-Control", "no-cache")
+		h.ServeHTTP(w, rq)
+	}
 
 	// serveAsset serves a named asset, 404ing if absent.
 	serveAsset := func(name string) http.HandlerFunc {
 		return func(w http.ResponseWriter, rq *http.Request) {
 			if cfg.Dev {
-				http.ServeFile(w, rq, filepath.Join("site", name))
+				devServe(w, rq, http.HandlerFunc(func(w http.ResponseWriter, rq *http.Request) {
+					http.ServeFile(w, rq, filepath.Join("site", name))
+				}))
 				return
 			}
 			if !site.serve(w, rq, name) {
@@ -125,7 +132,7 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 	// everything else is a static asset from the embedded site
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, rq *http.Request) {
 		if cfg.Dev {
-			devStatic.ServeHTTP(w, rq)
+			devServe(w, rq, devStatic)
 			return
 		}
 		if !site.serve(w, rq, rq.URL.Path) {

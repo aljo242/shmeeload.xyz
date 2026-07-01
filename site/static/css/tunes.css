@@ -1,47 +1,46 @@
-/* A Winamp/AIMP-style player skin: dark metal with orange accents and an LCD
-   display. Self-contained (fixed colors), so it stays "skinned" regardless of
-   the site theme behind it. */
+/* Cyber-tech player skin: square brushed metal with restrained neon theme
+   accents, a subtle CRT scanline/grid on the LCD, and a faint Xbox-blade blur.
+   Colors come from the active theme via the --scheme-* variables (set by
+   theme.ts): header tints the metal/buttons, link is the neon accent.
+   No title bar: the player is dragged by grabbing its metal/LCD (see tunes.ts). */
 
-/* The player floats over the page and can be dragged by its title bar. JS sets
-   left/top once dragged (and restores them); these are the starting spot. */
+:root {
+    --scheme-header: #e76f51;
+    --scheme-nav: #264653;
+    --scheme-article: #f4a261;
+    --scheme-link: #14ff14;
+}
+
+/* The player floats over the page; cursor: move marks the draggable chrome,
+   while the controls below reset it to pointer. */
 #player {
     position: fixed;
     top: 90px;
     left: 360px;
     width: 540px;
     max-width: 92vw;
-    padding: 0 10px 10px 10px;
-    background: linear-gradient(#3c3c3c, #1d1d1d);
-    border: 2px solid #000;
-    border-top-color: #5a5a5a;
-    border-left-color: #5a5a5a;
-    box-shadow: inset 0 0 0 1px #111, 0 4px 14px rgba(0, 0, 0, .7);
-    color: #ffb24d;
+    padding: 10px;
+    /* Diamond-plate steel: the tiled texture, tinted with the theme and lit from
+       above. The LCD and playlist stay near-black like dark screens. */
+    background-image:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(0, 0, 0, 0.28)),
+        linear-gradient(color-mix(in srgb, var(--scheme-nav) 32%, transparent), color-mix(in srgb, var(--scheme-nav) 32%, transparent)),
+        url("/static/img/diamond-plate.jpg");
+    background-size: cover, cover, 280px auto;
+    background-position: center, center, center;
+    background-repeat: no-repeat, no-repeat, repeat;
+    background-blend-mode: soft-light, overlay, normal;
+    backdrop-filter: blur(4px) saturate(1.15);
+    -webkit-backdrop-filter: blur(4px) saturate(1.15);
+    border: 1px solid #000;
+    border-top-color: #8a8a8a;
+    border-left-color: #6a6a6a;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .4), 0 4px 16px rgba(0, 0, 0, .7);
+    color: #d2d2d2;
     font-family: 'Courier New', Courier, monospace;
     text-align: left;
-    z-index: 20;
-}
-
-#titlebar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin: 0 -10px 8px -10px;
-    padding: 3px 10px;
-    background: linear-gradient(#ffc46b, #ff8c00);
-    color: #1a1a1a;
-    font-weight: bold;
-    font-size: 90%;
-    letter-spacing: 2px;
     cursor: move;
-    user-select: none;
-}
-
-#dragHint {
-    font-weight: normal;
-    font-size: 78%;
-    letter-spacing: 1px;
-    opacity: .65;
+    z-index: 20;
 }
 
 /* On the tunes page the player floats over the background image, so the themed
@@ -52,22 +51,18 @@
     box-shadow: none !important;
 }
 
-.toggle {
-    opacity: .5;
-}
-
-.toggle.active {
-    opacity: 1;
-    box-shadow: 0 0 6px #ffd27f, inset 0 0 4px #000;
-}
-
 #display {
-    background: #120d08;
-    border: 2px solid #000;
+    /* Dark LCD with a faint scanline + grid; a sliver of link tint for the
+       cyber glow, kept subtle. */
+    background:
+        repeating-linear-gradient(0deg, color-mix(in srgb, var(--scheme-link) 6%, transparent) 0 1px, transparent 1px 3px),
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.02) 0 1px, transparent 1px 4px),
+        #090909;
+    border: 1px solid #000;
     border-top-color: #2a2a2a;
     padding: 8px 10px;
     margin-bottom: 8px;
-    box-shadow: inset 0 0 10px #000;
+    box-shadow: inset 0 2px 12px rgba(0, 0, 0, .8);
 }
 
 #nowPlaying {
@@ -77,8 +72,8 @@
 
 #trackName {
     display: inline-block;
-    color: #ffa500;
-    text-shadow: 0 0 4px #ff8c00;
+    color: var(--scheme-link);
+    text-shadow: 0 0 4px color-mix(in srgb, var(--scheme-link) 55%, transparent);
     letter-spacing: 1px;
 }
 
@@ -88,21 +83,151 @@
     gap: 8px;
     margin-top: 6px;
     font-size: 90%;
-    color: #ff8c00;
+    color: color-mix(in srgb, var(--scheme-link) 75%, white);
+}
+
+/* CRT monitor framing the visualizer: a real CRT photo (crt-tv.jpg, swap the
+   file to change it) is the frame; the canvas sits over its screen so the viz
+   plays "on" the tube. Kept small/centered to stay short. */
+#scope {
+    position: relative;
+    width: 100%;
+    height: 132px;
+    margin-top: 8px;
+    background: url("/static/img/crt-tv.jpg") no-repeat;
+    background-size: 100% 100%; /* stretch the CRT to fill the width */
+}
+
+/* The scope view sits inside the tube's screen, a bit smaller so it "just fits".
+   Canvas is a replaced element, so it needs an explicit width/height (insets via
+   top+bottom are ignored and it falls back to its intrinsic size). */
+/* The canvas owns the whole screen now: opaque dark base + generated low-res
+   static + trace, so the screen degrades with the trace. The CRT photo is just
+   the bezel behind it. */
+#viz {
+    position: absolute;
+    left: 6%;
+    top: 8%;
+    width: 88%;
+    height: 84%;
+    background: #06080e;
+    image-rendering: pixelated; /* chunky upscale of the downsampled buffer */
+    border-radius: 36px / 24px;
+    /* Fade the left/right edges so the trace dissolves into the bezel instead of
+       cutting off with a hard line. */
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 9%, #000 91%, transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0%, #000 9%, #000 91%, transparent 100%);
+}
+
+/* Scanlines (under) and a corner light glare (over) on the CRT screen. */
+#scope::after {
+    content: "";
+    position: absolute;
+    left: 6%;
+    top: 8%;
+    width: 88%;
+    height: 84%;
+    pointer-events: none;
+    z-index: 1;
+    border-radius: 36px / 24px;
+    background: repeating-linear-gradient(0deg, rgba(0, 0, 0, .3) 0 1px, transparent 1px 3px);
+}
+
+#scope::before {
+    content: "";
+    position: absolute;
+    left: 6%;
+    top: 8%;
+    width: 88%;
+    height: 84%;
+    pointer-events: none;
+    z-index: 2;
+    border-radius: 36px / 24px;
+    /* a small twinkling sparkle glint on the glass (no big flare) */
+    background: url("/static/img/sparkle.png") 24% 26% / 96px auto no-repeat;
+    mix-blend-mode: screen;
+    opacity: .5;
+    animation: glint 6s ease-in-out infinite;
+}
+
+@keyframes glint {
+    0%, 100% {
+        opacity: .5;
+    }
+
+    50% {
+        opacity: .15;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #scope::before {
+        animation: none;
+    }
+}
+
+/* The page background lives in a real fixed element (not the body background)
+   so the invert overlay can blend with it — a propagated body background sits
+   outside the blend backdrop. */
+#pageBg {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background: url("/static/img/cactus.jpg") center center / cover no-repeat;
+}
+
+/* Full-page projection of the scope, washed over the whole tunes page. */
+#vizOverlay {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 60;
+    opacity: 1;
+    /* Render the signal as white, then difference-blend so the trace inverts the
+       page's pixels exactly where it passes (and leaves the rest untouched). */
+    filter: brightness(0) invert(1);
+    mix-blend-mode: difference;
+    image-rendering: pixelated;
+}
+
+.vizModeBtn {
+    position: absolute;
+    top: 11%;
+    right: 9%;
+    z-index: 3;
+    font-family: inherit;
+    font-size: 62%;
+    letter-spacing: 1px;
+    color: var(--scheme-link);
+    background: rgba(0, 0, 0, .5);
+    border: 1px solid color-mix(in srgb, var(--scheme-link) 50%, #000);
+    padding: 0 4px;
+    cursor: pointer;
+    opacity: .6;
+}
+
+.vizModeBtn:hover {
+    opacity: 1;
 }
 
 #seek {
     flex: 1 1 auto;
     height: 9px;
     background: #000;
-    border: 1px solid #ff8c00;
+    border: 1px solid #2a2a2a;
     cursor: pointer;
+    overflow: hidden;
 }
 
 #seekFill {
     height: 100%;
     width: 0;
-    background: linear-gradient(#ffd27f, #ff8c00);
+    background: linear-gradient(180deg,
+        color-mix(in srgb, var(--scheme-link) 50%, white),
+        var(--scheme-link));
+    box-shadow: 0 0 5px color-mix(in srgb, var(--scheme-link) 60%, transparent);
 }
 
 #transport {
@@ -112,22 +237,35 @@
     margin-bottom: 8px;
 }
 
+/* Square brushed-metal buttons with a header tint (metal-forward, not candy),
+   beveled light top/left, pressing in on :active. */
 .tbtn {
     font-family: inherit;
     font-size: 105%;
-    color: #1a1a1a;
-    background: linear-gradient(#ffc46b, #ff8c00);
-    border: 2px solid #000;
-    border-top-color: #ffe6c2;
-    border-left-color: #ffe6c2;
-    padding: 4px 10px;
+    color: #fff;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, .6);
+    background: linear-gradient(180deg,
+        color-mix(in srgb, var(--scheme-header) 32%, #6e6e6e),
+        color-mix(in srgb, var(--scheme-header) 42%, #242424));
+    border: 1px solid #000;
+    border-top-color: #9a9a9a;
+    border-left-color: #7a7a7a;
+    padding: 4px 11px;
     cursor: pointer;
 }
 
+.tbtn:hover {
+    background: linear-gradient(180deg,
+        color-mix(in srgb, var(--scheme-header) 42%, #808080),
+        color-mix(in srgb, var(--scheme-header) 55%, #2a2a2a));
+}
+
 .tbtn:active {
-    background: linear-gradient(#ff8c00, #ffc46b);
     border-top-color: #000;
     border-left-color: #000;
+    border-bottom-color: #9a9a9a;
+    border-right-color: #9a9a9a;
+    transform: translateY(1px);
 }
 
 #volWrap {
@@ -136,12 +274,28 @@
     align-items: center;
     gap: 6px;
     font-size: 85%;
-    color: #ff8c00;
+    color: color-mix(in srgb, var(--scheme-link) 70%, white);
 }
 
 #vol {
-    accent-color: #ff8c00;
+    accent-color: var(--scheme-link);
     width: 90px;
+}
+
+/* Toggles read as "off" (dim) until lit, then sink in with a restrained glow. */
+.toggle {
+    opacity: .55;
+}
+
+.toggle.active {
+    opacity: 1;
+    color: #fff;
+    background: linear-gradient(180deg,
+        color-mix(in srgb, var(--scheme-link) 32%, #1a1a1a),
+        color-mix(in srgb, var(--scheme-link) 52%, #000));
+    border-top-color: #000;
+    border-left-color: #000;
+    box-shadow: inset 0 0 6px color-mix(in srgb, var(--scheme-link) 55%, transparent);
 }
 
 #playlist {
@@ -150,31 +304,32 @@
     padding: 0;
     max-height: 50vh;
     overflow-y: auto;
-    background: #120d08;
-    border: 2px solid #000;
+    background: #090909;
+    border: 1px solid #000;
     border-top-color: #2a2a2a;
 }
 
 #playlist li {
     display: flex;
     gap: 8px;
-    padding: 4px 8px;
-    border-bottom: 1px solid #2a2018;
+    padding: 4px 9px;
+    border-bottom: 1px solid #1a1a1a;
     cursor: pointer;
-    color: #ffb24d;
+    color: #c6c6c6;
 }
 
 #playlist li:hover {
-    background: #2a1c0c;
+    background: #181818;
 }
 
 #playlist li.playing {
-    background: #3a2410;
-    color: #ffd27f;
+    background: color-mix(in srgb, var(--scheme-link) 14%, #101010);
+    color: #fff;
+    box-shadow: inset 2px 0 0 var(--scheme-link);
 }
 
 #playlist .num {
-    color: #ff8c00;
+    color: var(--scheme-link);
     min-width: 1.8em;
     text-align: right;
 }
@@ -187,12 +342,12 @@
 }
 
 #playlist .pdur {
-    color: #ff8c00;
+    color: color-mix(in srgb, var(--scheme-link) 60%, white);
 }
 
 #playlist .empty {
     padding: 12px;
-    color: #aa7a40;
+    color: #7a7a7a;
     cursor: default;
     font-style: italic;
 }

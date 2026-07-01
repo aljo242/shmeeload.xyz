@@ -1,0 +1,98 @@
+/* Compact "now playing" bar, self-mounted on every page but the full tunes page.
+   Same diamond-plate + theme-accent look as the big player, shrunk down. */
+
+#miniPlayer {
+    position: fixed;
+    bottom: 16px;
+    left: 16px;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 7px;
+    max-width: 92vw;
+    background-image:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(0, 0, 0, 0.3)),
+        linear-gradient(color-mix(in srgb, var(--scheme-nav, #264653) 32%, transparent), color-mix(in srgb, var(--scheme-nav, #264653) 32%, transparent)),
+        url("/static/img/diamond-plate.jpg");
+    background-size: cover, cover, 200px auto;
+    background-blend-mode: soft-light, overlay, normal;
+    border: 1px solid #000;
+    border-top-color: #aaa;
+    border-left-color: #888;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .6);
+    color: #eee;
+    font-family: 'Courier New', Courier, monospace;
+    cursor: move;
+    user-select: none;
+}
+
+.miniBtn {
+    font-family: inherit;
+    font-size: 95%;
+    color: #fff;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, .6);
+    background: linear-gradient(180deg,
+        color-mix(in srgb, var(--scheme-header, #e76f51) 35%, #6e6e6e),
+        color-mix(in srgb, var(--scheme-header, #e76f51) 45%, #242424));
+    border: 1px solid #000;
+    border-top-color: #9a9a9a;
+    border-left-color: #7a7a7a;
+    padding: 2px 7px;
+    cursor: pointer;
+}
+
+.miniBtn:active {
+    border-top-color: #000;
+    border-left-color: #000;
+    transform: translateY(1px);
+}
+
+.miniClose {
+    padding: 2px 6px;
+    opacity: .8;
+}
+
+.miniName {
+    max-width: 170px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--scheme-link, #14ff14);
+    text-shadow: 0 0 4px color-mix(in srgb, var(--scheme-link, #14ff14) 50%, transparent);
+    padding: 0 4px;
+}
+
+.miniSeek {
+    width: 120px;
+    height: 7px;
+    background: #000;
+    border: 1px solid #2a2a2a;
+    cursor: pointer;
+    overflow: hidden;
+    flex: 0 0 auto;
+}
+
+.miniFill {
+    height: 100%;
+    width: 0;
+    background: var(--scheme-link, #14ff14);
+    box-shadow: 0 0 5px color-mix(in srgb, var(--scheme-link, #14ff14) 60%, transparent);
+}
+
+.miniLink {
+    color: #e0e0e0 !important;
+    text-decoration: underline;
+    font-size: 85%;
+    padding: 0 2px;
+}
+
+@media (max-width: 520px) {
+    .miniName {
+        max-width: 90px;
+    }
+
+    .miniSeek {
+        width: 70px;
+    }
+}

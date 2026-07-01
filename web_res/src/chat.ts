@@ -1,4 +1,6 @@
 import { getElement } from "./dom.js";
+import { initMiniPlayer } from "./miniplayer.js";
+import { initSparkles } from "./sparkles.js";
 import { initTheme } from "./theme.js";
 
 const DEFAULT_NAME = "anon";
@@ -128,6 +130,8 @@ function closePopUpForm() {
 
 window.onload = async () => {
     initTheme(); // shmee-man button cycles themes, same as the other pages
+    void initMiniPlayer(); // "now playing" bar if a track is in progress
+    initSparkles();
 
     if (!("WebSocket" in window)) {
         appendLog("Your browser does not support WebSockets.");
