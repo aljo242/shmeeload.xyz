@@ -351,3 +351,37 @@
     cursor: default;
     font-style: italic;
 }
+
+/* Mobile: the player floats/drags on desktop, but on a phone it flows inline
+   (so the whole thing scrolls into view instead of being fixed off-screen), the
+   button row wraps, and the heavy full-page invert overlay is dropped. */
+@media (max-width: 600px) {
+    #player {
+        position: static !important; /* in-flow + scrollable; overrides drag left/top */
+        width: 94vw;
+        max-width: 94vw;
+        margin: 8px auto;
+        padding: 8px;
+    }
+
+    #transport {
+        flex-wrap: wrap;
+    }
+
+    .tbtn {
+        font-size: 95%;
+        padding: 4px 8px;
+    }
+
+    #volWrap {
+        margin-left: 0;
+    }
+
+    #playlist {
+        max-height: 44vh;
+    }
+
+    #vizOverlay {
+        display: none; /* full-screen difference blend is too heavy on phones */
+    }
+}
