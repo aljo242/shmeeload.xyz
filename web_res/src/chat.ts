@@ -30,11 +30,16 @@ let userName = DEFAULT_NAME;
 let currentRoom = "";
 let conn: WebSocket | undefined;
 
-// appendLog renders one line, turning URLs into safe anchor elements. It never
+// The message log is capped so a long-lived tab can't grow the DOM without
+// bound, and appends are coalesced into one reflow per animation frame so a
+// burst (history replay on join, or a busy room) renders in a single batch.
+const MAX_LOG_LINES = 500;
+let pendingLines: HTMLDivElement[] = [];
+let flushScheduled = false;
+
+// buildLine renders one line, turning URLs into safe anchor elements. It never
 // uses innerHTML: messages are untrusted (from other clients and history).
-function appendLog(text: string, cls = "logLine") {
-    const log = getElement("log");
-    const doScroll = log.scrollTop > log.scrollHeight - log.clientHeight - 1;
+function buildLine(text: string, cls: string): HTMLDivElement {
     const item = document.createElement("div");
     item.className = cls;
 
@@ -55,10 +60,45 @@ function appendLog(text: string, cls = "logLine") {
     if (last < text.length) {
         item.appendChild(document.createTextNode(text.slice(last)));
     }
+    return item;
+}
 
-    log.appendChild(item);
+// flushLog appends every queued line in one batch, trims the log to the cap,
+// and keeps the view pinned to the bottom if it already was.
+function flushLog() {
+    flushScheduled = false;
+    if (pendingLines.length === 0) {
+        return;
+    }
+    const log = getElement("log");
+    // Checked before the append, which changes scrollHeight.
+    const doScroll = log.scrollTop > log.scrollHeight - log.clientHeight - 1;
+
+    const frag = document.createDocumentFragment();
+    for (const item of pendingLines) {
+        frag.appendChild(item);
+    }
+    pendingLines = [];
+    log.appendChild(frag);
+
+    while (log.childElementCount > MAX_LOG_LINES && log.firstChild) {
+        log.removeChild(log.firstChild);
+    }
     if (doScroll) {
         log.scrollTop = log.scrollHeight - log.clientHeight;
+    }
+}
+
+function appendLog(text: string, cls = "logLine") {
+    pendingLines.push(buildLine(text, cls));
+    // Bound the queue too: rAF does not fire while the tab is backgrounded, so a
+    // flood there must not accumulate past what the log would keep anyway.
+    if (pendingLines.length > MAX_LOG_LINES) {
+        pendingLines.splice(0, pendingLines.length - MAX_LOG_LINES);
+    }
+    if (!flushScheduled) {
+        flushScheduled = true;
+        requestAnimationFrame(flushLog);
     }
 }
 
@@ -74,6 +114,7 @@ function renderRoster(json: string) {
 }
 
 function clearLog() {
+    pendingLines = []; // drop lines queued from the previous room
     getElement("log").textContent = "";
 }
 

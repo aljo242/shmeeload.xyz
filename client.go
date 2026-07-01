@@ -40,7 +40,10 @@ var (
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
-	CheckOrigin:     sameOriginCheck,
+	// Negotiate permessage-deflate so chat lines and roster JSON travel
+	// compressed when the browser supports it.
+	EnableCompression: true,
+	CheckOrigin:       sameOriginCheck,
 }
 
 // chatLine prefixes text with a server timestamp, so message times are
