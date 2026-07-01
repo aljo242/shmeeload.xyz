@@ -18,7 +18,8 @@ function place(img: HTMLImageElement) {
 }
 
 export function initSparkles(count = 14) {
-    for (let i = 0; i < count; i++) {
+    const n = window.innerWidth < 600 ? Math.ceil(count / 2) : count; // fewer on phones
+    for (let i = 0; i < n; i++) {
         const img = document.createElement("img");
         img.className = "flare";
         img.alt = "";

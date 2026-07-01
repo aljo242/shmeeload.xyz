@@ -46,21 +46,31 @@
 
 body {
     font-family: 'Courier New', Courier, monospace;
-    background-color: #14ff14;  
-
-    /*background-color: rgb(203, 224, 231); */
-
+    /* Opinionated garish backdrop: a deliberately clashing hot-neon gradient that
+       slowly pans, with a faint CRT scanline wash tying it to the player's tube.
+       Pages used to each set their own photo here; this is the one shared look
+       (the tunes page still lays its own #pageBg over this for the invert). */
+    background:
+        repeating-linear-gradient(0deg, rgba(0, 0, 0, .10) 0 1px, transparent 1px 3px),
+        linear-gradient(115deg, #ff2ec4, #7a04eb, #00e5ff, #adff2f, #ff6b00, #ff2ec4);
+    background-size: auto, 300% 300%;
+    animation: garishPan 16s ease-in-out infinite;
     position: fixed;
     width: 99%;
     height: 99%;
 }
 
-/* style for the header */
-#header {
-    background-color: rgb(203, 224, 231);
-    background: pink;
+@keyframes garishPan {
+    0%, 100% { background-position: 0 0, 0% 50%; }
+    50% { background-position: 0 0, 100% 50%; }
+}
 
-    /*padding: 30px;*/
+@media (prefers-reduced-motion: reduce) {
+    body { animation: none; }
+}
+
+/* style for the header (background set per-theme by theme.ts: scheme.nav_header) */
+#header {
     text-align: center;
     font-size: 30px;
 }
@@ -68,13 +78,12 @@ body {
 /*
     create two columns/boxes that float next to each other
 */
+/* background set per-theme by theme.ts (scheme.nav_background) */
 #nav {
     float: left;
-    /* width: 10%; */
-    min-height: 100vh; 
+    min-height: 100vh;
     min-width: fit-content;
     position: fixed;
-    background: greenyellow;
     text-align: center;
     z-index: 1;
 }
@@ -112,17 +121,14 @@ article {
     position: relative;
 }
 
+/* background set per-theme by theme.ts (scheme.article_background) */
 #mainArticleBody {
     float: right;
     text-align: center;
-    /* padding: 20px; */
-   /*  width: 90%; */
     max-width: 70%;
     margin-left: 30%;
-    background-color: khaki;
     overflow-x: hidden;
     min-width: 60%;
-
 }
 
 #mainArticleBody h2 {
