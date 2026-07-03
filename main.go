@@ -88,6 +88,7 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 		}
 	}
 	page := serveAsset
+	visits := newVisitCounter(filepath.Join(filepath.Dir(chatDBPathOf(cfg)), "gamers-visits"))
 	underConstruction := func(w http.ResponseWriter, rq *http.Request) {
 		http.Redirect(w, rq, "/under-construction", http.StatusTemporaryRedirect)
 	}
@@ -116,6 +117,19 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 	mux.HandleFunc("GET /chat/home", page("chat.html"))
 	mux.HandleFunc("GET /tunes/home", page("tunes.html"))
 	mux.HandleFunc("GET /shop/home", page("shop.html"))
+	mux.HandleFunc("GET /gamers", func(w http.ResponseWriter, rq *http.Request) {
+		http.Redirect(w, rq, "/gamers/home", http.StatusPermanentRedirect)
+	})
+	gamersPage := page("gamers.html")
+	mux.HandleFunc("GET /gamers/home", func(w http.ResponseWriter, rq *http.Request) {
+		visits.Inc()
+		gamersPage(w, rq)
+	})
+	mux.HandleFunc("GET /gamers/count", func(w http.ResponseWriter, rq *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Cache-Control", "no-cache")
+		_ = json.NewEncoder(w).Encode(map[string]int64{"visits": visits.Get()})
+	})
 	mux.HandleFunc("GET /under-construction", page("construction.html"))
 
 	// security.txt for vulnerability-disclosure contact (RFC 9116).

@@ -64,7 +64,10 @@ func run(root string) error {
 			return err
 		}
 		ext := strings.ToLower(filepath.Ext(p))
-		webp := ext == ".png" || ext == ".gif"
+		// GIFs are intentionally left untouched: a static webp/avif variant would
+		// flatten an animated GIF to a single frame, and the static handler would
+		// then serve that flattened variant to browsers that accept webp/avif.
+		webp := ext == ".png"
 		avifOK := webp || ext == ".jpg" || ext == ".jpeg"
 		if !avifOK {
 			return nil
