@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <base href="/"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no"/>
+    <meta name="theme-color" content="#000000"/>
+    <meta name="description" content="SHMEELAND - the shmee minecraft server. Join the hunt for Dark Enerjohn. Live map, Discord, and how to join."/>
+
+    <meta property="og:type" content="website"/>
+    <meta property="og:site_name" content="djinntek"/>
+    <meta property="og:title" content="SHMEELAND"/>
+    <meta property="og:description" content="Join the hunt for Dark Enerjohn. The shmee minecraft server - live map, Discord, and how to join."/>
+    <meta property="og:url" content="https://djinntek.space/gamers/home"/>
+    <link rel="canonical" href="https://djinntek.space/gamers/home"/>
+
+    <title>SHMEELAND</title>
+
+    <link rel="manifest" href="/manifest.json">
+    <link rel="shortcut icon" href="/static/img/1favicon.ico" type="image/x-icon"/>
+
+    <style>
+      @keyframes blink { 50% { opacity: 0; } }
+      @keyframes rainbow { to { filter: hue-rotate(360deg); } }
+      @keyframes bob { 50% { transform: translateY(-7px); } }
+
+      html, body { margin: 0; }
+      body {
+        min-height: 100vh;
+        font-family: "Times New Roman", Times, Georgia, serif;
+        color: #eee; text-align: center;
+        background: #05010f url('/static/img/xdf.jpg') no-repeat center center fixed;
+        background-size: cover;
+      }
+      .wrap { max-width: 720px; margin: 0 auto; padding: 10px 12px 40px; }
+      img { image-rendering: -webkit-optimize-contrast; }
+
+      .topbar {
+        background: repeating-linear-gradient(90deg, #ff0080, #ff0080 12px, #000 12px, #000 24px);
+        border-top: 3px solid #0ff; border-bottom: 3px solid #0ff;
+        color: #fff; font-weight: bold; padding: 4px 0; letter-spacing: 1px;
+        font-family: Arial, sans-serif;
+      }
+
+      .banner { display:block; margin: 12px auto; max-width: 92%; }
+      .divider { display:block; margin: 20px auto; width: 90%; max-width: 560px; }
+
+      .title {
+        font-size: clamp(44px, 12vw, 94px); font-weight: 900; margin: 6px 0 2px; line-height: 1;
+        background: linear-gradient(90deg,#ff004d,#ff9d00,#faff00,#00ff5e,#00e5ff,#c400ff,#ff004d);
+        -webkit-background-clip: text; background-clip: text; color: transparent;
+        -webkit-text-stroke: 1px #000;
+        animation: rainbow 6s linear infinite;
+      }
+      .titlerow { display:flex; align-items:center; justify-content:center; gap:12px; }
+      .titlerow img { height: 46px; animation: bob 3s ease-in-out infinite; }
+
+      .sub { color:#ffe600; font-size: 26px; font-style: italic; margin: 2px 0 6px;
+        text-shadow: 2px 2px 0 #b30059; }
+      .online { display:inline-flex; align-items:center; gap:10px; color:#39ff14; font-weight:bold; font-size:20px; }
+      .online img { height: 44px; }
+      .online b { animation: blink 1s step-start infinite; font-size: 22px; }
+
+      .panel {
+        margin: 10px auto; padding: 14px 18px; max-width: 580px;
+        background: rgba(8,0,20,0.80); border: 4px ridge #7a00ff;
+      }
+      .panel h2 { margin: 0 0 10px; color:#00e5ff; font-size: 26px; letter-spacing: 1px;
+        text-shadow: 2px 2px 0 #002; }
+
+      .ip {
+        display:inline-block; font-family: "Courier New", monospace; font-weight:bold;
+        font-size: clamp(18px, 5vw, 30px); color:#39ff14; background:#000;
+        border: 3px inset #39ff14; padding: 8px 16px; letter-spacing: 1px;
+      }
+      .hint { color:#cfe8ff; font-size: 15px; margin-top: 10px; }
+      .hint a, .steps a { color:#ffe600; font-weight:bold; }
+      .hint a:visited, .steps a:visited { color:#ff9d00; }
+
+      .btns { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; align-items:center; margin: 8px 0; }
+      .btns .ptr { height: 40px; flex: none; }
+      .btns .ptr.flip { transform: scaleX(-1); }
+      .btn {
+        display:block; text-decoration:none; color:#000; font-weight:900;
+        font-family: Arial, sans-serif; font-size: 18px; padding: 10px 16px; white-space: nowrap;
+        border: 5px outset #fff; box-shadow: 4px 4px 0 #000;
+      }
+      .btn:active { border-style: inset; transform: translate(2px,2px); box-shadow: 2px 2px 0 #000; }
+      .btn.map { background: linear-gradient(#00ff9d,#00a86b); }
+      .btn.dc  { background: linear-gradient(#8ba4ff,#5865F2); color:#fff; text-shadow:1px 1px 0 #000; }
+      .btn small { display:block; font-weight:bold; font-size:12px; }
+
+      .steps { text-align:left; max-width:520px; margin:0 auto; color:#f0f0f0; font-size:17px; line-height:2; }
+      .steps b { color:#ffe600; }
+      .steps img.bullet { height: 16px; vertical-align: middle; margin-right: 8px; }
+
+      .collage { display:flex; flex-wrap:wrap; gap:16px; justify-content:center; align-items:center; margin: 6px 0; }
+      .collage img { height: 74px; }
+      .collage .torch { height: 60px; }
+
+      .counter { margin-top: 6px; font-size: 18px; }
+      .counter img.star { height: 28px; vertical-align: middle; margin: 0 8px; }
+      .counter .odo {
+        font-family:"Courier New",monospace; font-weight:bold; color:#33ff33; background:#000;
+        border:2px solid #444; padding:3px 8px; letter-spacing:4px;
+      }
+
+      .footer { color:#bfe; font-size:13px; line-height:1.9; margin-top: 16px; font-family: Arial, sans-serif; }
+      .footer img { height: 22px; vertical-align: middle; margin: 0 6px; }
+      a.home { color:#0ff; }
+    </style>
+</head>
+<body>
+  <div class="topbar">
+    <marquee scrollamount="6">&bull; Stargazer Champion &bull; Dark Enerjohn &bull; Tony Tundra &bull; Cozart Shmoopler &bull; Spyrus Quantonix &bull; Yoivixquartzsar &bull; Stargazer Champion &bull; Dark Enerjohn &bull; Tony Tundra &bull; Cozart Shmoopler &bull; Spyrus Quantonix &bull; Yoivixquartzsar</marquee>
+  </div>
+
+  <div class="wrap">
+    <img class="banner" src="/static/img/gifs/construction.gif" alt="under construction">
+
+    <div class="titlerow">
+      <img src="/static/img/gifs/star-gold.gif" alt="">
+      <span class="title">SHMEELAND</span>
+      <img src="/static/img/gifs/star-gold.gif" alt="">
+    </div>
+    <div class="sub">join the hunt for Dark Enerjohn</div>
+    <div class="online"><img src="/static/img/gifs/torch.gif" alt=""><span><b>&bull;</b> SERVER ONLINE</span><img src="/static/img/gifs/torch.gif" alt=""></div>
+
+    <img class="divider" src="/static/img/gifs/divider-rainbow.gif" alt="">
+
+    <div class="panel">
+      <h2>SERVER ADDRESS</h2>
+      <div class="ip">gamer.djinntek.space</div>
+      <div class="hint">Java Edition &bull; install the <a href="https://www.feed-the-beast.com/modpacks/126-ftb-presents-direwolf20-121" target="_blank" rel="noopener">Direwolf20 1.21</a> modpack first &mdash; see the <a href="https://discord.gg/WnVTKa7vDJ" target="_blank" rel="noopener">Discord</a> for the guide</div>
+    </div>
+
+    <img class="divider" src="/static/img/gifs/divider-fire.gif" alt="">
+
+    <div class="btns">
+      <img class="ptr flip" src="/static/img/gifs/pointer.gif" alt="">
+      <a class="btn map" href="https://map.djinntek.space" target="_blank" rel="noopener">
+        ENTER THE LIVE MAP<small>see the whole world in your browser</small>
+      </a>
+      <a class="btn dc" href="https://discord.gg/WnVTKa7vDJ" target="_blank" rel="noopener">
+        JOIN THE DISCORD<small>guides, chat, and the crew</small>
+      </a>
+      <img class="ptr" src="/static/img/gifs/pointer.gif" alt="">
+    </div>
+
+    <img class="divider" src="/static/img/gifs/divider-rainbow.gif" alt="">
+
+    <div class="panel">
+      <h2>HOW TO JOIN</h2>
+      <div class="steps">
+        <img class="bullet" src="/static/img/gifs/bullet.gif" alt=""><b>1.</b> Grab the free <a href="https://www.feed-the-beast.com/app" target="_blank" rel="noopener">FTB App</a> and install the <a href="https://www.feed-the-beast.com/modpacks/126-ftb-presents-direwolf20-121" target="_blank" rel="noopener">Direwolf20 1.21</a> modpack.<br>
+        <img class="bullet" src="/static/img/gifs/bullet.gif" alt=""><b>2.</b> Hop in our <a href="https://discord.gg/WnVTKa7vDJ" target="_blank" rel="noopener">Discord</a> and drop your Minecraft username so we can whitelist you.<br>
+        <img class="bullet" src="/static/img/gifs/bullet.gif" alt=""><b>3.</b> Add the server <b>gamer.djinntek.space</b> and jump in.<br>
+        <img class="bullet" src="/static/img/gifs/bullet.gif" alt=""><b>4.</b> Join the <b>Shmeeland Legends</b> party so you can find each other on the <a href="https://map.djinntek.space" target="_blank" rel="noopener">map</a>.
+      </div>
+    </div>
+
+    <div class="collage">
+      <img class="torch" src="/static/img/gifs/torch.gif" alt="">
+      <img src="/static/img/gifs/skull-fire.gif" alt="">
+      <img src="/static/img/gifs/skull-yellow.gif" alt="">
+      <img src="/static/img/gifs/skull-plain.gif" alt="">
+      <img src="/static/img/gifs/skull-horn.gif" alt="">
+      <img src="/static/img/gifs/lavalamp.gif" alt="">
+      <img src="/static/img/gifs/genie.gif" alt="">
+      <img src="/static/img/gifs/computer.gif" alt="">
+      <img class="torch" src="/static/img/gifs/torch.gif" alt="">
+    </div>
+
+    <img class="divider" src="/static/img/gifs/divider-flowers.gif" alt="">
+
+    <div class="counter">
+      <img class="star" src="/static/img/gifs/star-gold.gif" alt="">
+      You are visitor number
+      <span class="odo" id="visits">0 0 0 0 0 0</span>
+      <img class="star" src="/static/img/gifs/star-gold.gif" alt="">
+    </div>
+
+    <div class="footer">
+      <img src="/static/img/gifs/new.gif" alt=""> under construction FOREVER &bull; best viewed in Shmeescape Scanner 4.0 at 800&times;600<br>
+      &copy; 199X SHMEELAND ENTERPRISES &bull; all rites reserved &bull; no scrubs<br>
+      <a class="home" href="/home">&laquo; back to djinntek.space</a>
+    </div>
+  </div>
+  <script type="module" src="/static/js/gamers.js"></script>
+</body>
+</html>
