@@ -33,3 +33,16 @@ jobs:
             200|301|308) ;;
             *) echo "::error::www.djinntek.space returned $code"; exit 1 ;;
           esac
+      - name: Probe Minecraft server (gamer.djinntek.space:25565)
+        if: always()
+        run: |
+          # External reachability check for the game server: confirms 25565 is
+          # open from the public internet, which the on-box heartbeat can't see
+          # (a broken port-forward, ufw rule, or a DNS/IP that didn't propagate
+          # would all leave the box "up" but the server unreachable to players).
+          if timeout 15 bash -c '</dev/tcp/gamer.djinntek.space/25565'; then
+            echo "gamer.djinntek.space:25565 -> reachable"
+          else
+            echo "::error::gamer.djinntek.space:25565 is NOT reachable from the internet"
+            exit 1
+          fi
