@@ -89,6 +89,7 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 	}
 	page := serveAsset
 	visits := newVisitCounter(filepath.Join(filepath.Dir(chatDBPathOf(cfg)), "gamers-visits"))
+	mcStat := newStatusCache(cfg.MCServerAddr)
 	underConstruction := func(w http.ResponseWriter, rq *http.Request) {
 		http.Redirect(w, rq, "/under-construction", http.StatusTemporaryRedirect)
 	}
@@ -129,6 +130,11 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Cache-Control", "no-cache")
 		_ = json.NewEncoder(w).Encode(map[string]int64{"visits": visits.Get()})
+	})
+	mux.HandleFunc("GET /gamers/status", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Cache-Control", "no-cache")
+		_ = json.NewEncoder(w).Encode(mcStat.get())
 	})
 	mux.HandleFunc("GET /under-construction", page("construction.html"))
 

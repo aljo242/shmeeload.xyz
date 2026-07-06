@@ -33,6 +33,10 @@ type Config struct {
 
 	TunesDir string `json:"tunesDir"` // directory of MP3s served on the tunes page (default /tunes)
 
+	// MCServerAddr is the "host:port" of the Minecraft server pinged for the live
+	// player count on /gamers (Server List Ping). Empty disables the feature.
+	MCServerAddr string `json:"mcServerAddr"`
+
 	Dev bool `json:"dev"` // dev mode: serve site/ from disk (no embed/minify); also set by -dev
 }
 

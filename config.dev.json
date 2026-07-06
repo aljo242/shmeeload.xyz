@@ -6,5 +6,6 @@
   "debugLog": true,
   "cacheMaxAge": 0,
   "chatDBPath": "dev-chat.db",
-  "tunesDir": "dev-tunes"
+  "tunesDir": "dev-tunes",
+  "mcServerAddr": "gamer.djinntek.space:25565"
 }
