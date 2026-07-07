@@ -32,7 +32,7 @@ func (c *visitCounter) Inc() int64 {
 	defer c.mu.Unlock()
 	c.n++
 	tmp := c.path + ".tmp"
-	if os.WriteFile(tmp, []byte(strconv.FormatInt(c.n, 10)), 0o644) == nil {
+	if os.WriteFile(tmp, []byte(strconv.FormatInt(c.n, 10)), 0o600) == nil {
 		_ = os.Rename(tmp, c.path)
 	}
 	return c.n

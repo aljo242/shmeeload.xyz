@@ -32,7 +32,7 @@ type slpResponse struct {
 }
 
 func putVarInt(buf *bytes.Buffer, v int) {
-	uv := uint32(v)
+	uv := uint32(v) //nolint:gosec // varint encoding intentionally reinterprets the int's low bits
 	for {
 		b := byte(uv & 0x7f)
 		uv >>= 7
@@ -102,7 +102,7 @@ func queryMCStatus(addr string, timeout time.Duration) (mcStatus, error) {
 	putVarInt(&hs, 0x00)
 	putVarInt(&hs, -1)
 	putString(&hs, host)
-	_ = binary.Write(&hs, binary.BigEndian, uint16(port))
+	_ = binary.Write(&hs, binary.BigEndian, uint16(port)) //nolint:gosec // bounded network port (0-65535)
 	putVarInt(&hs, 1)
 	if err := writeFramed(conn, hs.Bytes()); err != nil {
 		return st, err
