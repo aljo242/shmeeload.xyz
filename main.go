@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
 	"crypto/subtle"
 	"crypto/tls"
 	"encoding/json"
@@ -190,16 +191,34 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 	// credentials are configured; its data (Pi-hole stats) is never on a public
 	// endpoint.
 	if cfg.InternalUser != "" && cfg.InternalPass != "" {
+		// Session cookie value: a hash of the password (never the password itself),
+		// so an authenticated page load can hand its fetch()es a credential that
+		// browsers reliably send, unlike Basic Auth on subrequests.
+		sessVal := fmt.Sprintf("%x", sha256.Sum256([]byte(cfg.InternalPass)))
+		const sessCookie = "hlsess"
+		authed := func(rq *http.Request) bool {
+			if u, p, ok := rq.BasicAuth(); ok &&
+				subtle.ConstantTimeCompare([]byte(u), []byte(cfg.InternalUser)) == 1 &&
+				subtle.ConstantTimeCompare([]byte(p), []byte(cfg.InternalPass)) == 1 {
+				return true
+			}
+			if c, err := rq.Cookie(sessCookie); err == nil &&
+				subtle.ConstantTimeCompare([]byte(c.Value), []byte(sessVal)) == 1 {
+				return true
+			}
+			return false
+		}
 		gate := func(h http.HandlerFunc) http.HandlerFunc {
 			return func(w http.ResponseWriter, rq *http.Request) {
-				u, p, ok := rq.BasicAuth()
-				if !ok ||
-					subtle.ConstantTimeCompare([]byte(u), []byte(cfg.InternalUser)) != 1 ||
-					subtle.ConstantTimeCompare([]byte(p), []byte(cfg.InternalPass)) != 1 {
+				if !authed(rq) {
 					w.Header().Set("WWW-Authenticate", `Basic realm="internal"`)
 					http.Error(w, "unauthorized", http.StatusUnauthorized)
 					return
 				}
+				http.SetCookie(w, &http.Cookie{
+					Name: sessCookie, Value: sessVal, Path: "/internal",
+					HttpOnly: true, Secure: true, SameSite: http.SameSiteStrictMode, MaxAge: 3600,
+				})
 				h(w, rq)
 			}
 		}
