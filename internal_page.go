@@ -123,6 +123,8 @@ type hostPanel struct {
 	Uptime, Load, Mem, Swap, Temp             string
 	LoadClass, MemClass, SwapClass, TempClass string
 	FailedUnits, FailedClass                  string
+	Updates                                   string
+	RebootReq, CIBuilding                     bool
 	Backup, BackupClass                       string
 	LoadSpark, DiskSpark                      template.HTML
 	Disks                                     []hostDiskView
@@ -132,10 +134,12 @@ type hostPanel struct {
 type internalView struct {
 	StatusClass, StatusText                   string
 	Warnings, Criticals                       []string
+	CertDays, CertClass                       string
 	PiUp                                      bool
 	Queries, Blocked, Pct, Blocklist, Clients string
+	Cache, Blocking, BlockingClass            string
 	PiSpark                                   template.HTML
-	Top                                       []internalRow
+	Top, TopClients                           []internalRow
 	MCUp                                      bool
 	Online, TPS, Day                          string
 	Hosts                                     []hostPanel
@@ -258,6 +262,14 @@ func buildHostPanel(e hostEntry, now time.Time) (hostPanel, []string, []string) 
 		note(sevWarn, fmt.Sprintf("%d failed unit(s)", r.FailedUnits))
 	}
 
+	if r.Updates > 0 {
+		p.Updates = strconv.Itoa(r.Updates)
+	}
+	p.RebootReq, p.CIBuilding = r.RebootReq, r.CIBuilding
+	if r.RebootReq {
+		warns = append(warns, r.Box+": reboot required")
+	}
+
 	for _, d := range r.Disks {
 		ds := diskSev(d.UsedPct)
 		p.Disks = append(p.Disks, hostDiskView{
@@ -292,21 +304,54 @@ func buildHostPanel(e hostEntry, now time.Time) (hostPanel, []string, []string) 
 	return p, warns, bads
 }
 
-func buildInternalView(pi piholeStats, mc liveResponse, hosts []hostEntry, hist func(string) []float64, now time.Time) internalView {
+func buildInternalView(pi piholeStats, mc liveResponse, hosts []hostEntry, hist func(string) []float64, certDays int, certOK bool, now time.Time) internalView {
 	v := internalView{PiUp: pi.Up, MCUp: mc.Up}
 	v.PiSpark = sparkline(hist("pihole.blocked_pct"))
+	var warns, bads []string
+
+	if certOK {
+		v.CertDays = strconv.Itoa(certDays) + "d"
+		cs := sevOK
+		switch {
+		case certDays <= 5:
+			cs = sevBad
+		case certDays <= 14:
+			cs = sevWarn
+		}
+		v.CertClass = cs.class()
+		if msg := fmt.Sprintf("TLS cert expires in %dd", certDays); cs == sevBad {
+			bads = append(bads, msg)
+		} else if cs == sevWarn {
+			warns = append(warns, msg)
+		}
+	} else {
+		v.CertDays = "--"
+	}
 
 	if pi.Up {
 		v.Queries = commafy(pi.QueriesToday)
 		v.Blocked = commafy(pi.BlockedToday)
 		v.Pct = strconv.FormatFloat(pi.PercentBlocked, 'f', 1, 64) + "%"
+		v.Cache = strconv.FormatFloat(pi.CacheHitPct, 'f', 0, 64) + "%"
 		v.Blocklist = commafy(pi.BlocklistSize)
 		v.Clients = commafy(pi.ActiveClients)
+		v.Blocking = pi.Blocking
+		if pi.Blocking == "disabled" {
+			v.BlockingClass = sevBad.class()
+			bads = append(bads, "pi-hole: blocking DISABLED")
+		}
 		for _, d := range pi.TopBlocked {
 			v.Top = append(v.Top, internalRow{Count: commafy(d.Count), Domain: d.Domain})
 		}
+		for _, cl := range pi.TopClients {
+			name := cl.Name
+			if name == "" {
+				name = cl.IP
+			}
+			v.TopClients = append(v.TopClients, internalRow{Count: commafy(cl.Count), Domain: name})
+		}
 	} else {
-		v.Queries, v.Blocked, v.Pct, v.Blocklist, v.Clients = "--", "--", "--", "--", "--"
+		v.Queries, v.Blocked, v.Pct, v.Cache, v.Blocklist, v.Clients = "--", "--", "--", "--", "--", "--"
 	}
 	if pi.CheckedAt > 0 {
 		v.Checked = "pi-hole checked " + time.Unix(pi.CheckedAt, 0).Format("15:04:05")
@@ -330,7 +375,6 @@ func buildInternalView(pi piholeStats, mc liveResponse, hosts []hostEntry, hist 
 		v.Day = "--"
 	}
 
-	var warns, bads []string
 	for _, e := range hosts {
 		pnl, w, b := buildHostPanel(e, now)
 		pnl.LoadSpark = sparkline(hist(e.rep.Box + ".load"))
@@ -413,29 +457,39 @@ td.d{color:#cfe;word-break:break-all;font-family:ui-monospace,"SF Mono",Menlo,mo
 .sparks{display:flex;gap:18px;margin-top:12px;flex-wrap:wrap}
 .sparkbox{flex:1;min-width:150px}
 .sparklbl{font-size:11px;color:#7d8b99;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.cert.warn{color:#ffc061}.cert.bad{color:#ff8b8b}
+.tag{font-size:11px;font-weight:600;color:#37d67a;background:#0f1b14;border:1px solid #1e6b3f;border-radius:5px;padding:2px 7px;text-transform:none;letter-spacing:0}
+.tag.warn{color:#ffc061;background:#1b160f;border-color:#7a5a1e}
+.tag.bad{color:#ff8b8b;background:#1b0f0f;border-color:#7a2626}
 </style>
 </head>
 <body>
 <div class="wrap">
 <h1>homelab &mdash; internal</h1>
-<div class="muted">{{.Checked}} &bull; auto-refreshes every 60s</div>
+<div class="muted">{{.Checked}} &bull; auto-refreshes every 60s &bull; TLS cert <span class="cert {{.CertClass}}">{{.CertDays}}</span></div>
 
 <div class="rollup {{.StatusClass}}">{{.StatusText}}
 {{if or .Criticals .Warnings}}<ul>{{range .Criticals}}<li class="bad">{{.}}</li>{{end}}{{range .Warnings}}<li class="warn">{{.}}</li>{{end}}</ul>{{end}}
 </div>
 
 <div class="panel">
-<h2><span class="dot {{if .PiUp}}up{{else}}down{{end}}"></span> Pi-hole</h2>
+<h2><span class="dot {{if .PiUp}}up{{else}}down{{end}}"></span> Pi-hole{{if .Blocking}} <span class="tag {{.BlockingClass}}">blocking {{.Blocking}}</span>{{end}}</h2>
 <div class="grid">
 <div class="stat"><div class="n">{{.Queries}}</div><div class="l">queries (24h)</div></div>
 <div class="stat"><div class="n block">{{.Blocked}}</div><div class="l">blocked</div></div>
 <div class="stat"><div class="n pct">{{.Pct}}</div><div class="l">blocked %</div></div>
+<div class="stat"><div class="n">{{.Cache}}</div><div class="l">cache hit</div></div>
 <div class="stat"><div class="n">{{.Blocklist}}</div><div class="l">blocklist</div></div>
 <div class="stat"><div class="n">{{.Clients}}</div><div class="l">clients</div></div>
 </div>
+<div class="sparklbl" style="margin-top:12px">top blocked</div>
 <table><tbody>
 {{range .Top}}<tr><td class="c">{{.Count}}</td><td class="d">{{.Domain}}</td></tr>{{end}}
 </tbody></table>
+{{if .TopClients}}<div class="sparklbl" style="margin-top:12px">top clients</div>
+<table><tbody>
+{{range .TopClients}}<tr><td class="c">{{.Count}}</td><td class="d">{{.Domain}}</td></tr>{{end}}
+</tbody></table>{{end}}
 {{if .PiSpark}}<div class="sparkbox" style="margin-top:14px"><div class="sparklbl">blocked % &middot; 24h</div>{{.PiSpark}}</div>{{end}}
 </div>
 
@@ -450,7 +504,7 @@ td.d{color:#cfe;word-break:break-all;font-family:ui-monospace,"SF Mono",Menlo,mo
 
 {{range .Hosts}}
 <div class="panel">
-<h2><span class="dot {{if .Up}}up{{else}}down{{end}}"></span> {{.Box}}{{if .Stale}} <span class="muted">stale</span>{{end}}</h2>
+<h2><span class="dot {{if .Up}}up{{else}}down{{end}}"></span> {{.Box}}{{if .Stale}} <span class="muted">stale</span>{{end}}{{if .CIBuilding}} <span class="tag warn">building</span>{{end}}{{if .RebootReq}} <span class="tag bad">reboot</span>{{end}}</h2>
 <div class="grid">
 <div class="stat"><div class="n" style="font-size:22px">{{.Uptime}}</div><div class="l">uptime</div></div>
 <div class="stat"><div class="n {{.LoadClass}}" style="font-size:22px">{{.Load}}</div><div class="l">load 1m</div></div>
@@ -458,6 +512,7 @@ td.d{color:#cfe;word-break:break-all;font-family:ui-monospace,"SF Mono",Menlo,mo
 <div class="stat"><div class="n {{.SwapClass}}" style="font-size:22px">{{.Swap}}</div><div class="l">swap</div></div>
 <div class="stat"><div class="n {{.TempClass}}" style="font-size:22px">{{.Temp}}</div><div class="l">temp</div></div>
 {{if .FailedUnits}}<div class="stat"><div class="n {{.FailedClass}}" style="font-size:22px">{{.FailedUnits}}</div><div class="l">failed units</div></div>{{end}}
+{{if .Updates}}<div class="stat"><div class="n" style="font-size:22px">{{.Updates}}</div><div class="l">updates</div></div>{{end}}
 {{if .Backup}}<div class="stat"><div class="n {{.BackupClass}}" style="font-size:16px">{{.Backup}}</div><div class="l">mc backup</div></div>{{end}}
 </div>
 {{range .Disks}}<div class="disk"><div class="dlabel">{{.Mount}} <span class="muted">{{.Used}}</span></div><div class="bar"><div class="fill {{.BarClass}}" style="width:{{.Pct}}%"></div></div></div>{{end}}

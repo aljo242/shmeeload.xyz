@@ -28,6 +28,9 @@ type hostReport struct {
 	SwapTotalMB int               `json:"swapTotalMB"`
 	TempC       float64           `json:"tempC"`
 	FailedUnits int               `json:"failedUnits"`
+	Updates     int               `json:"updates"`
+	RebootReq   bool              `json:"rebootRequired"`
+	CIBuilding  bool              `json:"ciBuilding"`
 	Disks       []hostDisk        `json:"disks"`
 	Services    map[string]string `json:"services"`
 	BackupAgeH  float64           `json:"backupAgeH"`

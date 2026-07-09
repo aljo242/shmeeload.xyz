@@ -102,6 +102,7 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 		log.Error("metrics history disabled", "err", err)
 	}
 	go metrics.run(context.Background(), pihole, hosts) // nil-safe; unmanaged like the other pollers
+	cert := newCertChecker(apexDomain(cfg.Domains))
 	underConstruction := func(w http.ResponseWriter, rq *http.Request) {
 		http.Redirect(w, rq, "/under-construction", http.StatusTemporaryRedirect)
 	}
@@ -236,7 +237,8 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 			hist := func(series string) []float64 {
 				return metrics.recent(rq.Context(), series, now.Add(-metricsWindow).Unix())
 			}
-			renderInternal(w, buildInternalView(pihole.snapshot(), buildLive(mcStat.get(), live, now), hosts.all(), hist, now))
+			certDays, certOK := cert.days()
+			renderInternal(w, buildInternalView(pihole.snapshot(), buildLive(mcStat.get(), live, now), hosts.all(), hist, certDays, certOK, now))
 		}))
 	}
 

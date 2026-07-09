@@ -17,6 +17,13 @@ type domainCount struct {
 	Count  int    `json:"count"`
 }
 
+// clientCount is one entry in the top-clients list.
+type clientCount struct {
+	Name  string `json:"name"`
+	IP    string `json:"ip"`
+	Count int    `json:"count"`
+}
+
 // piholeStats is the snapshot the internal view renders. Up is false when the
 // last poll could not reach or authenticate to Pi-hole.
 type piholeStats struct {
@@ -24,9 +31,12 @@ type piholeStats struct {
 	QueriesToday   int           `json:"queriesToday"`
 	BlockedToday   int           `json:"blockedToday"`
 	PercentBlocked float64       `json:"percentBlocked"`
+	CacheHitPct    float64       `json:"cacheHitPct"`
 	BlocklistSize  int           `json:"blocklistSize"`
 	ActiveClients  int           `json:"activeClients"`
+	Blocking       string        `json:"blocking"` // "enabled" / "disabled" / ""
 	TopBlocked     []domainCount `json:"topBlocked"`
+	TopClients     []clientCount `json:"topClients"`
 	CheckedAt      int64         `json:"checkedAt"` // unix seconds
 }
 
@@ -97,6 +107,7 @@ func (c *piholeClient) fetch(ctx context.Context) (piholeStats, error) {
 			Total          int     `json:"total"`
 			Blocked        int     `json:"blocked"`
 			PercentBlocked float64 `json:"percent_blocked"`
+			Cached         int     `json:"cached"`
 		} `json:"queries"`
 		Gravity struct {
 			DomainsBeingBlocked int `json:"domains_being_blocked"`
@@ -116,14 +127,32 @@ func (c *piholeClient) fetch(ctx context.Context) (piholeStats, error) {
 		return out, err
 	}
 
+	// Top clients and blocking state are best-effort: a failure here should not
+	// drop the whole snapshot.
+	var clients struct {
+		Clients []clientCount `json:"clients"`
+	}
+	_ = c.getJSON(ctx, "/api/stats/top_clients?count=6", &clients)
+	var blk struct {
+		Blocking string `json:"blocking"`
+	}
+	_ = c.getJSON(ctx, "/api/dns/blocking", &blk)
+
+	var cacheHit float64
+	if summary.Queries.Total > 0 {
+		cacheHit = float64(summary.Queries.Cached) * 100 / float64(summary.Queries.Total)
+	}
 	out = piholeStats{
 		Up:             true,
 		QueriesToday:   summary.Queries.Total,
 		BlockedToday:   summary.Queries.Blocked,
 		PercentBlocked: summary.Queries.PercentBlocked,
+		CacheHitPct:    cacheHit,
 		BlocklistSize:  summary.Gravity.DomainsBeingBlocked,
 		ActiveClients:  summary.Clients.Active,
+		Blocking:       blk.Blocking,
 		TopBlocked:     top.Domains,
+		TopClients:     clients.Clients,
 	}
 	return out, nil
 }
