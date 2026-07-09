@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"time"
@@ -27,7 +28,9 @@ func newChatStore(path string) (*chatStore, error) {
 	}
 	// One connection serializes access and avoids SQLite "database is locked".
 	db.SetMaxOpenConns(1)
-	if _, err := db.Exec(`CREATE TABLE IF NOT EXISTS messages (
+	// Schema setup runs once at startup, before any request context exists.
+	ctx := context.Background()
+	if _, err := db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS messages (
 		id         INTEGER PRIMARY KEY AUTOINCREMENT,
 		room       TEXT NOT NULL,
 		body       BLOB NOT NULL,
@@ -36,7 +39,7 @@ func newChatStore(path string) (*chatStore, error) {
 		_ = db.Close()
 		return nil, fmt.Errorf("creating messages table: %w", err)
 	}
-	if _, err := db.Exec(`CREATE INDEX IF NOT EXISTS idx_messages_room_id ON messages(room, id)`); err != nil {
+	if _, err := db.ExecContext(ctx, `CREATE INDEX IF NOT EXISTS idx_messages_room_id ON messages(room, id)`); err != nil {
 		_ = db.Close()
 		return nil, fmt.Errorf("creating index: %w", err)
 	}
@@ -44,16 +47,16 @@ func newChatStore(path string) (*chatStore, error) {
 }
 
 // save records one message for a room.
-func (s *chatStore) save(room string, body []byte) error {
-	_, err := s.db.Exec(
+func (s *chatStore) save(ctx context.Context, room string, body []byte) error {
+	_, err := s.db.ExecContext(ctx,
 		`INSERT INTO messages (room, body, created_at) VALUES (?, ?, ?)`,
 		room, body, time.Now().Unix())
 	return err
 }
 
 // recent returns up to limit of a room's messages, oldest first.
-func (s *chatStore) recent(room string, limit int) ([][]byte, error) {
-	rows, err := s.db.Query(
+func (s *chatStore) recent(ctx context.Context, room string, limit int) ([][]byte, error) {
+	rows, err := s.db.QueryContext(ctx,
 		`SELECT body FROM messages WHERE room = ? ORDER BY id DESC LIMIT ?`, room, limit)
 	if err != nil {
 		return nil, err
@@ -79,8 +82,8 @@ func (s *chatStore) recent(room string, limit int) ([][]byte, error) {
 }
 
 // purgeOlderThan deletes messages older than d and returns how many were removed.
-func (s *chatStore) purgeOlderThan(d time.Duration) (int64, error) {
-	res, err := s.db.Exec(
+func (s *chatStore) purgeOlderThan(ctx context.Context, d time.Duration) (int64, error) {
+	res, err := s.db.ExecContext(ctx,
 		`DELETE FROM messages WHERE created_at < ?`, time.Now().Add(-d).Unix())
 	if err != nil {
 		return 0, err

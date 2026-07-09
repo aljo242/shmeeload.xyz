@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -148,7 +149,7 @@ func TestWebSocketHistoryReplay(t *testing.T) {
 		t.Fatalf("write: %v", err)
 	}
 	time.Sleep(200 * time.Millisecond) // let it persist
-	if got, _ := store.recent("general", 10); len(got) != 1 {
+	if got, _ := store.recent(context.Background(), "general", 10); len(got) != 1 {
 		t.Fatalf("message not persisted: recent = %q", got)
 	}
 	_ = c1.Close()

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"regexp"
@@ -49,7 +50,7 @@ func newMCHeadProxy() *mcHeadProxy {
 // get returns the PNG head for id (username or UUID). The bool is false when the
 // id is malformed or no head is available, in which case the caller should 404
 // and let the page hide the broken avatar.
-func (p *mcHeadProxy) get(id string) ([]byte, bool) {
+func (p *mcHeadProxy) get(ctx context.Context, id string) ([]byte, bool) {
 	if !headIDRe.MatchString(id) {
 		return nil, false
 	}
@@ -63,7 +64,7 @@ func (p *mcHeadProxy) get(id string) ([]byte, bool) {
 	}
 	p.mu.Unlock()
 
-	png := p.fetch(id)
+	png := p.fetch(ctx, id)
 
 	p.mu.Lock()
 	if len(p.cache) >= headMaxCache {
@@ -77,9 +78,13 @@ func (p *mcHeadProxy) get(id string) ([]byte, bool) {
 
 // fetch pulls a single head from the upstream service. Any failure returns nil,
 // which is cached as a short-lived negative so a flaky upstream is not hammered.
-func (p *mcHeadProxy) fetch(id string) []byte {
+func (p *mcHeadProxy) fetch(ctx context.Context, id string) []byte {
 	url := p.baseURL + id + "/" + p.size + ".png"
-	resp, err := p.client.Get(url)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil
+	}
+	resp, err := p.client.Do(req)
 	if err != nil {
 		return nil
 	}

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net/http"
 	"net/http/httptest"
 	"testing"
 )
@@ -20,7 +21,7 @@ func TestSameOriginCheck(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			r := httptest.NewRequest("GET", "/chat/ws", nil)
+			r := httptest.NewRequest(http.MethodGet, "/chat/ws", nil)
 			r.Host = c.host
 			if c.origin != "" {
 				r.Header.Set("Origin", c.origin)

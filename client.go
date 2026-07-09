@@ -241,7 +241,7 @@ func serveWs(hub *Hub, conns *connLimiter, rooms map[string]bool) func(http.Resp
 		// Replay recent history before the pumps start, so each past message is
 		// its own frame (the writePump batches whatever is queued together).
 		if hub.store != nil {
-			history, err := hub.store.recent(room, chatHistoryLimit)
+			history, err := hub.store.recent(r.Context(), room, chatHistoryLimit)
 			if err != nil {
 				log.Error("error loading chat history", "room", room, "err", err)
 			} else {

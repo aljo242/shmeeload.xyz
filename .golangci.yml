@@ -5,22 +5,33 @@ run:
 linters:
   default: none
   enable:
+    - bodyclose
+    - canonicalheader
     - dogsled
     - errcheck
+    - errorlint
     - goconst
     - gocritic
     - gosec
     - govet
     - ineffassign
+    - makezero
     - misspell
     - nakedret
+    - nilerr
+    - noctx
     - nolintlint
+    - reassign
     - revive
+    - rowserrcheck
+    - sqlclosecheck
     - staticcheck
     - thelper
     - unconvert
     - unparam
     - unused
+    - usestdlibvars
+    - wastedassign
   settings:
     dogsled:
       max-blank-identifiers: 3
@@ -68,6 +79,12 @@ linters:
       - linters:
           - goconst
           - gosec
+        path: _test\.go
+      # httptest.NewRequest and short-lived test dials don't need a context or a
+      # body close; these linters are meant to guard production code, not tests.
+      - linters:
+          - bodyclose
+          - noctx
         path: _test\.go
       - linters:
           - gosec

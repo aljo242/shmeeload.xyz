@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"sort"
 
@@ -81,7 +82,7 @@ func (h *Hub) run() {
 
 		case m := <-h.broadcast:
 			if h.store != nil && !m.system {
-				if err := h.store.save(m.room, m.body); err != nil {
+				if err := h.store.save(context.Background(), m.room, m.body); err != nil {
 					log.Error("error persisting chat message", "room", m.room, "err", err)
 				}
 			}

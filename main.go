@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"net/http"
@@ -139,7 +140,7 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 	})
 	// Player-head avatars, proxied same-origin so the strict img-src CSP holds.
 	mux.HandleFunc("GET /gamers/head/{id}", func(w http.ResponseWriter, rq *http.Request) {
-		png, ok := heads.get(rq.PathValue("id"))
+		png, ok := heads.get(rq.Context(), rq.PathValue("id"))
 		if !ok {
 			http.NotFound(w, rq)
 			return
@@ -240,7 +241,7 @@ func roomSet(rooms []string) map[string]bool {
 func runChatCleanup(ctx context.Context, store *chatStore, retentionDays int) {
 	window := time.Duration(retentionDays) * 24 * time.Hour
 	purge := func() {
-		if n, err := store.purgeOlderThan(window); err != nil {
+		if n, err := store.purgeOlderThan(ctx, window); err != nil {
 			log.Error("chat cleanup failed", "err", err)
 		} else if n > 0 {
 			log.Info("chat cleanup", "deleted", n)
@@ -358,7 +359,7 @@ func run() error {
 			} else {
 				err = h3.ListenAndServeTLS(cfg.CertFile, cfg.KeyFile)
 			}
-			if err != nil && err != http.ErrServerClosed {
+			if err != nil && !errors.Is(err, http.ErrServerClosed) {
 				log.Error("http3 server error", "err", err)
 			}
 		}()
@@ -392,7 +393,7 @@ func run() error {
 	default:
 		err = srv.ListenAndServe()
 	}
-	if err != nil && err != http.ErrServerClosed {
+	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return err
 	}
 	// Block until graceful shutdown has finished draining before exiting.

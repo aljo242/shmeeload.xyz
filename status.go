@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/binary"
 	"encoding/json"
 	"io"
@@ -99,7 +100,8 @@ func queryMCStatus(addr string, timeout time.Duration) (mcStatus, error) {
 	if err != nil {
 		return st, err
 	}
-	conn, err := net.DialTimeout("tcp", addr, timeout)
+	dialer := net.Dialer{Timeout: timeout}
+	conn, err := dialer.DialContext(context.Background(), "tcp", addr)
 	if err != nil {
 		return st, err
 	}
