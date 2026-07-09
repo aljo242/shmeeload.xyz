@@ -96,6 +96,7 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 	heads := newMCHeadProxy()
 	live := newLiveStore()
 	pihole := newPiholeClient(cfg.PiholeURL, cfg.PiholePassword)
+	hosts := newHostStore()
 	underConstruction := func(w http.ResponseWriter, rq *http.Request) {
 		http.Redirect(w, rq, "/under-construction", http.StatusTemporaryRedirect)
 	}
@@ -171,6 +172,25 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 			live.ingest(p, time.Now())
 			w.WriteHeader(http.StatusNoContent)
 		})
+		// Host stats ingest for the internal dashboard: each box (foundry, the Pi)
+		// pushes its own report. Same bearer token; the data is only ever rendered
+		// on the Basic-Auth-gated /internal page.
+		mux.HandleFunc("POST /internal/host", func(w http.ResponseWriter, rq *http.Request) {
+			token, ok := strings.CutPrefix(rq.Header.Get("Authorization"), "Bearer ")
+			if !ok || subtle.ConstantTimeCompare([]byte(token), []byte(cfg.MCPushToken)) != 1 {
+				http.Error(w, "unauthorized", http.StatusUnauthorized)
+				return
+			}
+			var r hostReport
+			dec := json.NewDecoder(io.LimitReader(rq.Body, 16<<10))
+			dec.DisallowUnknownFields()
+			if err := dec.Decode(&r); err != nil || !r.valid() {
+				http.Error(w, "bad payload", http.StatusBadRequest)
+				return
+			}
+			hosts.ingest(r, time.Now())
+			w.WriteHeader(http.StatusNoContent)
+		})
 	}
 	// Player-head avatars, proxied same-origin so the strict img-src CSP holds.
 	mux.HandleFunc("GET /gamers/head/{id}", func(w http.ResponseWriter, rq *http.Request) {
@@ -207,7 +227,8 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 			}
 		}
 		mux.HandleFunc("GET /internal", gate(func(w http.ResponseWriter, _ *http.Request) {
-			renderInternal(w, buildInternalView(pihole.snapshot(), buildLive(mcStat.get(), live, time.Now())))
+			now := time.Now()
+			renderInternal(w, buildInternalView(pihole.snapshot(), buildLive(mcStat.get(), live, now), hosts.all(), now))
 		}))
 	}
 
