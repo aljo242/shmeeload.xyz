@@ -95,7 +95,6 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 	mcStat := newStatusCache(cfg.MCServerAddr)
 	heads := newMCHeadProxy()
 	live := newLiveStore()
-	svc := newServiceCache(cfg.PiholeDNS)
 	underConstruction := func(w http.ResponseWriter, rq *http.Request) {
 		http.Redirect(w, rq, "/under-construction", http.StatusTemporaryRedirect)
 	}
@@ -148,7 +147,7 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 	mux.HandleFunc("GET /gamers/live", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Cache-Control", "no-cache")
-		_ = json.NewEncoder(w).Encode(buildLive(mcStat.get(), live, svc.services(), time.Now()))
+		_ = json.NewEncoder(w).Encode(buildLive(mcStat.get(), live, time.Now()))
 	})
 	// Ingest for the game host's push. Registered only when a token is set; the
 	// bearer token is compared in constant time and the body is size-capped.

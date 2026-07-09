@@ -7,29 +7,20 @@ import (
 
 // pushedStatus is the live server telemetry the game host POSTs to /gamers/live.
 // It carries what Server List Ping cannot: tick rate, in-game day, process
-// uptime, whitelist size, and a free-form service-health map for the status
-// page.
+// uptime, and whitelist size. Homelab internals are deliberately not part of
+// this public feed.
 type pushedStatus struct {
-	TPS       float64           `json:"tps"`
-	MsPerTick float64           `json:"msPerTick"`
-	Day       int               `json:"day"`
-	UptimeSec int64             `json:"uptimeSec"`
-	Whitelist int               `json:"whitelist"`
-	Services  map[string]string `json:"services"`
+	TPS       float64 `json:"tps"`
+	MsPerTick float64 `json:"msPerTick"`
+	Day       int     `json:"day"`
+	UptimeSec int64   `json:"uptimeSec"`
+	Whitelist int     `json:"whitelist"`
 }
 
-// liveMaxServices and the length caps bound what an ingest payload can hold, so
-// a malformed or hostile push cannot balloon memory.
-const (
-	liveMaxServices   = 24
-	liveMaxServiceKey = 32
-	liveMaxServiceVal = 32
-	liveStaleAfter    = 150 * time.Second // ~2.5 missed 60s pushes
-)
+const liveStaleAfter = 150 * time.Second // ~2.5 missed 60s pushes
 
-// valid reports whether the payload is in sane ranges. It also trims the
-// services map to the caps. It returns false for values that indicate a broken
-// or hostile sender rather than clamping them silently.
+// valid reports whether the payload is in sane ranges. It returns false for
+// values that indicate a broken or hostile sender rather than clamping them.
 func (p *pushedStatus) valid() bool {
 	if p.TPS < 0 || p.TPS > 100 {
 		return false
@@ -39,14 +30,6 @@ func (p *pushedStatus) valid() bool {
 	}
 	if p.Day < 0 || p.UptimeSec < 0 || p.Whitelist < 0 {
 		return false
-	}
-	if len(p.Services) > liveMaxServices {
-		return false
-	}
-	for k, v := range p.Services {
-		if len(k) > liveMaxServiceKey || len(v) > liveMaxServiceVal {
-			return false
-		}
 	}
 	return true
 }
@@ -83,28 +66,24 @@ type liveResponse struct {
 	Max     int        `json:"max"`
 	Players []mcPlayer `json:"players"`
 
-	TPS       *float64          `json:"tps,omitempty"`
-	MsPerTick *float64          `json:"msPerTick,omitempty"`
-	Day       *int              `json:"day,omitempty"`
-	UptimeSec *int64            `json:"uptimeSec,omitempty"`
-	Whitelist *int              `json:"whitelist,omitempty"`
-	Services  map[string]string `json:"services,omitempty"`
+	TPS       *float64 `json:"tps,omitempty"`
+	MsPerTick *float64 `json:"msPerTick,omitempty"`
+	Day       *int     `json:"day,omitempty"`
+	UptimeSec *int64   `json:"uptimeSec,omitempty"`
+	Whitelist *int     `json:"whitelist,omitempty"`
 
 	Stale    bool  `json:"stale"`    // pushed telemetry older than liveStaleAfter
 	PushedAt int64 `json:"pushedAt"` // unix seconds of the last push, 0 if never
 }
 
-// buildLive merges the SLP status with the pushed telemetry and the site's own
-// service checks as of now. siteServices (e.g. Pi-hole) are merged over the
-// pushed service map into a fresh map, so the stored push is never mutated.
-func buildLive(slp mcStatus, s *liveStore, siteServices map[string]string, now time.Time) liveResponse {
+// buildLive merges the SLP status with the pushed telemetry as of now.
+func buildLive(slp mcStatus, s *liveStore, now time.Time) liveResponse {
 	r := liveResponse{
 		Up:      slp.Up,
 		Online:  slp.Online,
 		Max:     slp.Max,
 		Players: slp.Players,
 	}
-	services := map[string]string{}
 	if p, received, ok := s.snapshot(); ok {
 		tps, mspt, day, up, wl := p.TPS, p.MsPerTick, p.Day, p.UptimeSec, p.Whitelist
 		r.TPS = &tps
@@ -114,15 +93,6 @@ func buildLive(slp mcStatus, s *liveStore, siteServices map[string]string, now t
 		r.Whitelist = &wl
 		r.PushedAt = received.Unix()
 		r.Stale = now.Sub(received) > liveStaleAfter
-		for k, v := range p.Services {
-			services[k] = v
-		}
-	}
-	for k, v := range siteServices {
-		services[k] = v
-	}
-	if len(services) > 0 {
-		r.Services = services
 	}
 	return r
 }

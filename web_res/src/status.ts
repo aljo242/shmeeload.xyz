@@ -14,7 +14,6 @@ interface Live {
   players?: MCPlayer[];
   tps?: number;
   uptimeSec?: number;
-  services?: Record<string, string>;
   stale?: boolean;
   pushedAt?: number;
 }
@@ -60,19 +59,6 @@ function setRow(idBase: string, dot: Dot, detail: string): void {
   if (t) t.textContent = detail;
 }
 
-// classify maps a free-form service word from the push into a dot color.
-function classify(v: string): Dot {
-  const s = v.toLowerCase();
-  if (["up", "ok", "idle", "online", "active", "running", "healthy"].includes(s)) return "up";
-  if (["busy", "warn", "degraded", "slow", "stale"].includes(s)) return "warn";
-  if (["down", "fail", "failed", "offline", "error", "dead"].includes(s)) return "down";
-  return "unknown";
-}
-
-function titleize(k: string): string {
-  return k.charAt(0).toUpperCase() + k.slice(1).replace(/[_-]+/g, " ");
-}
-
 function refresh(): void {
   fetch("/gamers/live")
     .then((r) => r.json())
@@ -95,28 +81,6 @@ function refresh(): void {
         setRow("feed", "warn", "stale");
       } else {
         setRow("feed", "up", "fresh");
-      }
-
-      // Extra services reported by the push (foundry, CI, Pi-hole, ...).
-      const box = document.getElementById("services");
-      if (box) {
-        box.textContent = "";
-        for (const [k, v] of Object.entries(d.services ?? {})) {
-          const row = document.createElement("div");
-          row.className = "row";
-          const dot = document.createElement("span");
-          dot.className = "dot " + (classify(v) === "unknown" ? "" : classify(v));
-          const label = document.createElement("span");
-          label.className = "rlabel";
-          label.textContent = titleize(k);
-          const detail = document.createElement("span");
-          detail.className = "rdetail";
-          detail.textContent = v;
-          row.appendChild(dot);
-          row.appendChild(label);
-          row.appendChild(detail);
-          box.appendChild(row);
-        }
       }
     })
     .catch(() => {
