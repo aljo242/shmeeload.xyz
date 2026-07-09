@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="88" height="31" viewBox="0 0 88 31" shape-rendering="crispEdges">
+  <title>SHMEELAND</title>
+  <defs>
+    <linearGradient id="rb" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ff004d"/>
+      <stop offset="0.2" stop-color="#ff9d00"/>
+      <stop offset="0.4" stop-color="#faff00"/>
+      <stop offset="0.6" stop-color="#00ff5e"/>
+      <stop offset="0.8" stop-color="#00e5ff"/>
+      <stop offset="1" stop-color="#c400ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="88" height="31" fill="#05010f"/>
+  <rect x="0.5" y="0.5" width="87" height="30" fill="none" stroke="#00e5ff"/>
+  <rect x="2.5" y="2.5" width="83" height="26" fill="none" stroke="#ff0080"/>
+  <text x="44" y="15" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" font-size="11" letter-spacing="0.5" fill="url(#rb)" stroke="#000" stroke-width="0.4">SHMEELAND</text>
+  <text x="44" y="25" text-anchor="middle" font-family="Arial, sans-serif" font-size="6.5" letter-spacing="0.4" fill="#39ff14">the shmee server</text>
+</svg>

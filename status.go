@@ -12,21 +12,30 @@ import (
 	"time"
 )
 
-// mcStatus is the live Minecraft server status served at /gamers/status.
-type mcStatus struct {
-	Up      bool     `json:"up"`
-	Online  int      `json:"online"`
-	Max     int      `json:"max"`
-	Players []string `json:"players"`
+// mcPlayer is one online player from the server's status sample.
+type mcPlayer struct {
+	Name string `json:"name"`
+	UUID string `json:"uuid"`
 }
 
-// slpResponse is the subset of the Server List Ping JSON we care about.
+// mcStatus is the live Minecraft server status served at /gamers/status.
+type mcStatus struct {
+	Up      bool       `json:"up"`
+	Online  int        `json:"online"`
+	Max     int        `json:"max"`
+	Players []mcPlayer `json:"players"`
+}
+
+// slpResponse is the subset of the Server List Ping JSON we care about. The
+// sample carries each online player's name and UUID (the UUID drives the head
+// avatars on the gamers page).
 type slpResponse struct {
 	Players struct {
 		Max    int `json:"max"`
 		Online int `json:"online"`
 		Sample []struct {
 			Name string `json:"name"`
+			ID   string `json:"id"`
 		} `json:"sample"`
 	} `json:"players"`
 }
@@ -142,7 +151,7 @@ func queryMCStatus(addr string, timeout time.Duration) (mcStatus, error) {
 	st.Max = resp.Players.Max
 	for _, p := range resp.Players.Sample {
 		if p.Name != "" {
-			st.Players = append(st.Players, p.Name)
+			st.Players = append(st.Players, mcPlayer{Name: p.Name, UUID: p.ID})
 		}
 	}
 	return st, nil

@@ -90,6 +90,7 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 	page := serveAsset
 	visits := newVisitCounter(filepath.Join(filepath.Dir(chatDBPathOf(cfg)), "gamers-visits"))
 	mcStat := newStatusCache(cfg.MCServerAddr)
+	heads := newMCHeadProxy()
 	underConstruction := func(w http.ResponseWriter, rq *http.Request) {
 		http.Redirect(w, rq, "/under-construction", http.StatusTemporaryRedirect)
 	}
@@ -135,6 +136,17 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Cache-Control", "no-cache")
 		_ = json.NewEncoder(w).Encode(mcStat.get())
+	})
+	// Player-head avatars, proxied same-origin so the strict img-src CSP holds.
+	mux.HandleFunc("GET /gamers/head/{id}", func(w http.ResponseWriter, rq *http.Request) {
+		png, ok := heads.get(rq.PathValue("id"))
+		if !ok {
+			http.NotFound(w, rq)
+			return
+		}
+		w.Header().Set("Content-Type", "image/png")
+		w.Header().Set("Cache-Control", "public, max-age=300")
+		_, _ = w.Write(png)
 	})
 	mux.HandleFunc("GET /under-construction", page("construction.html"))
 
