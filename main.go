@@ -97,6 +97,11 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 	live := newLiveStore()
 	pihole := newPiholeClient(cfg.PiholeURL, cfg.PiholePassword)
 	hosts := newHostStore()
+	metrics, err := newMetricsStore(metricsDBPathOf(cfg))
+	if err != nil {
+		log.Error("metrics history disabled", "err", err)
+	}
+	go metrics.run(context.Background(), pihole, hosts) // nil-safe; unmanaged like the other pollers
 	underConstruction := func(w http.ResponseWriter, rq *http.Request) {
 		http.Redirect(w, rq, "/under-construction", http.StatusTemporaryRedirect)
 	}
@@ -226,9 +231,12 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 				h(w, rq)
 			}
 		}
-		mux.HandleFunc("GET /internal", gate(func(w http.ResponseWriter, _ *http.Request) {
+		mux.HandleFunc("GET /internal", gate(func(w http.ResponseWriter, rq *http.Request) {
 			now := time.Now()
-			renderInternal(w, buildInternalView(pihole.snapshot(), buildLive(mcStat.get(), live, now), hosts.all(), now))
+			hist := func(series string) []float64 {
+				return metrics.recent(rq.Context(), series, now.Add(-metricsWindow).Unix())
+			}
+			renderInternal(w, buildInternalView(pihole.snapshot(), buildLive(mcStat.get(), live, now), hosts.all(), hist, now))
 		}))
 	}
 
@@ -307,6 +315,11 @@ func chatDBPathOf(cfg Config) string {
 		return cfg.ChatDBPath
 	}
 	return defaultChatDBPath
+}
+
+// metricsDBPathOf puts the dashboard history DB next to the chat DB.
+func metricsDBPathOf(cfg Config) string {
+	return filepath.Join(filepath.Dir(chatDBPathOf(cfg)), "metrics.db")
 }
 
 func roomSet(rooms []string) map[string]bool {

@@ -124,6 +124,7 @@ type hostPanel struct {
 	LoadClass, MemClass, SwapClass, TempClass string
 	FailedUnits, FailedClass                  string
 	Backup, BackupClass                       string
+	LoadSpark, DiskSpark                      template.HTML
 	Disks                                     []hostDiskView
 	Services                                  []hostServiceView
 }
@@ -133,6 +134,7 @@ type internalView struct {
 	Warnings, Criticals                       []string
 	PiUp                                      bool
 	Queries, Blocked, Pct, Blocklist, Clients string
+	PiSpark                                   template.HTML
 	Top                                       []internalRow
 	MCUp                                      bool
 	Online, TPS, Day                          string
@@ -172,6 +174,38 @@ func fmtDuration(sec int64) string {
 	default:
 		return fmt.Sprintf("%dm", m)
 	}
+}
+
+// sparkline renders a series as a tiny inline SVG polyline over a 100x20 box.
+// The markup is server-generated from floats, so template.HTML is safe here.
+func sparkline(points []float64) template.HTML {
+	if len(points) < 2 {
+		return ""
+	}
+	lo, hi := points[0], points[0]
+	for _, v := range points {
+		if v < lo {
+			lo = v
+		}
+		if v > hi {
+			hi = v
+		}
+	}
+	span := hi - lo
+	if span == 0 {
+		span = 1
+	}
+	var b strings.Builder
+	for i, v := range points {
+		x := 100 * float64(i) / float64(len(points)-1)
+		y := 20 - (v-lo)/span*20
+		if i > 0 {
+			b.WriteByte(' ')
+		}
+		fmt.Fprintf(&b, "%.1f,%.1f", x, y)
+	}
+	return template.HTML(fmt.Sprintf( //nolint:gosec // markup built from floats, no user input
+		`<svg class="spark" viewBox="0 0 100 20" preserveAspectRatio="none"><polyline points="%s"/></svg>`, b.String()))
 }
 
 func buildHostPanel(e hostEntry, now time.Time) (hostPanel, []string, []string) {
@@ -258,8 +292,9 @@ func buildHostPanel(e hostEntry, now time.Time) (hostPanel, []string, []string) 
 	return p, warns, bads
 }
 
-func buildInternalView(pi piholeStats, mc liveResponse, hosts []hostEntry, now time.Time) internalView {
+func buildInternalView(pi piholeStats, mc liveResponse, hosts []hostEntry, hist func(string) []float64, now time.Time) internalView {
 	v := internalView{PiUp: pi.Up, MCUp: mc.Up}
+	v.PiSpark = sparkline(hist("pihole.blocked_pct"))
 
 	if pi.Up {
 		v.Queries = commafy(pi.QueriesToday)
@@ -298,6 +333,8 @@ func buildInternalView(pi piholeStats, mc liveResponse, hosts []hostEntry, now t
 	var warns, bads []string
 	for _, e := range hosts {
 		pnl, w, b := buildHostPanel(e, now)
+		pnl.LoadSpark = sparkline(hist(e.rep.Box + ".load"))
+		pnl.DiskSpark = sparkline(hist(e.rep.Box + ".disk"))
 		v.Hosts = append(v.Hosts, pnl)
 		warns = append(warns, w...)
 		bads = append(bads, b...)
@@ -371,6 +408,11 @@ td.d{color:#cfe;word-break:break-all;font-family:ui-monospace,"SF Mono",Menlo,mo
 .fill.warn{background:#ff9d3c}.fill.bad{background:#ff5a5a}
 .svcs{display:flex;flex-wrap:wrap;gap:14px;margin-top:12px}
 .svc{font-size:12.5px;color:#cfe;display:flex;align-items:center;gap:5px}
+.spark{display:block;width:100%;height:26px}
+.spark polyline{fill:none;stroke:#8fb7ff;stroke-width:1.4;vector-effect:non-scaling-stroke}
+.sparks{display:flex;gap:18px;margin-top:12px;flex-wrap:wrap}
+.sparkbox{flex:1;min-width:150px}
+.sparklbl{font-size:11px;color:#7d8b99;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
 </style>
 </head>
 <body>
@@ -394,6 +436,7 @@ td.d{color:#cfe;word-break:break-all;font-family:ui-monospace,"SF Mono",Menlo,mo
 <table><tbody>
 {{range .Top}}<tr><td class="c">{{.Count}}</td><td class="d">{{.Domain}}</td></tr>{{end}}
 </tbody></table>
+{{if .PiSpark}}<div class="sparkbox" style="margin-top:14px"><div class="sparklbl">blocked % &middot; 24h</div>{{.PiSpark}}</div>{{end}}
 </div>
 
 <div class="panel">
@@ -418,6 +461,7 @@ td.d{color:#cfe;word-break:break-all;font-family:ui-monospace,"SF Mono",Menlo,mo
 {{if .Backup}}<div class="stat"><div class="n {{.BackupClass}}" style="font-size:16px">{{.Backup}}</div><div class="l">mc backup</div></div>{{end}}
 </div>
 {{range .Disks}}<div class="disk"><div class="dlabel">{{.Mount}} <span class="muted">{{.Used}}</span></div><div class="bar"><div class="fill {{.BarClass}}" style="width:{{.Pct}}%"></div></div></div>{{end}}
+{{if or .LoadSpark .DiskSpark}}<div class="sparks">{{if .LoadSpark}}<div class="sparkbox"><div class="sparklbl">load &middot; 24h</div>{{.LoadSpark}}</div>{{end}}{{if .DiskSpark}}<div class="sparkbox"><div class="sparklbl">disk % &middot; 24h</div>{{.DiskSpark}}</div>{{end}}</div>{{end}}
 {{if .Services}}<div class="svcs">{{range .Services}}<span class="svc"><span class="dot sm {{if .Up}}up{{else}}down{{end}}"></span>{{.Name}}</span>{{end}}</div>{{end}}
 </div>
 {{end}}
