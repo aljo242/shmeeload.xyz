@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"crypto/subtle"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/signal"
@@ -92,6 +94,7 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 	visits := newVisitCounter(filepath.Join(filepath.Dir(chatDBPathOf(cfg)), "gamers-visits"))
 	mcStat := newStatusCache(cfg.MCServerAddr)
 	heads := newMCHeadProxy()
+	live := newLiveStore()
 	underConstruction := func(w http.ResponseWriter, rq *http.Request) {
 		http.Redirect(w, rq, "/under-construction", http.StatusTemporaryRedirect)
 	}
@@ -138,6 +141,36 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 		w.Header().Set("Cache-Control", "no-cache")
 		_ = json.NewEncoder(w).Encode(mcStat.get())
 	})
+	// Merged live status: the fresh SLP fields plus the last pushed telemetry
+	// (TPS, in-game day, uptime, whitelist). Drives the /gamers dashboard and the
+	// /status page.
+	mux.HandleFunc("GET /gamers/live", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Cache-Control", "no-cache")
+		_ = json.NewEncoder(w).Encode(buildLive(mcStat.get(), live, time.Now()))
+	})
+	// Ingest for the game host's push. Registered only when a token is set; the
+	// bearer token is compared in constant time and the body is size-capped.
+	if cfg.MCPushToken != "" {
+		mux.HandleFunc("POST /gamers/live", func(w http.ResponseWriter, rq *http.Request) {
+			const prefix = "Bearer "
+			auth := rq.Header.Get("Authorization")
+			token, ok := strings.CutPrefix(auth, prefix)
+			if !ok || subtle.ConstantTimeCompare([]byte(token), []byte(cfg.MCPushToken)) != 1 {
+				http.Error(w, "unauthorized", http.StatusUnauthorized)
+				return
+			}
+			var p pushedStatus
+			dec := json.NewDecoder(io.LimitReader(rq.Body, 8<<10))
+			dec.DisallowUnknownFields()
+			if err := dec.Decode(&p); err != nil || !p.valid() {
+				http.Error(w, "bad payload", http.StatusBadRequest)
+				return
+			}
+			live.ingest(p, time.Now())
+			w.WriteHeader(http.StatusNoContent)
+		})
+	}
 	// Player-head avatars, proxied same-origin so the strict img-src CSP holds.
 	mux.HandleFunc("GET /gamers/head/{id}", func(w http.ResponseWriter, rq *http.Request) {
 		png, ok := heads.get(rq.Context(), rq.PathValue("id"))
@@ -150,6 +183,7 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 		_, _ = w.Write(png)
 	})
 	mux.HandleFunc("GET /under-construction", page("construction.html"))
+	mux.HandleFunc("GET /status", page("status.html"))
 
 	// security.txt for vulnerability-disclosure contact (RFC 9116).
 	mux.HandleFunc("GET /.well-known/security.txt", func(w http.ResponseWriter, _ *http.Request) {

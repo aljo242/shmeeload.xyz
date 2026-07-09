@@ -69,6 +69,14 @@
       }
       .heads .hname { font-family: Arial, sans-serif; font-size: 12px; color:#ffe600; max-width: 64px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
+      .dash { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin: 8px auto 2px; max-width: 560px; }
+      .dash .cell { background: rgba(8,0,20,0.80); border: 3px ridge #7a00ff; padding: 8px 14px; min-width: 92px; }
+      .dash .k { font-family: Arial, sans-serif; font-size: 12px; color:#00e5ff; letter-spacing: 1px; }
+      .dash .val { font-family:"Courier New", monospace; font-weight:bold; font-size: 24px; color:#ffe600; line-height: 1.2; }
+      .dash .val.good { color:#39ff14; }
+      .dash .val.warn { color:#ffb000; }
+      .dash .val.bad  { color:#ff2d2d; }
+
       .panel {
         margin: 10px auto; padding: 14px 18px; max-width: 580px;
         background: rgba(8,0,20,0.80); border: 4px ridge #7a00ff;
@@ -143,6 +151,13 @@
     <div class="sub">join the hunt for Dark Enerjohn</div>
     <div class="online"><img src="/static/img/gifs/torch.gif" alt=""><span><b>&bull;</b> <span id="mcstatus">SERVER ONLINE</span></span><img src="/static/img/gifs/torch.gif" alt=""></div>
     <div class="heads" id="mcheads"></div>
+
+    <div class="dash">
+      <div class="cell"><div class="k">TPS</div><div class="val" id="dTps">--</div></div>
+      <div class="cell"><div class="k">DAY</div><div class="val" id="dDay">--</div></div>
+      <div class="cell"><div class="k">UPTIME</div><div class="val" id="dUptime">--</div></div>
+      <div class="cell"><div class="k">WHITELIST</div><div class="val" id="dWhitelist">--</div></div>
+    </div>
 
     <img class="divider" src="/static/img/gifs/divider-rainbow.gif" alt="">
 

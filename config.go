@@ -37,6 +37,12 @@ type Config struct {
 	// player count on /gamers (Server List Ping). Empty disables the feature.
 	MCServerAddr string `json:"mcServerAddr"`
 
+	// MCPushToken is the shared bearer token the game host presents when pushing
+	// live server stats (TPS, in-game day, uptime, whitelist) to POST
+	// /gamers/live. Empty disables the ingest endpoint (GET still serves whatever
+	// has been pushed, if anything).
+	MCPushToken string `json:"mcPushToken"`
+
 	Dev bool `json:"dev"` // dev mode: serve site/ from disk (no embed/minify); also set by -dev
 }
 

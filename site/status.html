@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <base href="/"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no"/>
+    <meta name="theme-color" content="#000000"/>
+    <meta name="description" content="SHMEELAND status - live health of the Minecraft server, the site, and the homelab services behind it."/>
+    <title>SHMEELAND STATUS</title>
+    <link rel="shortcut icon" href="/static/img/1favicon.ico" type="image/x-icon"/>
+    <style>
+      @keyframes pulse { 50% { opacity: 0.45; } }
+      html, body { margin: 0; }
+      body {
+        min-height: 100vh; font-family: "Times New Roman", Times, Georgia, serif;
+        color: #eee; text-align: center;
+        background: #05010f url('/static/img/xdf.jpg') no-repeat center center fixed; background-size: cover;
+      }
+      .wrap { max-width: 620px; margin: 0 auto; padding: 16px 12px 40px; }
+      .title {
+        font-size: clamp(30px, 8vw, 54px); font-weight: 900; margin: 8px 0 2px; line-height: 1;
+        background: linear-gradient(90deg,#ff004d,#ff9d00,#faff00,#00ff5e,#00e5ff,#c400ff,#ff004d);
+        -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-stroke: 1px #000;
+      }
+      .sub { color:#cfe8ff; font-size: 15px; font-family: Arial, sans-serif; margin-bottom: 14px; }
+      .panel { margin: 10px auto; padding: 6px 10px 12px; max-width: 560px; background: rgba(8,0,20,0.82); border: 4px ridge #7a00ff; }
+      .row { display:flex; align-items:center; gap:12px; padding: 12px 8px; border-bottom: 1px solid #2a1a4a; text-align:left; }
+      .row:last-child { border-bottom: 0; }
+      .dot { width: 16px; height: 16px; border-radius: 50%; flex: none; background:#888; box-shadow: 0 0 8px #000 inset; }
+      .dot.up { background:#39ff14; box-shadow: 0 0 10px #39ff14; }
+      .dot.warn { background:#ffb000; box-shadow: 0 0 10px #ffb000; animation: pulse 1.4s infinite; }
+      .dot.down { background:#ff2d2d; box-shadow: 0 0 10px #ff2d2d; animation: pulse 1s infinite; }
+      .rlabel { font-family: Arial, sans-serif; font-weight: bold; font-size: 17px; color:#fff; flex: 1; }
+      .rdetail { font-family:"Courier New", monospace; font-size: 14px; color:#9fb; }
+      .footer { color:#bfe; font-size:13px; line-height:1.9; margin-top: 16px; font-family: Arial, sans-serif; }
+      .footer a { color:#0ff; }
+    </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="title">STATUS</div>
+    <div class="sub">live health of Shmeeland and the homelab behind it &bull; refreshes every 20s</div>
+
+    <div class="panel">
+      <div class="row"><span class="dot" id="mc-dot"></span><span class="rlabel">Minecraft server</span><span class="rdetail" id="mc-detail">checking...</span></div>
+      <div class="row"><span class="dot" id="feed-dot"></span><span class="rlabel">Live stats feed</span><span class="rdetail" id="feed-detail">checking...</span></div>
+      <div class="row"><span class="dot up"></span><span class="rlabel">Website</span><span class="rdetail">up</span></div>
+      <div id="services"></div>
+    </div>
+
+    <div class="footer">
+      <a href="/gamers/home">&laquo; back to SHMEELAND</a> &bull; <a href="https://map.djinntek.space" target="_blank" rel="noopener">live map</a>
+    </div>
+  </div>
+  <script type="module" src="/static/js/status.js"></script>
+</body>
+</html>
