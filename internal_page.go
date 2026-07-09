@@ -14,6 +14,97 @@ import (
 // <meta refresh>. Page navigations carry Basic Auth reliably (unlike fetch), so
 // this needs no cookie, token, or client script.
 
+// sev is a metric's health: ok, warn, or bad. class() is the CSS suffix.
+type sev int
+
+const (
+	sevOK sev = iota
+	sevWarn
+	sevBad
+)
+
+func (s sev) class() string {
+	switch s {
+	case sevBad:
+		return "bad"
+	case sevWarn:
+		return "warn"
+	default:
+		return ""
+	}
+}
+
+func diskSev(pct int) sev {
+	switch {
+	case pct >= 90:
+		return sevBad
+	case pct >= 80:
+		return sevWarn
+	default:
+		return sevOK
+	}
+}
+
+func tempSev(c float64) sev {
+	switch {
+	case c >= 80:
+		return sevBad
+	case c >= 68:
+		return sevWarn
+	default:
+		return sevOK
+	}
+}
+
+func pctSev(used, total, warn, bad int) sev {
+	if total <= 0 {
+		return sevOK
+	}
+	p := used * 100 / total
+	switch {
+	case p >= bad:
+		return sevBad
+	case p >= warn:
+		return sevWarn
+	default:
+		return sevOK
+	}
+}
+
+func loadSev(load float64, cores int) sev {
+	if cores <= 0 {
+		return sevOK // unknown core count; don't judge load
+	}
+	switch r := load / float64(cores); {
+	case r >= 3:
+		return sevBad
+	case r >= 1.5:
+		return sevWarn
+	default:
+		return sevOK
+	}
+}
+
+func backupSev(ageH float64) sev {
+	switch {
+	case ageH >= 48:
+		return sevBad
+	case ageH >= 26:
+		return sevWarn
+	default:
+		return sevOK
+	}
+}
+
+func serviceUp(state string) bool {
+	switch state {
+	case "up", "idle", "active", "running":
+		return true
+	default:
+		return false
+	}
+}
+
 type internalRow struct{ Count, Domain string }
 
 type hostDiskView struct {
@@ -27,15 +118,19 @@ type hostServiceView struct {
 }
 
 type hostPanel struct {
-	Box                     string
-	Up, Stale               bool
-	Uptime, Load, Mem, Temp string
-	Backup                  string
-	Disks                   []hostDiskView
-	Services                []hostServiceView
+	Box                                       string
+	Up, Stale                                 bool
+	Uptime, Load, Mem, Swap, Temp             string
+	LoadClass, MemClass, SwapClass, TempClass string
+	FailedUnits, FailedClass                  string
+	Backup, BackupClass                       string
+	Disks                                     []hostDiskView
+	Services                                  []hostServiceView
 }
 
 type internalView struct {
+	StatusClass, StatusText                   string
+	Warnings, Criticals                       []string
 	PiUp                                      bool
 	Queries, Blocked, Pct, Blocklist, Clients string
 	Top                                       []internalRow
@@ -79,52 +174,88 @@ func fmtDuration(sec int64) string {
 	}
 }
 
-func barClass(pct int) string {
-	switch {
-	case pct >= 90:
-		return "bad"
-	case pct >= 75:
-		return "warn"
-	default:
-		return ""
-	}
-}
-
-func buildHostPanel(e hostEntry, now time.Time) hostPanel {
+func buildHostPanel(e hostEntry, now time.Time) (hostPanel, []string, []string) {
 	r := e.rep
 	stale := now.Sub(e.received) > hostStaleAfter
 	p := hostPanel{Box: r.Box, Up: !stale, Stale: stale, Uptime: fmtDuration(r.UptimeSec)}
-	p.Load = strconv.FormatFloat(r.Load1, 'f', 2, 64)
+	var warns, bads []string
+	note := func(s sev, msg string) {
+		switch s {
+		case sevWarn:
+			warns = append(warns, r.Box+": "+msg)
+		case sevBad:
+			bads = append(bads, r.Box+": "+msg)
+		}
+	}
+
+	ls := loadSev(r.Load1, r.Cores)
+	p.Load, p.LoadClass = strconv.FormatFloat(r.Load1, 'f', 2, 64), ls.class()
+	note(ls, fmt.Sprintf("load %.2f", r.Load1))
+
 	if r.MemTotalMB > 0 {
 		p.Mem = fmt.Sprintf("%.1f / %.0f GB", float64(r.MemUsedMB)/1024, float64(r.MemTotalMB)/1024)
+		ms := pctSev(r.MemUsedMB, r.MemTotalMB, 82, 92)
+		p.MemClass = ms.class()
+		note(ms, fmt.Sprintf("memory %d%%", r.MemUsedMB*100/r.MemTotalMB))
 	} else {
 		p.Mem = "--"
 	}
+
+	if r.SwapTotalMB > 0 {
+		p.Swap = fmt.Sprintf("%.1f / %.0f GB", float64(r.SwapUsedMB)/1024, float64(r.SwapTotalMB)/1024)
+		ss := pctSev(r.SwapUsedMB, r.SwapTotalMB, 50, 80)
+		p.SwapClass = ss.class()
+		note(ss, fmt.Sprintf("swap %d%%", r.SwapUsedMB*100/r.SwapTotalMB))
+	} else {
+		p.Swap = "none"
+	}
+
 	if r.TempC > 0 {
 		p.Temp = fmt.Sprintf("%.0f°C", r.TempC)
+		tsv := tempSev(r.TempC)
+		p.TempClass = tsv.class()
+		note(tsv, fmt.Sprintf("temp %.0f°C", r.TempC))
 	} else {
 		p.Temp = "--"
 	}
+
+	if r.FailedUnits > 0 {
+		p.FailedUnits, p.FailedClass = strconv.Itoa(r.FailedUnits), sevWarn.class()
+		note(sevWarn, fmt.Sprintf("%d failed unit(s)", r.FailedUnits))
+	}
+
 	for _, d := range r.Disks {
+		ds := diskSev(d.UsedPct)
 		p.Disks = append(p.Disks, hostDiskView{
-			Mount: d.Mount, Pct: d.UsedPct, BarClass: barClass(d.UsedPct),
+			Mount: d.Mount, Pct: d.UsedPct, BarClass: ds.class(),
 			Used: fmt.Sprintf("%.0f/%.0f GB", d.UsedGB, d.TotalGB),
 		})
+		note(ds, fmt.Sprintf("disk %s %d%%", d.Mount, d.UsedPct))
 	}
+
 	keys := make([]string, 0, len(r.Services))
 	for k := range r.Services {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
 	for _, k := range keys {
-		v := r.Services[k]
-		up := v == "up" || v == "idle" || v == "active" || v == "running"
-		p.Services = append(p.Services, hostServiceView{Name: k, State: v, Up: up})
+		up := serviceUp(r.Services[k])
+		p.Services = append(p.Services, hostServiceView{Name: k, State: r.Services[k], Up: up})
+		if !up {
+			bads = append(bads, r.Box+": "+k+" down")
+		}
 	}
+
 	if r.BackupAgeH > 0 {
-		p.Backup = fmt.Sprintf("%s · %.1f GB", fmtDuration(int64(r.BackupAgeH*3600)), r.BackupGB)
+		bs := backupSev(r.BackupAgeH)
+		p.Backup, p.BackupClass = fmt.Sprintf("%s · %.1f GB", fmtDuration(int64(r.BackupAgeH*3600)), r.BackupGB), bs.class()
+		note(bs, fmt.Sprintf("mc backup %s old", fmtDuration(int64(r.BackupAgeH*3600))))
 	}
-	return p
+
+	if stale {
+		warns = append(warns, r.Box+": stale (no recent report)")
+	}
+	return p, warns, bads
 }
 
 func buildInternalView(pi piholeStats, mc liveResponse, hosts []hostEntry, now time.Time) internalView {
@@ -164,8 +295,28 @@ func buildInternalView(pi piholeStats, mc liveResponse, hosts []hostEntry, now t
 		v.Day = "--"
 	}
 
+	var warns, bads []string
 	for _, e := range hosts {
-		v.Hosts = append(v.Hosts, buildHostPanel(e, now))
+		pnl, w, b := buildHostPanel(e, now)
+		v.Hosts = append(v.Hosts, pnl)
+		warns = append(warns, w...)
+		bads = append(bads, b...)
+	}
+	if !pi.Up {
+		bads = append(bads, "pi-hole: unreachable")
+	}
+
+	v.Warnings, v.Criticals = warns, bads
+	switch {
+	case len(bads) > 0:
+		v.StatusClass = "bad"
+		v.StatusText = fmt.Sprintf("%d critical, %d warning", len(bads), len(warns))
+	case len(warns) > 0:
+		v.StatusClass = "warn"
+		v.StatusText = fmt.Sprintf("%d warning", len(warns))
+	default:
+		v.StatusClass = "ok"
+		v.StatusText = "all systems nominal"
 	}
 	return v
 }
@@ -192,6 +343,12 @@ body{font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#dfe6ee;
 .wrap{max-width:760px;margin:0 auto;padding:20px 16px 48px}
 h1{font-size:20px;font-weight:700;margin:0 0 2px;letter-spacing:.3px}
 .muted{color:#7d8b99;font-size:13px}
+.rollup{border-radius:10px;padding:12px 16px;margin:14px 0;font-weight:700;font-size:15px;border:1px solid #223041;background:#121821}
+.rollup.ok{border-color:#1e6b3f;background:#0f1b14;color:#37d67a}
+.rollup.warn{border-color:#7a5a1e;background:#1b160f;color:#ffc061}
+.rollup.bad{border-color:#7a2626;background:#1b0f0f;color:#ff8b8b}
+.rollup ul{margin:8px 0 0;padding-left:18px;font-weight:400;font-size:13px}
+.rollup li.bad{color:#ff8b8b}.rollup li.warn{color:#ffc061}
 .panel{background:#121821;border:1px solid #223041;border-radius:10px;padding:16px 18px;margin:16px 0}
 .panel h2{font-size:14px;text-transform:uppercase;letter-spacing:1px;color:#8fb7ff;margin:0 0 12px;display:flex;align-items:center;gap:8px}
 .dot{width:10px;height:10px;border-radius:50%;background:#556;display:inline-block}
@@ -202,6 +359,7 @@ h1{font-size:20px;font-weight:700;margin:0 0 2px;letter-spacing:.3px}
 .stat .n{font-size:30px;font-weight:800;line-height:1.1}
 .stat .l{font-size:12px;color:#7d8b99;text-transform:uppercase;letter-spacing:.5px}
 .n.block{color:#ff9d3c}.n.pct{color:#37d67a}
+.n.warn{color:#ffc061}.n.bad{color:#ff8b8b}
 table{width:100%;border-collapse:collapse;margin-top:6px;font-size:14px}
 td{padding:6px 4px;border-bottom:1px solid #1b2431}
 td.c{text-align:right;color:#ff9d3c;font-variant-numeric:tabular-nums;width:72px;font-weight:700}
@@ -219,6 +377,10 @@ td.d{color:#cfe;word-break:break-all;font-family:ui-monospace,"SF Mono",Menlo,mo
 <div class="wrap">
 <h1>homelab &mdash; internal</h1>
 <div class="muted">{{.Checked}} &bull; auto-refreshes every 60s</div>
+
+<div class="rollup {{.StatusClass}}">{{.StatusText}}
+{{if or .Criticals .Warnings}}<ul>{{range .Criticals}}<li class="bad">{{.}}</li>{{end}}{{range .Warnings}}<li class="warn">{{.}}</li>{{end}}</ul>{{end}}
+</div>
 
 <div class="panel">
 <h2><span class="dot {{if .PiUp}}up{{else}}down{{end}}"></span> Pi-hole</h2>
@@ -248,10 +410,12 @@ td.d{color:#cfe;word-break:break-all;font-family:ui-monospace,"SF Mono",Menlo,mo
 <h2><span class="dot {{if .Up}}up{{else}}down{{end}}"></span> {{.Box}}{{if .Stale}} <span class="muted">stale</span>{{end}}</h2>
 <div class="grid">
 <div class="stat"><div class="n" style="font-size:22px">{{.Uptime}}</div><div class="l">uptime</div></div>
-<div class="stat"><div class="n" style="font-size:22px">{{.Load}}</div><div class="l">load 1m</div></div>
-<div class="stat"><div class="n" style="font-size:22px">{{.Mem}}</div><div class="l">memory</div></div>
-<div class="stat"><div class="n" style="font-size:22px">{{.Temp}}</div><div class="l">temp</div></div>
-{{if .Backup}}<div class="stat"><div class="n" style="font-size:16px">{{.Backup}}</div><div class="l">mc backup</div></div>{{end}}
+<div class="stat"><div class="n {{.LoadClass}}" style="font-size:22px">{{.Load}}</div><div class="l">load 1m</div></div>
+<div class="stat"><div class="n {{.MemClass}}" style="font-size:22px">{{.Mem}}</div><div class="l">memory</div></div>
+<div class="stat"><div class="n {{.SwapClass}}" style="font-size:22px">{{.Swap}}</div><div class="l">swap</div></div>
+<div class="stat"><div class="n {{.TempClass}}" style="font-size:22px">{{.Temp}}</div><div class="l">temp</div></div>
+{{if .FailedUnits}}<div class="stat"><div class="n {{.FailedClass}}" style="font-size:22px">{{.FailedUnits}}</div><div class="l">failed units</div></div>{{end}}
+{{if .Backup}}<div class="stat"><div class="n {{.BackupClass}}" style="font-size:16px">{{.Backup}}</div><div class="l">mc backup</div></div>{{end}}
 </div>
 {{range .Disks}}<div class="disk"><div class="dlabel">{{.Mount}} <span class="muted">{{.Used}}</span></div><div class="bar"><div class="fill {{.BarClass}}" style="width:{{.Pct}}%"></div></div></div>{{end}}
 {{if .Services}}<div class="svcs">{{range .Services}}<span class="svc"><span class="dot sm {{if .Up}}up{{else}}down{{end}}"></span>{{.Name}}</span>{{end}}</div>{{end}}

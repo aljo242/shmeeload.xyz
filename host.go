@@ -18,16 +18,20 @@ type hostDisk struct {
 // left at zero render as "--"; BackupAgeH > 0 marks a box that also reports a
 // Minecraft backup (foundry).
 type hostReport struct {
-	Box        string            `json:"box"`
-	UptimeSec  int64             `json:"uptimeSec"`
-	Load1      float64           `json:"load1"`
-	MemUsedMB  int               `json:"memUsedMB"`
-	MemTotalMB int               `json:"memTotalMB"`
-	TempC      float64           `json:"tempC"`
-	Disks      []hostDisk        `json:"disks"`
-	Services   map[string]string `json:"services"`
-	BackupAgeH float64           `json:"backupAgeH"`
-	BackupGB   float64           `json:"backupGB"`
+	Box         string            `json:"box"`
+	UptimeSec   int64             `json:"uptimeSec"`
+	Load1       float64           `json:"load1"`
+	Cores       int               `json:"cores"`
+	MemUsedMB   int               `json:"memUsedMB"`
+	MemTotalMB  int               `json:"memTotalMB"`
+	SwapUsedMB  int               `json:"swapUsedMB"`
+	SwapTotalMB int               `json:"swapTotalMB"`
+	TempC       float64           `json:"tempC"`
+	FailedUnits int               `json:"failedUnits"`
+	Disks       []hostDisk        `json:"disks"`
+	Services    map[string]string `json:"services"`
+	BackupAgeH  float64           `json:"backupAgeH"`
+	BackupGB    float64           `json:"backupGB"`
 }
 
 const (
