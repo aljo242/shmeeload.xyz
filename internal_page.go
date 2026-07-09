@@ -118,7 +118,7 @@ type hostServiceView struct {
 }
 
 type hostPanel struct {
-	Box                                       string
+	Box, Reported                             string
 	Up, Stale                                 bool
 	Uptime, Load, Mem, Swap, Temp             string
 	LoadClass, MemClass, SwapClass, TempClass string
@@ -215,7 +215,7 @@ func sparkline(points []float64) template.HTML {
 func buildHostPanel(e hostEntry, now time.Time) (hostPanel, []string, []string) {
 	r := e.rep
 	stale := now.Sub(e.received) > hostStaleAfter
-	p := hostPanel{Box: r.Box, Up: !stale, Stale: stale, Uptime: fmtDuration(r.UptimeSec)}
+	p := hostPanel{Box: r.Box, Reported: e.received.Format("15:04:05"), Up: !stale, Stale: stale, Uptime: fmtDuration(r.UptimeSec)}
 	var warns, bads []string
 	note := func(s sev, msg string) {
 		switch s {
@@ -461,6 +461,7 @@ td.d{color:#cfe;word-break:break-all;font-family:ui-monospace,"SF Mono",Menlo,mo
 .tag{font-size:11px;font-weight:600;color:#37d67a;background:#0f1b14;border:1px solid #1e6b3f;border-radius:5px;padding:2px 7px;text-transform:none;letter-spacing:0}
 .tag.warn{color:#ffc061;background:#1b160f;border-color:#7a5a1e}
 .tag.bad{color:#ff8b8b;background:#1b0f0f;border-color:#7a2626}
+.rep{font-weight:400;font-size:11px;color:#7d8b99;text-transform:none;letter-spacing:0}
 </style>
 </head>
 <body>
@@ -504,7 +505,7 @@ td.d{color:#cfe;word-break:break-all;font-family:ui-monospace,"SF Mono",Menlo,mo
 
 {{range .Hosts}}
 <div class="panel">
-<h2><span class="dot {{if .Up}}up{{else}}down{{end}}"></span> {{.Box}}{{if .Stale}} <span class="muted">stale</span>{{end}}{{if .CIBuilding}} <span class="tag warn">building</span>{{end}}{{if .RebootReq}} <span class="tag bad">reboot</span>{{end}}</h2>
+<h2><span class="dot {{if .Up}}up{{else}}down{{end}}"></span> {{.Box}} <span class="rep">reported {{.Reported}}</span>{{if .Stale}} <span class="tag bad">stale</span>{{end}}{{if .CIBuilding}} <span class="tag warn">building</span>{{end}}{{if .RebootReq}} <span class="tag bad">reboot</span>{{end}}</h2>
 <div class="grid">
 <div class="stat"><div class="n" style="font-size:22px">{{.Uptime}}</div><div class="l">uptime</div></div>
 <div class="stat"><div class="n {{.LoadClass}}" style="font-size:22px">{{.Load}}</div><div class="l">load 1m</div></div>
