@@ -94,26 +94,35 @@ type liveResponse struct {
 	PushedAt int64 `json:"pushedAt"` // unix seconds of the last push, 0 if never
 }
 
-// buildLive merges the SLP status with the pushed telemetry as of now.
-func buildLive(slp mcStatus, s *liveStore, now time.Time) liveResponse {
+// buildLive merges the SLP status with the pushed telemetry and the site's own
+// service checks as of now. siteServices (e.g. Pi-hole) are merged over the
+// pushed service map into a fresh map, so the stored push is never mutated.
+func buildLive(slp mcStatus, s *liveStore, siteServices map[string]string, now time.Time) liveResponse {
 	r := liveResponse{
 		Up:      slp.Up,
 		Online:  slp.Online,
 		Max:     slp.Max,
 		Players: slp.Players,
 	}
-	p, received, ok := s.snapshot()
-	if !ok {
-		return r
+	services := map[string]string{}
+	if p, received, ok := s.snapshot(); ok {
+		tps, mspt, day, up, wl := p.TPS, p.MsPerTick, p.Day, p.UptimeSec, p.Whitelist
+		r.TPS = &tps
+		r.MsPerTick = &mspt
+		r.Day = &day
+		r.UptimeSec = &up
+		r.Whitelist = &wl
+		r.PushedAt = received.Unix()
+		r.Stale = now.Sub(received) > liveStaleAfter
+		for k, v := range p.Services {
+			services[k] = v
+		}
 	}
-	tps, mspt, day, up, wl := p.TPS, p.MsPerTick, p.Day, p.UptimeSec, p.Whitelist
-	r.TPS = &tps
-	r.MsPerTick = &mspt
-	r.Day = &day
-	r.UptimeSec = &up
-	r.Whitelist = &wl
-	r.Services = p.Services
-	r.PushedAt = received.Unix()
-	r.Stale = now.Sub(received) > liveStaleAfter
+	for k, v := range siteServices {
+		services[k] = v
+	}
+	if len(services) > 0 {
+		r.Services = services
+	}
 	return r
 }

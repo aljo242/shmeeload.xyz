@@ -3,13 +3,54 @@
 // else is derived from the feed and the game host's pushed service map.
 type Dot = "up" | "warn" | "down" | "unknown";
 
+interface MCPlayer {
+  name: string;
+  uuid: string;
+}
+
 interface Live {
   up?: boolean;
+  online?: number;
+  players?: MCPlayer[];
   tps?: number;
   uptimeSec?: number;
   services?: Record<string, string>;
   stale?: boolean;
   pushedAt?: number;
+}
+
+// renderHeads paints the online players as head avatars (same same-origin proxy
+// the /gamers page uses), or a placeholder line when nobody is on.
+function renderHeads(d: Live): void {
+  const count = document.getElementById("online-count");
+  if (count) count.textContent = d.up ? String(d.online ?? 0) : "--";
+  const box = document.getElementById("mcheads");
+  if (!box) return;
+  box.textContent = "";
+  const players = d.up ? d.players ?? [] : [];
+  if (players.length === 0) {
+    const none = document.createElement("div");
+    none.className = "none";
+    none.textContent = d.up ? "nobody on right now" : "server offline";
+    box.appendChild(none);
+    return;
+  }
+  for (const p of players) {
+    const fig = document.createElement("span");
+    fig.className = "head";
+    const img = document.createElement("img");
+    img.alt = p.name;
+    img.width = 40;
+    img.height = 40;
+    img.src = "/gamers/head/" + encodeURIComponent(p.uuid || p.name);
+    img.onerror = (): void => img.remove();
+    const label = document.createElement("span");
+    label.className = "hname";
+    label.textContent = p.name;
+    fig.appendChild(img);
+    fig.appendChild(label);
+    box.appendChild(fig);
+  }
 }
 
 function setRow(idBase: string, dot: Dot, detail: string): void {
@@ -36,6 +77,8 @@ function refresh(): void {
   fetch("/gamers/live")
     .then((r) => r.json())
     .then((d: Live) => {
+      renderHeads(d);
+
       // Minecraft server: down if SLP is offline; degraded if slow or stale; else up.
       if (!d.up) {
         setRow("mc", "down", "offline");

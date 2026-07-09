@@ -43,6 +43,11 @@ type Config struct {
 	// has been pushed, if anything).
 	MCPushToken string `json:"mcPushToken"`
 
+	// PiholeDNS is the "host:port" of the Pi-hole DNS resolver to health-check for
+	// the /status page (the site is co-located with Pi-hole, so it checks locally
+	// rather than via the game-host push). Empty disables the check.
+	PiholeDNS string `json:"piholeDNS"`
+
 	Dev bool `json:"dev"` // dev mode: serve site/ from disk (no embed/minify); also set by -dev
 }
 

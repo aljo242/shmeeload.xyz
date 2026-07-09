@@ -32,6 +32,12 @@
       .dot.down { background:#ff2d2d; box-shadow: 0 0 10px #ff2d2d; animation: pulse 1s infinite; }
       .rlabel { font-family: Arial, sans-serif; font-weight: bold; font-size: 17px; color:#fff; flex: 1; }
       .rdetail { font-family:"Courier New", monospace; font-size: 14px; color:#9fb; }
+      .ohead { font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; color:#00e5ff; letter-spacing: 1px; padding: 6px 4px 10px; }
+      .heads { display:flex; flex-wrap:wrap; gap:14px; justify-content:center; padding-bottom: 6px; }
+      .heads .head { display:flex; flex-direction:column; align-items:center; gap:3px; }
+      .heads .head img { width: 40px; height: 40px; image-rendering: pixelated; border: 2px solid #00e5ff; box-shadow: 3px 3px 0 #000; background:#000; }
+      .heads .hname { font-family: Arial, sans-serif; font-size: 12px; color:#ffe600; max-width: 64px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      .heads .none { font-family:"Courier New", monospace; font-size: 14px; color:#9ab; padding: 4px; }
       .footer { color:#bfe; font-size:13px; line-height:1.9; margin-top: 16px; font-family: Arial, sans-serif; }
       .footer a { color:#0ff; }
     </style>
@@ -40,6 +46,11 @@
   <div class="wrap">
     <div class="title">STATUS</div>
     <div class="sub">live health of Shmeeland and the homelab behind it &bull; refreshes every 20s</div>
+
+    <div class="panel">
+      <div class="ohead">PLAYERS ONLINE <span id="online-count">--</span></div>
+      <div class="heads" id="mcheads"><div class="none">checking...</div></div>
+    </div>
 
     <div class="panel">
       <div class="row"><span class="dot" id="mc-dot"></span><span class="rlabel">Minecraft server</span><span class="rdetail" id="mc-detail">checking...</span></div>
