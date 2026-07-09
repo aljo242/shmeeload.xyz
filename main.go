@@ -9,6 +9,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -221,8 +222,16 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 		// Gated by Basic Auth. The page is server-rendered and refreshed by a
 		// <meta refresh>, so page navigations (which do carry Basic Auth, unlike
 		// fetch subrequests) are all that is needed. No cookie, token, or script.
+		trusted := parseCIDRs(cfg.InternalTrustCIDRs)
 		gate := func(h http.HandlerFunc) http.HandlerFunc {
 			return func(w http.ResponseWriter, rq *http.Request) {
+				// Requests from a trusted internal network skip Basic Auth. The IP
+				// is Caddy's X-Real-IP (the true peer), which a client cannot forge
+				// since the app is only reachable via Caddy.
+				if ipInNets(rq.Header.Get("X-Real-IP"), trusted) {
+					h(w, rq)
+					return
+				}
 				u, p, ok := rq.BasicAuth()
 				if !ok ||
 					subtle.ConstantTimeCompare([]byte(u), []byte(cfg.InternalUser)) != 1 ||
@@ -286,6 +295,32 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 	h = redirectToApex(apexDomain(cfg.Domains))(h)
 	h = securityHeaders(h)
 	return h
+}
+
+// parseCIDRs parses a list of CIDR strings, skipping any that are malformed.
+func parseCIDRs(cidrs []string) []*net.IPNet {
+	var out []*net.IPNet
+	for _, c := range cidrs {
+		if _, n, err := net.ParseCIDR(c); err == nil {
+			out = append(out, n)
+		}
+	}
+	return out
+}
+
+// ipInNets reports whether ipStr parses to an IP inside any of nets. An empty
+// net list (or unparseable IP) is never trusted.
+func ipInNets(ipStr string, nets []*net.IPNet) bool {
+	ip := net.ParseIP(strings.TrimSpace(ipStr))
+	if ip == nil {
+		return false
+	}
+	for _, n := range nets {
+		if n.Contains(ip) {
+			return true
+		}
+	}
+	return false
 }
 
 // apexDomain returns the first non-www domain (the canonical apex), or "" when

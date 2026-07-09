@@ -51,6 +51,12 @@ type Config struct {
 	PiholeURL      string `json:"piholeURL"`      // e.g. "http://192.168.68.56"
 	PiholePassword string `json:"piholePassword"` // Pi-hole v6 API password
 
+	// InternalTrustCIDRs are source networks (matched against Caddy's X-Real-IP)
+	// that may reach /internal WITHOUT Basic Auth, e.g. the LAN and tailnet.
+	// Empty means always require auth. Safe only because the app is loopback-only
+	// and Caddy stamps X-Real-IP with the true peer, so it can't be forged.
+	InternalTrustCIDRs []string `json:"internalTrustCIDRs"`
+
 	Dev bool `json:"dev"` // dev mode: serve site/ from disk (no embed/minify); also set by -dev
 }
 
