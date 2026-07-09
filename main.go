@@ -20,6 +20,8 @@ import (
 	"github.com/aljo242/shmeeload.xyz/handlers"
 	"github.com/aljo242/shmeeload.xyz/internal/log"
 	"github.com/quic-go/quic-go/http3"
+
+	_ "time/tzdata" // embed the zoneinfo DB so the display timezone resolves in the minimal container
 )
 
 const (
@@ -234,10 +236,17 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 		}
 		mux.HandleFunc("GET /internal", gate(func(w http.ResponseWriter, rq *http.Request) {
 			now := time.Now()
+			certDays, certOK := cert.days()
+			// Content negotiation: JSON for API clients, HTML otherwise.
+			if strings.Contains(rq.Header.Get("Accept"), "application/json") || rq.URL.Query().Get("format") == "json" {
+				w.Header().Set("Content-Type", "application/json")
+				w.Header().Set("Cache-Control", "no-cache")
+				_ = json.NewEncoder(w).Encode(buildInternalAPI(pihole.snapshot(), buildLive(mcStat.get(), live, now), hosts.all(), certDays, certOK, now))
+				return
+			}
 			hist := func(series string) []float64 {
 				return metrics.recent(rq.Context(), series, now.Add(-metricsWindow).Unix())
 			}
-			certDays, certOK := cert.days()
 			renderInternal(w, buildInternalView(pihole.snapshot(), buildLive(mcStat.get(), live, now), hosts.all(), hist, certDays, certOK, now))
 		}))
 	}

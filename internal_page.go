@@ -148,6 +148,14 @@ type internalView struct {
 
 var internalTmpl = template.Must(template.New("internal").Parse(internalHTML))
 
+// displayLoc is the timezone the dashboard renders clock times in.
+var displayLoc = func() *time.Location {
+	if loc, err := time.LoadLocation("America/New_York"); err == nil {
+		return loc
+	}
+	return time.UTC
+}()
+
 // commafy renders an int with thousands separators.
 func commafy(n int) string {
 	neg := n < 0
@@ -215,7 +223,7 @@ func sparkline(points []float64) template.HTML {
 func buildHostPanel(e hostEntry, now time.Time) (hostPanel, []string, []string) {
 	r := e.rep
 	stale := now.Sub(e.received) > hostStaleAfter
-	p := hostPanel{Box: r.Box, Reported: e.received.Format("15:04:05"), Up: !stale, Stale: stale, Uptime: fmtDuration(r.UptimeSec)}
+	p := hostPanel{Box: r.Box, Reported: e.received.In(displayLoc).Format("15:04:05"), Up: !stale, Stale: stale, Uptime: fmtDuration(r.UptimeSec)}
 	var warns, bads []string
 	note := func(s sev, msg string) {
 		switch s {
@@ -354,7 +362,7 @@ func buildInternalView(pi piholeStats, mc liveResponse, hosts []hostEntry, hist 
 		v.Queries, v.Blocked, v.Pct, v.Cache, v.Blocklist, v.Clients = "--", "--", "--", "--", "--", "--"
 	}
 	if pi.CheckedAt > 0 {
-		v.Checked = "pi-hole checked " + time.Unix(pi.CheckedAt, 0).Format("15:04:05")
+		v.Checked = "pi-hole checked " + time.Unix(pi.CheckedAt, 0).In(displayLoc).Format("15:04:05 MST")
 	} else {
 		v.Checked = "pi-hole not yet reached"
 	}
@@ -400,6 +408,53 @@ func buildInternalView(pi piholeStats, mc liveResponse, hosts []hostEntry, hist 
 		v.StatusText = "all systems nominal"
 	}
 	return v
+}
+
+// hostReportJSON is a host report plus its freshness metadata, for the API.
+type hostReportJSON struct {
+	hostReport
+	Reported int64 `json:"reported"` // unix seconds of the last push
+	Stale    bool  `json:"stale"`
+}
+
+// internalAPI is the JSON representation of the dashboard for programmatic
+// clients: raw values (not display strings) plus the same computed status.
+type internalAPI struct {
+	Now       int64    `json:"now"`
+	Status    string   `json:"status"` // "ok" | "warn" | "bad"
+	Warnings  []string `json:"warnings"`
+	Criticals []string `json:"criticals"`
+	Cert      struct {
+		DaysLeft int  `json:"daysLeft"`
+		OK       bool `json:"ok"`
+	} `json:"cert"`
+	Pihole    piholeStats      `json:"pihole"`
+	Minecraft liveResponse     `json:"minecraft"`
+	Hosts     []hostReportJSON `json:"hosts"`
+}
+
+// buildInternalAPI assembles the JSON view. It reuses buildInternalView (with an
+// empty history) for the status/warnings/criticals, so the thresholds stay in
+// one place.
+func buildInternalAPI(pi piholeStats, mc liveResponse, hosts []hostEntry, certDays int, certOK bool, now time.Time) internalAPI {
+	v := buildInternalView(pi, mc, hosts, func(string) []float64 { return nil }, certDays, certOK, now)
+	api := internalAPI{
+		Now:       now.Unix(),
+		Status:    v.StatusClass,
+		Warnings:  v.Warnings,
+		Criticals: v.Criticals,
+		Pihole:    pi,
+		Minecraft: mc,
+	}
+	api.Cert.DaysLeft, api.Cert.OK = certDays, certOK
+	for _, e := range hosts {
+		api.Hosts = append(api.Hosts, hostReportJSON{
+			hostReport: e.rep,
+			Reported:   e.received.Unix(),
+			Stale:      now.Sub(e.received) > hostStaleAfter,
+		})
+	}
+	return api
 }
 
 func renderInternal(w http.ResponseWriter, v internalView) {
