@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/sha256"
 	"crypto/subtle"
 	"crypto/tls"
 	"encoding/json"
@@ -191,48 +190,24 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 	// credentials are configured; its data (Pi-hole stats) is never on a public
 	// endpoint.
 	if cfg.InternalUser != "" && cfg.InternalPass != "" {
-		// Session cookie value: a hash of the password (never the password itself),
-		// so an authenticated page load can hand its fetch()es a credential that
-		// browsers reliably send, unlike Basic Auth on subrequests.
-		sessVal := fmt.Sprintf("%x", sha256.Sum256([]byte(cfg.InternalPass)))
-		const sessCookie = "hlsess"
-		authed := func(rq *http.Request) bool {
-			if u, p, ok := rq.BasicAuth(); ok &&
-				subtle.ConstantTimeCompare([]byte(u), []byte(cfg.InternalUser)) == 1 &&
-				subtle.ConstantTimeCompare([]byte(p), []byte(cfg.InternalPass)) == 1 {
-				return true
-			}
-			if c, err := rq.Cookie(sessCookie); err == nil &&
-				subtle.ConstantTimeCompare([]byte(c.Value), []byte(sessVal)) == 1 {
-				return true
-			}
-			return false
-		}
+		// Gated by Basic Auth. The page is server-rendered and refreshed by a
+		// <meta refresh>, so page navigations (which do carry Basic Auth, unlike
+		// fetch subrequests) are all that is needed. No cookie, token, or script.
 		gate := func(h http.HandlerFunc) http.HandlerFunc {
 			return func(w http.ResponseWriter, rq *http.Request) {
-				if !authed(rq) {
+				u, p, ok := rq.BasicAuth()
+				if !ok ||
+					subtle.ConstantTimeCompare([]byte(u), []byte(cfg.InternalUser)) != 1 ||
+					subtle.ConstantTimeCompare([]byte(p), []byte(cfg.InternalPass)) != 1 {
 					w.Header().Set("WWW-Authenticate", `Basic realm="internal"`)
 					http.Error(w, "unauthorized", http.StatusUnauthorized)
 					return
 				}
-				http.SetCookie(w, &http.Cookie{
-					Name: sessCookie, Value: sessVal, Path: "/internal",
-					HttpOnly: true, Secure: true, SameSite: http.SameSiteStrictMode, MaxAge: 3600,
-				})
 				h(w, rq)
 			}
 		}
-		mux.HandleFunc("GET /internal", gate(page("internal.html")))
-		mux.HandleFunc("GET /internal/live", gate(func(w http.ResponseWriter, _ *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			w.Header().Set("Cache-Control", "no-cache")
-			_ = json.NewEncoder(w).Encode(struct {
-				Pihole piholeStats  `json:"pihole"`
-				MC     liveResponse `json:"mc"`
-			}{
-				Pihole: pihole.snapshot(),
-				MC:     buildLive(mcStat.get(), live, time.Now()),
-			})
+		mux.HandleFunc("GET /internal", gate(func(w http.ResponseWriter, _ *http.Request) {
+			renderInternal(w, buildInternalView(pihole.snapshot(), buildLive(mcStat.get(), live, time.Now())))
 		}))
 	}
 
