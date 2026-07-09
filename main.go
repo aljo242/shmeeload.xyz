@@ -95,6 +95,7 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 	mcStat := newStatusCache(cfg.MCServerAddr)
 	heads := newMCHeadProxy()
 	live := newLiveStore()
+	pihole := newPiholeClient(cfg.PiholeURL, cfg.PiholePassword)
 	underConstruction := func(w http.ResponseWriter, rq *http.Request) {
 		http.Redirect(w, rq, "/under-construction", http.StatusTemporaryRedirect)
 	}
@@ -184,6 +185,37 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 	})
 	mux.HandleFunc("GET /under-construction", page("construction.html"))
 	mux.HandleFunc("GET /status", page("status.html"))
+
+	// Internal homelab view, gated by Basic Auth. Registered only when
+	// credentials are configured; its data (Pi-hole stats) is never on a public
+	// endpoint.
+	if cfg.InternalUser != "" && cfg.InternalPass != "" {
+		gate := func(h http.HandlerFunc) http.HandlerFunc {
+			return func(w http.ResponseWriter, rq *http.Request) {
+				u, p, ok := rq.BasicAuth()
+				if !ok ||
+					subtle.ConstantTimeCompare([]byte(u), []byte(cfg.InternalUser)) != 1 ||
+					subtle.ConstantTimeCompare([]byte(p), []byte(cfg.InternalPass)) != 1 {
+					w.Header().Set("WWW-Authenticate", `Basic realm="internal"`)
+					http.Error(w, "unauthorized", http.StatusUnauthorized)
+					return
+				}
+				h(w, rq)
+			}
+		}
+		mux.HandleFunc("GET /internal", gate(page("internal.html")))
+		mux.HandleFunc("GET /internal/live", gate(func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.Header().Set("Cache-Control", "no-cache")
+			_ = json.NewEncoder(w).Encode(struct {
+				Pihole piholeStats  `json:"pihole"`
+				MC     liveResponse `json:"mc"`
+			}{
+				Pihole: pihole.snapshot(),
+				MC:     buildLive(mcStat.get(), live, time.Now()),
+			})
+		}))
+	}
 
 	// security.txt for vulnerability-disclosure contact (RFC 9116).
 	mux.HandleFunc("GET /.well-known/security.txt", func(w http.ResponseWriter, _ *http.Request) {

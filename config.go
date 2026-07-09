@@ -43,6 +43,14 @@ type Config struct {
 	// has been pushed, if anything).
 	MCPushToken string `json:"mcPushToken"`
 
+	// Internal homelab view (Pi-hole stats etc.) at /internal, gated by HTTP Basic
+	// Auth. All four must be set for the view to register; empty disables it and
+	// none of this data ever appears on a public endpoint.
+	InternalUser   string `json:"internalUser"`
+	InternalPass   string `json:"internalPass"`
+	PiholeURL      string `json:"piholeURL"`      // e.g. "http://192.168.68.56"
+	PiholePassword string `json:"piholePassword"` // Pi-hole v6 API password
+
 	Dev bool `json:"dev"` // dev mode: serve site/ from disk (no embed/minify); also set by -dev
 }
 
