@@ -37,6 +37,26 @@ type Config struct {
 	// player count on /gamers (Server List Ping). Empty disables the feature.
 	MCServerAddr string `json:"mcServerAddr"`
 
+	// MCPushToken is the shared bearer token the game host presents when pushing
+	// live server stats (TPS, in-game day, uptime, whitelist) to POST
+	// /gamers/live. Empty disables the ingest endpoint (GET still serves whatever
+	// has been pushed, if anything).
+	MCPushToken string `json:"mcPushToken"`
+
+	// Internal homelab view (Pi-hole stats etc.) at /internal, gated by HTTP Basic
+	// Auth. All four must be set for the view to register; empty disables it and
+	// none of this data ever appears on a public endpoint.
+	InternalUser   string `json:"internalUser"`
+	InternalPass   string `json:"internalPass"`
+	PiholeURL      string `json:"piholeURL"`      // e.g. "http://192.168.68.56"
+	PiholePassword string `json:"piholePassword"` // Pi-hole v6 API password
+
+	// InternalTrustCIDRs are source networks (matched against Caddy's X-Real-IP)
+	// that may reach /internal WITHOUT Basic Auth, e.g. the LAN and tailnet.
+	// Empty means always require auth. Safe only because the app is loopback-only
+	// and Caddy stamps X-Real-IP with the true peer, so it can't be forged.
+	InternalTrustCIDRs []string `json:"internalTrustCIDRs"`
+
 	Dev bool `json:"dev"` // dev mode: serve site/ from disk (no embed/minify); also set by -dev
 }
 

@@ -2,11 +2,14 @@ package main
 
 import (
 	"context"
+	"crypto/subtle"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
+	"io"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -18,6 +21,8 @@ import (
 	"github.com/aljo242/shmeeload.xyz/handlers"
 	"github.com/aljo242/shmeeload.xyz/internal/log"
 	"github.com/quic-go/quic-go/http3"
+
+	_ "time/tzdata" // embed the zoneinfo DB so the display timezone resolves in the minimal container
 )
 
 const (
@@ -92,6 +97,15 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 	visits := newVisitCounter(filepath.Join(filepath.Dir(chatDBPathOf(cfg)), "gamers-visits"))
 	mcStat := newStatusCache(cfg.MCServerAddr)
 	heads := newMCHeadProxy()
+	live := newLiveStore()
+	pihole := newPiholeClient(cfg.PiholeURL, cfg.PiholePassword)
+	hosts := newHostStore()
+	metrics, err := newMetricsStore(metricsDBPathOf(cfg))
+	if err != nil {
+		log.Error("metrics history disabled", "err", err)
+	}
+	go metrics.run(context.Background(), pihole, hosts) // nil-safe; unmanaged like the other pollers
+	cert := newCertChecker(apexDomain(cfg.Domains))
 	underConstruction := func(w http.ResponseWriter, rq *http.Request) {
 		http.Redirect(w, rq, "/under-construction", http.StatusTemporaryRedirect)
 	}
@@ -138,6 +152,55 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 		w.Header().Set("Cache-Control", "no-cache")
 		_ = json.NewEncoder(w).Encode(mcStat.get())
 	})
+	// Merged live status: the fresh SLP fields plus the last pushed telemetry
+	// (TPS, in-game day, uptime, whitelist). Drives the /gamers dashboard and the
+	// /status page.
+	mux.HandleFunc("GET /gamers/live", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Cache-Control", "no-cache")
+		_ = json.NewEncoder(w).Encode(buildLive(mcStat.get(), live, time.Now()))
+	})
+	// Ingest for the game host's push. Registered only when a token is set; the
+	// bearer token is compared in constant time and the body is size-capped.
+	if cfg.MCPushToken != "" {
+		mux.HandleFunc("POST /gamers/live", func(w http.ResponseWriter, rq *http.Request) {
+			const prefix = "Bearer "
+			auth := rq.Header.Get("Authorization")
+			token, ok := strings.CutPrefix(auth, prefix)
+			if !ok || subtle.ConstantTimeCompare([]byte(token), []byte(cfg.MCPushToken)) != 1 {
+				http.Error(w, "unauthorized", http.StatusUnauthorized)
+				return
+			}
+			var p pushedStatus
+			dec := json.NewDecoder(io.LimitReader(rq.Body, 8<<10))
+			dec.DisallowUnknownFields()
+			if err := dec.Decode(&p); err != nil || !p.valid() {
+				http.Error(w, "bad payload", http.StatusBadRequest)
+				return
+			}
+			live.ingest(p, time.Now())
+			w.WriteHeader(http.StatusNoContent)
+		})
+		// Host stats ingest for the internal dashboard: each box (foundry, the Pi)
+		// pushes its own report. Same bearer token; the data is only ever rendered
+		// on the Basic-Auth-gated /internal page.
+		mux.HandleFunc("POST /internal/host", func(w http.ResponseWriter, rq *http.Request) {
+			token, ok := strings.CutPrefix(rq.Header.Get("Authorization"), "Bearer ")
+			if !ok || subtle.ConstantTimeCompare([]byte(token), []byte(cfg.MCPushToken)) != 1 {
+				http.Error(w, "unauthorized", http.StatusUnauthorized)
+				return
+			}
+			var r hostReport
+			dec := json.NewDecoder(io.LimitReader(rq.Body, 16<<10))
+			dec.DisallowUnknownFields()
+			if err := dec.Decode(&r); err != nil || !r.valid() {
+				http.Error(w, "bad payload", http.StatusBadRequest)
+				return
+			}
+			hosts.ingest(r, time.Now())
+			w.WriteHeader(http.StatusNoContent)
+		})
+	}
 	// Player-head avatars, proxied same-origin so the strict img-src CSP holds.
 	mux.HandleFunc("GET /gamers/head/{id}", func(w http.ResponseWriter, rq *http.Request) {
 		png, ok := heads.get(rq.Context(), rq.PathValue("id"))
@@ -150,6 +213,57 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 		_, _ = w.Write(png)
 	})
 	mux.HandleFunc("GET /under-construction", page("construction.html"))
+	mux.HandleFunc("GET /status", page("status.html"))
+
+	// Internal homelab view, gated by Basic Auth. Registered only when
+	// credentials are configured; its data (Pi-hole stats) is never on a public
+	// endpoint.
+	if cfg.InternalUser != "" && cfg.InternalPass != "" {
+		// Gated by Basic Auth. The page is server-rendered and refreshed by a
+		// <meta refresh>, so page navigations (which do carry Basic Auth, unlike
+		// fetch subrequests) are all that is needed. No cookie, token, or script.
+		trusted := parseCIDRs(cfg.InternalTrustCIDRs)
+		gate := func(h http.HandlerFunc) http.HandlerFunc {
+			return func(w http.ResponseWriter, rq *http.Request) {
+				// Requests from a trusted internal network skip Basic Auth. The IP
+				// is Caddy's X-Real-IP (the true peer), which a client cannot forge
+				// since the app is only reachable via Caddy.
+				if ipInNets(rq.Header.Get("X-Real-IP"), trusted) {
+					h(w, rq)
+					return
+				}
+				u, p, ok := rq.BasicAuth()
+				if !ok ||
+					subtle.ConstantTimeCompare([]byte(u), []byte(cfg.InternalUser)) != 1 ||
+					subtle.ConstantTimeCompare([]byte(p), []byte(cfg.InternalPass)) != 1 {
+					w.Header().Set("WWW-Authenticate", `Basic realm="internal"`)
+					http.Error(w, "unauthorized", http.StatusUnauthorized)
+					return
+				}
+				h(w, rq)
+			}
+		}
+		dashboard := func(w http.ResponseWriter, rq *http.Request) {
+			now := time.Now()
+			certDays, certOK := cert.days()
+			// Content negotiation: JSON for API clients, HTML otherwise.
+			if strings.Contains(rq.Header.Get("Accept"), "application/json") || rq.URL.Query().Get("format") == "json" {
+				w.Header().Set("Content-Type", "application/json")
+				w.Header().Set("Cache-Control", "no-cache")
+				_ = json.NewEncoder(w).Encode(buildInternalAPI(pihole.snapshot(), buildLive(mcStat.get(), live, now), hosts.all(), certDays, certOK, now))
+				return
+			}
+			hist := func(series string) []float64 {
+				return metrics.recent(rq.Context(), series, now.Add(-metricsWindow).Unix())
+			}
+			renderInternal(w, buildInternalView(pihole.snapshot(), buildLive(mcStat.get(), live, now), hosts.all(), hist, certDays, certOK, now))
+		}
+		mux.HandleFunc("GET /internal", gate(dashboard))
+		// Same dashboard at the root of internal.djinntek.space, which the edge
+		// proxy serves LAN-only. Other paths (e.g. /static for the favicon) fall
+		// through to the host-agnostic handlers.
+		mux.HandleFunc("GET internal.djinntek.space/{$}", gate(dashboard))
+	}
 
 	// security.txt for vulnerability-disclosure contact (RFC 9116).
 	mux.HandleFunc("GET /.well-known/security.txt", func(w http.ResponseWriter, _ *http.Request) {
@@ -186,6 +300,32 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 	h = redirectToApex(apexDomain(cfg.Domains))(h)
 	h = securityHeaders(h)
 	return h
+}
+
+// parseCIDRs parses a list of CIDR strings, skipping any that are malformed.
+func parseCIDRs(cidrs []string) []*net.IPNet {
+	var out []*net.IPNet
+	for _, c := range cidrs {
+		if _, n, err := net.ParseCIDR(c); err == nil {
+			out = append(out, n)
+		}
+	}
+	return out
+}
+
+// ipInNets reports whether ipStr parses to an IP inside any of nets. An empty
+// net list (or unparseable IP) is never trusted.
+func ipInNets(ipStr string, nets []*net.IPNet) bool {
+	ip := net.ParseIP(strings.TrimSpace(ipStr))
+	if ip == nil {
+		return false
+	}
+	for _, n := range nets {
+		if n.Contains(ip) {
+			return true
+		}
+	}
+	return false
 }
 
 // apexDomain returns the first non-www domain (the canonical apex), or "" when
@@ -226,6 +366,11 @@ func chatDBPathOf(cfg Config) string {
 		return cfg.ChatDBPath
 	}
 	return defaultChatDBPath
+}
+
+// metricsDBPathOf puts the dashboard history DB next to the chat DB.
+func metricsDBPathOf(cfg Config) string {
+	return filepath.Join(filepath.Dir(chatDBPathOf(cfg)), "metrics.db")
 }
 
 func roomSet(rooms []string) map[string]bool {
