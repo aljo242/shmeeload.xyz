@@ -100,6 +100,7 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 	live := newLiveStore()
 	pihole := newPiholeClient(cfg.PiholeURL, cfg.PiholePassword)
 	hosts := newHostStore()
+	edge := newEdgeStore()
 	metrics, err := newMetricsStore(metricsDBPathOf(cfg))
 	if err != nil {
 		log.Error("metrics history disabled", "err", err)
@@ -200,6 +201,23 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 			hosts.ingest(r, time.Now())
 			w.WriteHeader(http.StatusNoContent)
 		})
+		// edgelord (the front proxy) pushes its per-route request stats here.
+		mux.HandleFunc("POST /internal/edge", func(w http.ResponseWriter, rq *http.Request) {
+			token, ok := strings.CutPrefix(rq.Header.Get("Authorization"), "Bearer ")
+			if !ok || subtle.ConstantTimeCompare([]byte(token), []byte(cfg.MCPushToken)) != 1 {
+				http.Error(w, "unauthorized", http.StatusUnauthorized)
+				return
+			}
+			var r edgeReport
+			dec := json.NewDecoder(io.LimitReader(rq.Body, 16<<10))
+			dec.DisallowUnknownFields()
+			if err := dec.Decode(&r); err != nil || !r.valid() {
+				http.Error(w, "bad payload", http.StatusBadRequest)
+				return
+			}
+			edge.ingest(r, time.Now())
+			w.WriteHeader(http.StatusNoContent)
+		})
 	}
 	// Player-head avatars, proxied same-origin so the strict img-src CSP holds.
 	mux.HandleFunc("GET /gamers/head/{id}", func(w http.ResponseWriter, rq *http.Request) {
@@ -246,17 +264,18 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 		dashboard := func(w http.ResponseWriter, rq *http.Request) {
 			now := time.Now()
 			certDays, certOK := cert.days()
+			edgeRep, edgeRecv := edge.get()
 			// Content negotiation: JSON for API clients, HTML otherwise.
 			if strings.Contains(rq.Header.Get("Accept"), "application/json") || rq.URL.Query().Get("format") == "json" {
 				w.Header().Set("Content-Type", "application/json")
 				w.Header().Set("Cache-Control", "no-cache")
-				_ = json.NewEncoder(w).Encode(buildInternalAPI(pihole.snapshot(), buildLive(mcStat.get(), live, now), hosts.all(), certDays, certOK, now))
+				_ = json.NewEncoder(w).Encode(buildInternalAPI(pihole.snapshot(), buildLive(mcStat.get(), live, now), hosts.all(), certDays, certOK, edgeRep, edgeRecv, now))
 				return
 			}
 			hist := func(series string) []float64 {
 				return metrics.recent(rq.Context(), series, now.Add(-metricsWindow).Unix())
 			}
-			renderInternal(w, buildInternalView(pihole.snapshot(), buildLive(mcStat.get(), live, now), hosts.all(), hist, certDays, certOK, now))
+			renderInternal(w, buildInternalView(pihole.snapshot(), buildLive(mcStat.get(), live, now), hosts.all(), hist, certDays, certOK, edgeRep, edgeRecv, now))
 		}
 		mux.HandleFunc("GET /internal", gate(dashboard))
 		// Same dashboard at the root of internal.djinntek.space, which the edge

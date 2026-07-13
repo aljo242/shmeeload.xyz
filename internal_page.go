@@ -143,7 +143,28 @@ type internalView struct {
 	MCUp                                      bool
 	Online, TPS, Day                          string
 	Hosts                                     []hostPanel
+	Edge                                      *edgePanel
 	Checked                                   string
+}
+
+// edgePanel is the edgelord (front proxy) panel: its window totals plus a
+// per-route table. Nil when edgelord has not reported.
+type edgePanel struct {
+	Reported               string
+	Up, Stale              bool
+	Reqs, ErrPct, ErrClass string
+	Uptime                 string
+	Routes                 []edgeRouteView
+	Certs                  []edgeCertView
+}
+
+type edgeRouteView struct {
+	Host, Reqs, Codes, Lat string
+	BackendUp              bool
+}
+
+type edgeCertView struct {
+	Host, Days, Class string
 }
 
 var internalTmpl = template.Must(template.New("internal").Parse(internalHTML))
@@ -312,7 +333,74 @@ func buildHostPanel(e hostEntry, now time.Time) (hostPanel, []string, []string) 
 	return p, warns, bads
 }
 
-func buildInternalView(pi piholeStats, mc liveResponse, hosts []hostEntry, hist func(string) []float64, certDays int, certOK bool, now time.Time) internalView {
+// buildEdgePanel renders the edgelord proxy panel from its latest report,
+// returning nil (panel hidden) when edgelord has never reported. It also returns
+// warnings/criticals for the roll-up banner.
+func buildEdgePanel(rep edgeReport, received, now time.Time) (*edgePanel, []string, []string) {
+	if received.IsZero() {
+		return nil, nil, nil
+	}
+	stale := now.Sub(received) > edgeStaleAfter
+	p := &edgePanel{
+		Reported: received.In(displayLoc).Format("15:04:05"),
+		Up:       !stale,
+		Stale:    stale,
+		Uptime:   fmtDuration(int64(rep.UptimeSec)),
+	}
+	var warns, bads []string
+
+	totalReqs, totalErr := 0, 0
+	for _, rt := range rep.Routes {
+		totalReqs += rt.Reqs
+		totalErr += rt.Status[5]
+		backendUp := rt.LastErrSec < 0 || (rt.LastOKSec >= 0 && rt.LastOKSec < rt.LastErrSec)
+		p.Routes = append(p.Routes, edgeRouteView{
+			Host:      rt.Host,
+			Reqs:      commafy(rt.Reqs),
+			Codes:     fmt.Sprintf("%d/%d/%d", rt.Status[2], rt.Status[4], rt.Status[5]),
+			Lat:       fmt.Sprintf("%.1f / %.1f ms", rt.P50ms, rt.P95ms),
+			BackendUp: backendUp,
+		})
+		if !backendUp {
+			bads = append(bads, "edge: "+rt.Host+" backend down")
+		}
+	}
+	sort.Slice(p.Routes, func(i, j int) bool { return p.Routes[i].Host < p.Routes[j].Host })
+
+	p.Reqs = commafy(totalReqs)
+	errPct := 0.0
+	if totalReqs > 0 {
+		errPct = float64(totalErr) * 100 / float64(totalReqs)
+	}
+	p.ErrPct = strconv.FormatFloat(errPct, 'f', 1, 64) + "%"
+	switch {
+	case errPct >= 5:
+		p.ErrClass = sevBad.class()
+		bads = append(bads, fmt.Sprintf("edge: %.1f%% error rate", errPct))
+	case errPct >= 1:
+		p.ErrClass = sevWarn.class()
+		warns = append(warns, fmt.Sprintf("edge: %.1f%% error rate", errPct))
+	}
+
+	for _, c := range rep.Certs {
+		cs := sevOK
+		switch {
+		case c.DaysLeft <= 5:
+			cs = sevBad
+		case c.DaysLeft <= 14:
+			cs = sevWarn
+		}
+		p.Certs = append(p.Certs, edgeCertView{Host: c.Host, Days: strconv.Itoa(c.DaysLeft) + "d", Class: cs.class()})
+	}
+	sort.Slice(p.Certs, func(i, j int) bool { return p.Certs[i].Host < p.Certs[j].Host })
+
+	if stale {
+		warns = append(warns, "edge: edgelord report stale")
+	}
+	return p, warns, bads
+}
+
+func buildInternalView(pi piholeStats, mc liveResponse, hosts []hostEntry, hist func(string) []float64, certDays int, certOK bool, edgeRep edgeReport, edgeRecv time.Time, now time.Time) internalView {
 	v := internalView{PiUp: pi.Up, MCUp: mc.Up}
 	v.PiSpark = sparkline(hist("pihole.blocked_pct"))
 	var warns, bads []string
@@ -395,6 +483,12 @@ func buildInternalView(pi piholeStats, mc liveResponse, hosts []hostEntry, hist 
 		bads = append(bads, "pi-hole: unreachable")
 	}
 
+	if p, w, b := buildEdgePanel(edgeRep, edgeRecv, now); p != nil {
+		v.Edge = p
+		warns = append(warns, w...)
+		bads = append(bads, b...)
+	}
+
 	v.Warnings, v.Criticals = warns, bads
 	switch {
 	case len(bads) > 0:
@@ -431,13 +525,14 @@ type internalAPI struct {
 	Pihole    piholeStats      `json:"pihole"`
 	Minecraft liveResponse     `json:"minecraft"`
 	Hosts     []hostReportJSON `json:"hosts"`
+	Edge      edgeReport       `json:"edge"`
 }
 
 // buildInternalAPI assembles the JSON view. It reuses buildInternalView (with an
 // empty history) for the status/warnings/criticals, so the thresholds stay in
 // one place.
-func buildInternalAPI(pi piholeStats, mc liveResponse, hosts []hostEntry, certDays int, certOK bool, now time.Time) internalAPI {
-	v := buildInternalView(pi, mc, hosts, func(string) []float64 { return nil }, certDays, certOK, now)
+func buildInternalAPI(pi piholeStats, mc liveResponse, hosts []hostEntry, certDays int, certOK bool, edgeRep edgeReport, edgeRecv time.Time, now time.Time) internalAPI {
+	v := buildInternalView(pi, mc, hosts, func(string) []float64 { return nil }, certDays, certOK, edgeRep, edgeRecv, now)
 	api := internalAPI{
 		Now:       now.Unix(),
 		Status:    v.StatusClass,
@@ -447,6 +542,7 @@ func buildInternalAPI(pi piholeStats, mc liveResponse, hosts []hostEntry, certDa
 		Minecraft: mc,
 	}
 	api.Cert.DaysLeft, api.Cert.OK = certDays, certOK
+	api.Edge = edgeRep
 	for _, e := range hosts {
 		api.Hosts = append(api.Hosts, hostReportJSON{
 			hostReport: e.rep,
@@ -557,6 +653,22 @@ td.d{color:#cfe;word-break:break-all;font-family:ui-monospace,"SF Mono",Menlo,mo
 <div class="stat"><div class="n">{{.Day}}</div><div class="l">day</div></div>
 </div>
 </div>
+
+{{with .Edge}}
+<div class="panel">
+<h2><span class="dot {{if .Up}}up{{else}}down{{end}}"></span> edgelord <span class="rep">reported {{.Reported}}</span>{{if .Stale}} <span class="tag bad">stale</span>{{end}}</h2>
+<div class="grid">
+<div class="stat"><div class="n" style="font-size:22px">{{.Reqs}}</div><div class="l">reqs / window</div></div>
+<div class="stat"><div class="n {{.ErrClass}}" style="font-size:22px">{{.ErrPct}}</div><div class="l">error rate</div></div>
+<div class="stat"><div class="n" style="font-size:22px">{{.Uptime}}</div><div class="l">uptime</div></div>
+</div>
+{{if .Routes}}<div class="sparklbl" style="margin-top:12px">routes &middot; reqs / 2xx&middot;4xx&middot;5xx / p50&middot;p95 / backend</div>
+<table><tbody>
+{{range .Routes}}<tr><td class="d">{{.Host}}</td><td class="c">{{.Reqs}}</td><td class="c">{{.Codes}}</td><td class="c">{{.Lat}}</td><td class="c"><span class="dot sm {{if .BackendUp}}up{{else}}down{{end}}"></span></td></tr>{{end}}
+</tbody></table>{{end}}
+{{if .Certs}}<div class="sparklbl" style="margin-top:12px">certs</div><div class="svcs">{{range .Certs}}<span class="svc"><span class="tag {{.Class}}">{{.Host}} &middot; {{.Days}}</span></span>{{end}}</div>{{end}}
+</div>
+{{end}}
 
 {{range .Hosts}}
 <div class="panel">
