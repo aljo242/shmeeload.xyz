@@ -243,7 +243,7 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 				h(w, rq)
 			}
 		}
-		mux.HandleFunc("GET /internal", gate(func(w http.ResponseWriter, rq *http.Request) {
+		dashboard := func(w http.ResponseWriter, rq *http.Request) {
 			now := time.Now()
 			certDays, certOK := cert.days()
 			// Content negotiation: JSON for API clients, HTML otherwise.
@@ -257,7 +257,12 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 				return metrics.recent(rq.Context(), series, now.Add(-metricsWindow).Unix())
 			}
 			renderInternal(w, buildInternalView(pihole.snapshot(), buildLive(mcStat.get(), live, now), hosts.all(), hist, certDays, certOK, now))
-		}))
+		}
+		mux.HandleFunc("GET /internal", gate(dashboard))
+		// Same dashboard at the root of internal.djinntek.space, which the edge
+		// proxy serves LAN-only. Other paths (e.g. /static for the favicon) fall
+		// through to the host-agnostic handlers.
+		mux.HandleFunc("GET internal.djinntek.space/{$}", gate(dashboard))
 	}
 
 	// security.txt for vulnerability-disclosure contact (RFC 9116).
