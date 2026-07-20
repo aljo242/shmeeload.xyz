@@ -8,12 +8,12 @@ require (
 	github.com/caddyserver/certmagic v0.25.4
 	github.com/gen2brain/avif v0.6.0
 	github.com/gorilla/websocket v1.5.3
-	github.com/klauspost/compress v1.19.0
+	github.com/klauspost/compress v1.19.1
 	github.com/quic-go/quic-go v0.60.0
 	github.com/rs/zerolog v1.35.1
 	github.com/tdewolff/minify/v2 v2.24.13
 	golang.org/x/time v0.15.0
-	modernc.org/sqlite v1.53.0
+	modernc.org/sqlite v1.54.0
 )
 
 require (
@@ -44,7 +44,7 @@ require (
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.40.0 // indirect
 	golang.org/x/tools v0.47.0 // indirect
-	modernc.org/libc v1.73.4 // indirect
+	modernc.org/libc v1.74.1 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
 )
