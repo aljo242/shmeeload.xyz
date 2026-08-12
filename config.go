@@ -57,6 +57,11 @@ type Config struct {
 	// and Caddy stamps X-Real-IP with the true peer, so it can't be forged.
 	InternalTrustCIDRs []string `json:"internalTrustCIDRs"`
 
+	// AlertWebhook receives a Discord message when the /internal roll-up status
+	// changes, so a red banner does not wait for someone to open the page.
+	// Empty disables alerting entirely.
+	AlertWebhook string `json:"alertWebhook"`
+
 	Dev bool `json:"dev"` // dev mode: serve site/ from disk (no embed/minify); also set by -dev
 }
 

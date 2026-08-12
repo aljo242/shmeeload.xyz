@@ -23,12 +23,20 @@ const (
 	sevBad
 )
 
+// Status strings, shared by the CSS class on the page, the "status" field in
+// the JSON API, and the alerter. One spelling so they cannot drift apart.
+const (
+	statusOK   = "ok"
+	statusWarn = "warn"
+	statusBad  = "bad"
+)
+
 func (s sev) class() string {
 	switch s {
 	case sevBad:
-		return "bad"
+		return statusBad
 	case sevWarn:
-		return "warn"
+		return statusWarn
 	default:
 		return ""
 	}
@@ -96,6 +104,71 @@ func backupSev(ageH float64) sev {
 	}
 }
 
+// netSev judges a wired link. Speed is the signal worth watching: negotiation
+// falling back to 100M is the classic symptom of a damaged pair and is
+// invisible from any layer above the physical one. `dropped` is deliberately
+// not consulted, since it counts frames with no listening socket and any LAN
+// scan inflates it.
+func netSev(n hostNet) (sev, string) {
+	switch {
+	case !n.Carrier:
+		return sevBad, fmt.Sprintf("%s link down", n.Name)
+	case n.Errs > 0:
+		return sevWarn, fmt.Sprintf("%s %d link errors", n.Name, n.Errs)
+	case n.CarrierErrs > 0:
+		return sevWarn, fmt.Sprintf("%s %d link flaps", n.Name, n.CarrierErrs)
+	case n.SpeedMbs > 0 && n.SpeedMbs < 1000:
+		return sevWarn, fmt.Sprintf("%s negotiated %dM", n.Name, n.SpeedMbs)
+	}
+	return sevOK, ""
+}
+
+// driveSev judges one physical drive. Absence is checked first: a drive that has
+// fallen off the USB bus reports no other attribute, so every other field would
+// read as a healthy zero.
+func driveSev(d hostDrive) (sev, string) {
+	if !d.Present {
+		return sevBad, fmt.Sprintf("drive %s missing", d.Dev)
+	}
+	switch {
+	case d.Health != "" && d.Health != "PASSED":
+		return sevBad, fmt.Sprintf("drive %s SMART %s", d.Dev, d.Health)
+	case d.Realloc > 0 || d.Pending > 0 || d.Uncorr > 0:
+		return sevBad, fmt.Sprintf("drive %s sectors %d/%d/%d", d.Dev, d.Realloc, d.Pending, d.Uncorr)
+	case d.Health == "":
+		return sevWarn, fmt.Sprintf("drive %s SMART unreadable", d.Dev)
+	// Conservative against the 60°C ceiling these drives are usually rated to.
+	case d.TempC >= 55:
+		return sevBad, fmt.Sprintf("drive %s %.0f°C", d.Dev, d.TempC)
+	case d.TempC >= 50:
+		return sevWarn, fmt.Sprintf("drive %s %.0f°C", d.Dev, d.TempC)
+	}
+	return sevOK, ""
+}
+
+// portSev judges a switch port. An empty port is not a fault, so only bad-packet
+// counts are consulted.
+func portSev(p switchPort) (sev, string) {
+	if p.TxBad > 0 || p.RxBad > 0 {
+		return sevWarn, fmt.Sprintf("switch port %d bad packets (tx %d, rx %d)", p.Port, p.TxBad, p.RxBad)
+	}
+	return sevOK, ""
+}
+
+func dnsSev(d hostDNS) (sev, string) {
+	if !d.OK {
+		return sevBad, fmt.Sprintf("dns %s is %s, want %s", d.Name, orDash(d.Got), d.Want)
+	}
+	return sevOK, ""
+}
+
+func orDash(s string) string {
+	if s == "" {
+		return "unresolved"
+	}
+	return s
+}
+
 func serviceUp(state string) bool {
 	switch state {
 	case "up", "idle", "active", "running":
@@ -117,6 +190,26 @@ type hostServiceView struct {
 	Up          bool
 }
 
+type hostNetView struct {
+	Name, Link, Class string
+	Up                bool
+}
+
+type hostDriveView struct {
+	Dev, Model, Health, Temp, Sectors, SelfTest, Class string
+	Present                                            bool
+}
+
+type switchPortView struct {
+	Port, Link, Bad, Class string
+	Up                     bool
+}
+
+type hostDNSView struct {
+	Name, Got, Class string
+	OK               bool
+}
+
 type hostPanel struct {
 	Box, Reported                             string
 	Up, Stale                                 bool
@@ -129,6 +222,10 @@ type hostPanel struct {
 	LoadSpark, DiskSpark                      template.HTML
 	Disks                                     []hostDiskView
 	Services                                  []hostServiceView
+	Net                                       []hostNetView
+	Drives                                    []hostDriveView
+	Switch                                    []switchPortView
+	DNS                                       []hostDNSView
 }
 
 type internalView struct {
@@ -327,6 +424,57 @@ func buildHostPanel(e hostEntry, now time.Time) (hostPanel, []string, []string) 
 		note(bs, fmt.Sprintf("mc backup %s old", fmtDuration(int64(r.BackupAgeH*3600))))
 	}
 
+	for _, n := range r.Net {
+		s, msg := netSev(n)
+		link := "down"
+		if n.Carrier {
+			link = fmt.Sprintf("%dM %s", n.SpeedMbs, n.Duplex)
+		}
+		if n.Errs > 0 || n.CarrierErrs > 0 {
+			link += fmt.Sprintf(" · %d err", n.Errs+n.CarrierErrs)
+		}
+		p.Net = append(p.Net, hostNetView{Name: n.Name, Link: link, Class: s.class(), Up: n.Carrier})
+		note(s, msg)
+	}
+
+	for _, d := range r.Drives {
+		s, msg := driveSev(d)
+		dv := hostDriveView{
+			Dev: d.Dev, Model: d.Model, Present: d.Present,
+			Health: d.Health, SelfTest: d.SelfTest, Class: s.class(),
+			Sectors: fmt.Sprintf("%d/%d/%d", d.Realloc, d.Pending, d.Uncorr),
+		}
+		if !d.Present {
+			dv.Health = "MISSING"
+		} else if d.Health == "" {
+			dv.Health = "unreadable"
+		}
+		if d.TempC > 0 {
+			dv.Temp = fmt.Sprintf("%.0f°C", d.TempC)
+		}
+		p.Drives = append(p.Drives, dv)
+		note(s, msg)
+	}
+
+	for _, sp := range r.Switch {
+		s, msg := portSev(sp)
+		up := sp.Link != "" && sp.Link != "Link Down"
+		pv := switchPortView{
+			Port: strconv.Itoa(sp.Port), Link: sp.Link, Class: s.class(), Up: up,
+		}
+		if sp.TxBad > 0 || sp.RxBad > 0 {
+			pv.Bad = fmt.Sprintf("%d/%d", sp.TxBad, sp.RxBad)
+		}
+		p.Switch = append(p.Switch, pv)
+		note(s, msg)
+	}
+
+	for _, d := range r.DNS {
+		s, msg := dnsSev(d)
+		p.DNS = append(p.DNS, hostDNSView{Name: d.Name, Got: orDash(d.Got), Class: s.class(), OK: d.OK})
+		note(s, msg)
+	}
+
 	if stale {
 		warns = append(warns, r.Box+": stale (no recent report)")
 	}
@@ -391,6 +539,13 @@ func buildEdgePanel(rep edgeReport, received, now time.Time) (*edgePanel, []stri
 			cs = sevWarn
 		}
 		p.Certs = append(p.Certs, edgeCertView{Host: c.Host, Days: strconv.Itoa(c.DaysLeft) + "d", Class: cs.class()})
+		// These were display-only, so a cert could go red on the page while
+		// the banner stayed green. Feed them to the roll-up like everything else.
+		if msg := fmt.Sprintf("edge: %s cert expires in %dd", c.Host, c.DaysLeft); cs == sevBad {
+			bads = append(bads, msg)
+		} else if cs == sevWarn {
+			warns = append(warns, msg)
+		}
 	}
 	sort.Slice(p.Certs, func(i, j int) bool { return p.Certs[i].Host < p.Certs[j].Host })
 
@@ -421,7 +576,12 @@ func buildInternalView(pi piholeStats, mc liveResponse, hosts []hostEntry, hist 
 			warns = append(warns, msg)
 		}
 	} else {
+		// A checker that cannot read the cert must not render as healthy. An
+		// unreported expiry looks exactly like a fine one, so staying silent
+		// here is how a failed renewal reaches production unnoticed.
 		v.CertDays = "--"
+		v.CertClass = sevWarn.class()
+		warns = append(warns, "TLS cert check is not reporting")
 	}
 
 	if pi.Up {
@@ -492,13 +652,13 @@ func buildInternalView(pi piholeStats, mc liveResponse, hosts []hostEntry, hist 
 	v.Warnings, v.Criticals = warns, bads
 	switch {
 	case len(bads) > 0:
-		v.StatusClass = "bad"
+		v.StatusClass = statusBad
 		v.StatusText = fmt.Sprintf("%d critical, %d warning", len(bads), len(warns))
 	case len(warns) > 0:
-		v.StatusClass = "warn"
+		v.StatusClass = statusWarn
 		v.StatusText = fmt.Sprintf("%d warning", len(warns))
 	default:
-		v.StatusClass = "ok"
+		v.StatusClass = statusOK
 		v.StatusText = "all systems nominal"
 	}
 	return v
@@ -609,6 +769,10 @@ td.d{color:#cfe;word-break:break-all;font-family:ui-monospace,"SF Mono",Menlo,mo
 .sparkbox{flex:1;min-width:150px}
 .sparklbl{font-size:11px;color:#7d8b99;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
 .cert.warn{color:#ffc061}.cert.bad{color:#ff8b8b}
+.t{color:#7d8b99}.t.warn{color:#ffc061}.t.bad{color:#ff8b8b}
+.sub{font-size:11px;color:#7d8b99;text-transform:uppercase;letter-spacing:.5px;margin:12px 0 4px}
+td.dev{color:#cfe;font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:12.5px}
+td.v{text-align:right;font-variant-numeric:tabular-nums;width:64px;font-size:12.5px}
 .tag{font-size:11px;font-weight:600;color:#37d67a;background:#0f1b14;border:1px solid #1e6b3f;border-radius:5px;padding:2px 7px;text-transform:none;letter-spacing:0}
 .tag.warn{color:#ffc061;background:#1b160f;border-color:#7a5a1e}
 .tag.bad{color:#ff8b8b;background:#1b0f0f;border-color:#7a2626}
@@ -686,6 +850,10 @@ td.d{color:#cfe;word-break:break-all;font-family:ui-monospace,"SF Mono",Menlo,mo
 {{range .Disks}}<div class="disk"><div class="dlabel">{{.Mount}} <span class="muted">{{.Used}}</span></div><div class="bar"><div class="fill {{.BarClass}}" style="width:{{.Pct}}%"></div></div></div>{{end}}
 {{if or .LoadSpark .DiskSpark}}<div class="sparks">{{if .LoadSpark}}<div class="sparkbox"><div class="sparklbl">load &middot; 24h</div>{{.LoadSpark}}</div>{{end}}{{if .DiskSpark}}<div class="sparkbox"><div class="sparklbl">disk % &middot; 24h</div>{{.DiskSpark}}</div>{{end}}</div>{{end}}
 {{if .Services}}<div class="svcs">{{range .Services}}<span class="svc"><span class="dot sm {{if .Up}}up{{else}}down{{end}}"></span>{{.Name}}</span>{{end}}</div>{{end}}
+{{if .Net}}<div class="sub">link</div><div class="svcs">{{range .Net}}<span class="svc"><span class="dot sm {{if .Up}}up{{else}}down{{end}}"></span>{{.Name}} <span class="t {{.Class}}">{{.Link}}</span></span>{{end}}</div>{{end}}
+{{if .DNS}}<div class="sub">dns</div><div class="svcs">{{range .DNS}}<span class="svc"><span class="dot sm {{if .OK}}up{{else}}down{{end}}"></span>{{.Name}} <span class="t {{.Class}}">{{.Got}}</span></span>{{end}}</div>{{end}}
+{{if .Switch}}<div class="sub">switch ports</div><div class="svcs">{{range .Switch}}<span class="svc"><span class="dot sm {{if .Up}}up{{else}}down{{end}}"></span>{{.Port}} <span class="t {{.Class}}">{{.Link}}{{if .Bad}} · bad {{.Bad}}{{end}}</span></span>{{end}}</div>{{end}}
+{{if .Drives}}<div class="sub">drives &middot; health / temp / realloc-pending-uncorrectable</div><table>{{range .Drives}}<tr><td class="dev">{{.Dev}} <span class="muted">{{.Model}}</span>{{if .SelfTest}}<br><span class="muted">{{.SelfTest}}</span>{{end}}</td><td class="v {{.Class}}">{{.Health}}</td><td class="v">{{.Temp}}</td><td class="v">{{.Sectors}}</td></tr>{{end}}</table>{{end}}
 </div>
 {{end}}
 </div>
