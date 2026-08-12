@@ -277,6 +277,16 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 			}
 			renderInternal(w, buildInternalView(pihole.snapshot(), buildLive(mcStat.get(), live, now), hosts.all(), hist, certDays, certOK, edgeRep, edgeRecv, now))
 		}
+		// Push side of the same roll-up. Reuses buildInternalAPI so the alert and
+		// the page can never disagree about what "ok" means.
+		go runAlerter(context.Background(), cfg.AlertWebhook, func() (string, []string, []string) {
+			now := time.Now()
+			cd, co := cert.days()
+			er, ev := edge.get()
+			api := buildInternalAPI(pihole.snapshot(), buildLive(mcStat.get(), live, now), hosts.all(), cd, co, er, ev, now)
+			return api.Status, api.Warnings, api.Criticals
+		})
+
 		mux.HandleFunc("GET /internal", gate(dashboard))
 		// Same dashboard at the root of internal.djinntek.space, which the edge
 		// proxy serves LAN-only. Other paths (e.g. /static for the favicon) fall
