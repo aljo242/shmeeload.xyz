@@ -137,10 +137,14 @@ func driveSev(d hostDrive) (sev, string) {
 		return sevBad, fmt.Sprintf("drive %s sectors %d/%d/%d", d.Dev, d.Realloc, d.Pending, d.Uncorr)
 	case d.Health == "":
 		return sevWarn, fmt.Sprintf("drive %s SMART unreadable", d.Dev)
-	// Conservative against the 60°C ceiling these drives are usually rated to.
-	case d.TempC >= 55:
+	// Anchored to Seagate's own IronWolf spec: the drives are rated -40 to 70°C,
+	// and Seagate's guidance is not to *sustain* above 60. So 60 is the real
+	// line and 55 is the approach warning. An earlier pass used 50/55, which was
+	// guessed rather than sourced and sat yellow at a temperature these drives
+	// are perfectly happy at, which is how a dashboard teaches you to ignore it.
+	case d.TempC >= 60:
 		return sevBad, fmt.Sprintf("drive %s %.0f°C", d.Dev, d.TempC)
-	case d.TempC >= 50:
+	case d.TempC >= 55:
 		return sevWarn, fmt.Sprintf("drive %s %.0f°C", d.Dev, d.TempC)
 	}
 	return sevOK, ""
