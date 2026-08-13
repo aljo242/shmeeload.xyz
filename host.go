@@ -42,6 +42,26 @@ type hostDrive struct {
 	SelfTest string  `json:"selfTest"`
 }
 
+// hostBackup is the freshness of one backup tier, reported by the box that owns
+// the drives.
+//
+// MaxAgeH travels WITH the reading instead of being a constant here, because the
+// tiers run on schedules that differ by three orders of magnitude: snapshots four
+// times a day, the config pull nightly, the cold-drive rotation monthly. A single
+// threshold cannot be both "the 6-hourly job missed a run" and "the monthly job is
+// fine at three weeks", and picking one would either cry wolf about the rotation
+// or stay silent for a month about the snapshots.
+//
+// Count matters as much as age. A tier that runs successfully and produces nothing
+// is the failure this exists to catch: the unit does not fail, so failedUnits stays
+// clean, and the age of a snapshot that was never taken is not a number anyone sees.
+type hostBackup struct {
+	Name    string  `json:"name"`
+	AgeH    float64 `json:"ageH"`    // age of the newest snapshot
+	Count   int     `json:"count"`   // how many are retained
+	MaxAgeH float64 `json:"maxAgeH"` // older than this is a problem, set by the collector
+}
+
 // switchPort is one managed-switch port. Reported by whichever box can reach the
 // switch (only foundry does), not by the switch itself, which speaks no
 // protocol we can push from.
@@ -89,6 +109,9 @@ type hostReport struct {
 	Drives []hostDrive  `json:"drives,omitempty"`
 	Switch []switchPort `json:"switch,omitempty"`
 	DNS    []hostDNS    `json:"dns,omitempty"`
+	// Backup tiers. Optional for the same reason as the rest: a box that does
+	// not own the drives reports nothing here rather than a false all-clear.
+	Backups []hostBackup `json:"backups,omitempty"`
 }
 
 const (
@@ -98,6 +121,7 @@ const (
 	hostMaxDrives   = 8
 	hostMaxPorts    = 52 // a 48-port switch plus uplinks, well above the 16 here
 	hostMaxDNS      = 8
+	hostMaxBackups  = 8
 	hostStaleAfter  = 5 * time.Minute // boxes push every ~2 min
 )
 
@@ -111,8 +135,16 @@ func (r *hostReport) valid() bool {
 		return false
 	}
 	if len(r.Net) > hostMaxNet || len(r.Drives) > hostMaxDrives ||
-		len(r.Switch) > hostMaxPorts || len(r.DNS) > hostMaxDNS {
+		len(r.Switch) > hostMaxPorts || len(r.DNS) > hostMaxDNS ||
+		len(r.Backups) > hostMaxBackups {
 		return false
+	}
+	for _, b := range r.Backups {
+		// Negative values would invert every comparison downstream and render a
+		// stale tier as healthy, which is the one failure this must not produce.
+		if len(b.Name) > 24 || b.AgeH < 0 || b.Count < 0 || b.MaxAgeH < 0 {
+			return false
+		}
 	}
 	for _, d := range r.Disks {
 		if len(d.Mount) > 48 {

@@ -93,14 +93,30 @@ func loadSev(load float64, cores int) sev {
 	}
 }
 
-func backupSev(ageH float64) sev {
-	switch {
-	case ageH >= 48:
-		return sevBad
-	case ageH >= 26:
-		return sevWarn
+// backupTierSev grades a tier against the schedule it reported, not a constant.
+// See hostBackup: the tiers run from 6-hourly to monthly, so a shared threshold
+// would either cry wolf about the rotation or stay quiet for weeks about the
+// snapshots.
+//
+// Zero count is bad regardless of age, and that is the case worth being loud
+// about: a job that runs, exits 0, and writes nothing leaves failedUnits clean
+// and has no age to look stale. It reads as healthy right up until a restore.
+func backupTierSev(b hostBackup) (sev, string) {
+	if b.Count == 0 {
+		return sevBad, b.Name + " has no snapshots at all"
+	}
+	// Grace before crying wolf: a run can be late without being broken (the box
+	// was asleep, the timer has RandomizedDelaySec). Past 2x the interval it has
+	// missed a whole cycle, which is not lateness.
+	switch limit := b.MaxAgeH; {
+	case limit <= 0:
+		return sevOK, ""
+	case b.AgeH >= 2*limit:
+		return sevBad, fmt.Sprintf("%s backup %s old", b.Name, fmtDuration(int64(b.AgeH*3600)))
+	case b.AgeH >= limit:
+		return sevWarn, fmt.Sprintf("%s backup %s old", b.Name, fmtDuration(int64(b.AgeH*3600)))
 	default:
-		return sevOK
+		return sevOK, ""
 	}
 }
 
@@ -194,6 +210,10 @@ type hostServiceView struct {
 	Up          bool
 }
 
+type hostBackupView struct {
+	Name, Age, Detail, Class string
+}
+
 type hostNetView struct {
 	Name, Link, Class string
 	Up                bool
@@ -222,7 +242,7 @@ type hostPanel struct {
 	FailedUnits, FailedClass                  string
 	Updates                                   string
 	RebootReq, CIBuilding                     bool
-	Backup, BackupClass                       string
+	Backups                                   []hostBackupView
 	LoadSpark, DiskSpark                      template.HTML
 	Disks                                     []hostDiskView
 	Services                                  []hostServiceView
@@ -422,10 +442,21 @@ func buildHostPanel(e hostEntry, now time.Time) (hostPanel, []string, []string) 
 		}
 	}
 
-	if r.BackupAgeH > 0 {
-		bs := backupSev(r.BackupAgeH)
-		p.Backup, p.BackupClass = fmt.Sprintf("%s · %.1f GB", fmtDuration(int64(r.BackupAgeH*3600)), r.BackupGB), bs.class()
-		note(bs, fmt.Sprintf("game backup %s old", fmtDuration(int64(r.BackupAgeH*3600))))
+	for _, b := range r.Backups {
+		bs, msg := backupTierSev(b)
+		age := fmtDuration(int64(b.AgeH * 3600))
+		if b.Count == 0 {
+			age = "never"
+		}
+		p.Backups = append(p.Backups, hostBackupView{
+			Name:   b.Name,
+			Age:    age,
+			Detail: fmt.Sprintf("%d kept", b.Count),
+			Class:  bs.class(),
+		})
+		if msg != "" {
+			note(bs, msg)
+		}
 	}
 
 	for _, n := range r.Net {
@@ -846,7 +877,7 @@ td.v{text-align:right;font-variant-numeric:tabular-nums;width:64px;font-size:12.
 <div class="stat"><div class="n {{.TempClass}}" style="font-size:22px">{{.Temp}}</div><div class="l">temp</div></div>
 {{if .FailedUnits}}<div class="stat"><div class="n {{.FailedClass}}" style="font-size:22px">{{.FailedUnits}}</div><div class="l">failed units</div></div>{{end}}
 {{if .Updates}}<div class="stat"><div class="n" style="font-size:22px">{{.Updates}}</div><div class="l">updates</div></div>{{end}}
-{{if .Backup}}<div class="stat"><div class="n {{.BackupClass}}" style="font-size:16px">{{.Backup}}</div><div class="l">mc backup</div></div>{{end}}
+{{range .Backups}}<div class="stat"><div class="n {{.Class}}" style="font-size:16px">{{.Age}}</div><div class="l">{{.Name}} · {{.Detail}}</div></div>{{end}}
 </div>
 {{range .Disks}}<div class="disk"><div class="dlabel">{{.Mount}} <span class="muted">{{.Used}}</span></div><div class="bar"><div class="fill {{.BarClass}}" style="width:{{.Pct}}%"></div></div></div>{{end}}
 {{if or .LoadSpark .DiskSpark}}<div class="sparks">{{if .LoadSpark}}<div class="sparkbox"><div class="sparklbl">load &middot; 24h</div>{{.LoadSpark}}</div>{{end}}{{if .DiskSpark}}<div class="sparkbox"><div class="sparklbl">disk % &middot; 24h</div>{{.DiskSpark}}</div>{{end}}</div>{{end}}
