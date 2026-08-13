@@ -98,6 +98,7 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 	mcStat := newStatusCache(cfg.MCServerAddr)
 	heads := newMCHeadProxy()
 	live := newLiveStore()
+	valheim := newValheimStore()
 	pihole := newPiholeClient(cfg.PiholeURL, cfg.PiholePassword)
 	hosts := newHostStore()
 	edge := newEdgeStore()
@@ -161,6 +162,13 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 		w.Header().Set("Cache-Control", "no-cache")
 		_ = json.NewEncoder(w).Encode(buildLive(mcStat.get(), live, time.Now()))
 	})
+	// Valheim status, pushed by foundry. Replaced the Minecraft telemetry when
+	// that server was retired; see valheim.go for why the shape differs.
+	mux.HandleFunc("GET /gamers/valheim", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Cache-Control", "no-cache")
+		_ = json.NewEncoder(w).Encode(valheim.snapshot(time.Now()))
+	})
 	// Ingest for the game host's push. Registered only when a token is set; the
 	// bearer token is compared in constant time and the body is size-capped.
 	if cfg.MCPushToken != "" {
@@ -180,6 +188,27 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 				return
 			}
 			live.ingest(p, time.Now())
+			w.WriteHeader(http.StatusNoContent)
+		})
+		// Valheim ingest. Reuses MCPushToken rather than adding a config field:
+		// that value is already the site's general push token, shared by hostpush
+		// and edgelord, not something Minecraft-specific.
+		mux.HandleFunc("POST /gamers/valheim", func(w http.ResponseWriter, rq *http.Request) {
+			const prefix = "Bearer "
+			auth := rq.Header.Get("Authorization")
+			token, ok := strings.CutPrefix(auth, prefix)
+			if !ok || subtle.ConstantTimeCompare([]byte(token), []byte(cfg.MCPushToken)) != 1 {
+				http.Error(w, "unauthorized", http.StatusUnauthorized)
+				return
+			}
+			var v valheimStatus
+			dec := json.NewDecoder(io.LimitReader(rq.Body, 16<<10))
+			dec.DisallowUnknownFields()
+			if err := dec.Decode(&v); err != nil || !v.valid() {
+				http.Error(w, "bad payload", http.StatusBadRequest)
+				return
+			}
+			valheim.ingest(v, time.Now())
 			w.WriteHeader(http.StatusNoContent)
 		})
 		// Host stats ingest for the internal dashboard: each box (foundry, the Pi)
