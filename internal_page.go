@@ -241,8 +241,8 @@ type internalView struct {
 	Cache, Blocking, BlockingClass            string
 	PiSpark                                   template.HTML
 	Top, TopClients                           []internalRow
-	MCUp                                      bool
-	Online, TPS, Day                          string
+	VHUp                                      bool
+	VHPlayers, VHWorld, VHSeed, VHVersion     string
 	Hosts                                     []hostPanel
 	Edge                                      *edgePanel
 	Checked                                   string
@@ -425,7 +425,7 @@ func buildHostPanel(e hostEntry, now time.Time) (hostPanel, []string, []string) 
 	if r.BackupAgeH > 0 {
 		bs := backupSev(r.BackupAgeH)
 		p.Backup, p.BackupClass = fmt.Sprintf("%s · %.1f GB", fmtDuration(int64(r.BackupAgeH*3600)), r.BackupGB), bs.class()
-		note(bs, fmt.Sprintf("mc backup %s old", fmtDuration(int64(r.BackupAgeH*3600))))
+		note(bs, fmt.Sprintf("game backup %s old", fmtDuration(int64(r.BackupAgeH*3600))))
 	}
 
 	for _, n := range r.Net {
@@ -559,8 +559,8 @@ func buildEdgePanel(rep edgeReport, received, now time.Time) (*edgePanel, []stri
 	return p, warns, bads
 }
 
-func buildInternalView(pi piholeStats, mc liveResponse, hosts []hostEntry, hist func(string) []float64, certDays int, certOK bool, edgeRep edgeReport, edgeRecv time.Time, now time.Time) internalView {
-	v := internalView{PiUp: pi.Up, MCUp: mc.Up}
+func buildInternalView(pi piholeStats, vh valheimResponse, hosts []hostEntry, hist func(string) []float64, certDays int, certOK bool, edgeRep edgeReport, edgeRecv time.Time, now time.Time) internalView {
+	v := internalView{PiUp: pi.Up, VHUp: vh.Up}
 	v.PiSpark = sparkline(hist("pihole.blocked_pct"))
 	var warns, bads []string
 
@@ -619,21 +619,17 @@ func buildInternalView(pi piholeStats, mc liveResponse, hosts []hostEntry, hist 
 		v.Checked = "pi-hole not yet reached"
 	}
 
-	if mc.Up {
-		v.Online = strconv.Itoa(mc.Online) + "/" + strconv.Itoa(mc.Max)
-	} else {
-		v.Online = "--"
+	// Valheim replaced Minecraft here on 2026-08-13. "unknown" is distinct from
+	// zero players: the collector going quiet must not look like an empty server.
+	switch {
+	case !vh.Known:
+		v.VHPlayers = "?"
+	case vh.Stale:
+		v.VHPlayers = strconv.Itoa(vh.PlayerCount) + " (stale)"
+	default:
+		v.VHPlayers = strconv.Itoa(vh.PlayerCount)
 	}
-	if mc.TPS != nil {
-		v.TPS = strconv.FormatFloat(*mc.TPS, 'f', 1, 64)
-	} else {
-		v.TPS = "--"
-	}
-	if mc.Day != nil {
-		v.Day = commafy(*mc.Day)
-	} else {
-		v.Day = "--"
-	}
+	v.VHWorld, v.VHSeed, v.VHVersion = orDash(vh.World), orDash(vh.Seed), orDash(vh.Version)
 
 	for _, e := range hosts {
 		pnl, w, b := buildHostPanel(e, now)
@@ -686,24 +682,24 @@ type internalAPI struct {
 		DaysLeft int  `json:"daysLeft"`
 		OK       bool `json:"ok"`
 	} `json:"cert"`
-	Pihole    piholeStats      `json:"pihole"`
-	Minecraft liveResponse     `json:"minecraft"`
-	Hosts     []hostReportJSON `json:"hosts"`
-	Edge      edgeReport       `json:"edge"`
+	Pihole  piholeStats      `json:"pihole"`
+	Valheim valheimResponse  `json:"valheim"`
+	Hosts   []hostReportJSON `json:"hosts"`
+	Edge    edgeReport       `json:"edge"`
 }
 
 // buildInternalAPI assembles the JSON view. It reuses buildInternalView (with an
 // empty history) for the status/warnings/criticals, so the thresholds stay in
 // one place.
-func buildInternalAPI(pi piholeStats, mc liveResponse, hosts []hostEntry, certDays int, certOK bool, edgeRep edgeReport, edgeRecv time.Time, now time.Time) internalAPI {
-	v := buildInternalView(pi, mc, hosts, func(string) []float64 { return nil }, certDays, certOK, edgeRep, edgeRecv, now)
+func buildInternalAPI(pi piholeStats, vh valheimResponse, hosts []hostEntry, certDays int, certOK bool, edgeRep edgeReport, edgeRecv time.Time, now time.Time) internalAPI {
+	v := buildInternalView(pi, vh, hosts, func(string) []float64 { return nil }, certDays, certOK, edgeRep, edgeRecv, now)
 	api := internalAPI{
 		Now:       now.Unix(),
 		Status:    v.StatusClass,
 		Warnings:  v.Warnings,
 		Criticals: v.Criticals,
 		Pihole:    pi,
-		Minecraft: mc,
+		Valheim:   vh,
 	}
 	api.Cert.DaysLeft, api.Cert.OK = certDays, certOK
 	api.Edge = edgeRep
@@ -814,11 +810,12 @@ td.v{text-align:right;font-variant-numeric:tabular-nums;width:64px;font-size:12.
 </div>
 
 <div class="panel">
-<h2><span class="dot {{if .MCUp}}up{{else}}down{{end}}"></span> Minecraft</h2>
+<h2><span class="dot {{if .VHUp}}up{{else}}down{{end}}"></span> Valheim</h2>
 <div class="grid">
-<div class="stat"><div class="n">{{.Online}}</div><div class="l">online</div></div>
-<div class="stat"><div class="n">{{.TPS}}</div><div class="l">TPS</div></div>
-<div class="stat"><div class="n">{{.Day}}</div><div class="l">day</div></div>
+<div class="stat"><div class="n">{{.VHPlayers}}</div><div class="l">online</div></div>
+<div class="stat"><div class="n" style="font-size:18px">{{.VHWorld}}</div><div class="l">world</div></div>
+<div class="stat"><div class="n" style="font-size:18px">{{.VHSeed}}</div><div class="l">seed</div></div>
+<div class="stat"><div class="n" style="font-size:18px">{{.VHVersion}}</div><div class="l">version</div></div>
 </div>
 </div>
 

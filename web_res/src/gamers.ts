@@ -19,26 +19,25 @@ fetch("/gamers/count")
     /* leave the placeholder if the count can't be fetched */
   });
 
-interface MCPlayer {
-  name: string;
-  uuid: string;
-}
-
-interface Live {
+interface Valheim {
   up?: boolean;
-  online?: number;
-  max?: number;
-  players?: MCPlayer[];
-  tps?: number;
-  msPerTick?: number;
-  day?: number;
+  health?: string;
   uptimeSec?: number;
-  whitelist?: number;
+  players?: string[];
+  playerCount?: number;
+  world?: string;
+  seed?: string;
+  worldSizeBytes?: number;
+  version?: string;
+  mods?: string[];
+  backupAgeH?: number;
+  backupCount?: number;
   stale?: boolean;
+  known?: boolean;
 }
 
-// dash writes a value into a dashboard cell, or an em-free placeholder when the
-// value is missing (nothing pushed yet).
+// dash writes a value into a dashboard cell, or a placeholder when the value is
+// missing (nothing pushed yet).
 function dash(id: string, value: string | null): void {
   const el = document.getElementById(id);
   if (el) el.textContent = value ?? "--";
@@ -54,57 +53,78 @@ function fmtUptime(sec: number): string {
   return `${m}m`;
 }
 
-// tpsClass buckets tick rate into a color band for the dashboard.
-function tpsClass(tps: number): string {
-  if (tps >= 19) return "good";
-  if (tps >= 12) return "warn";
-  return "bad";
+// fmtSize renders the world .db size. Worth showing because a Valheim world
+// grows steadily as it is explored, so it doubles as a "how much have we done".
+function fmtSize(bytes: number): string {
+  if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(1) + "G";
+  if (bytes >= 1048576) return Math.round(bytes / 1048576) + "M";
+  return Math.round(bytes / 1024) + "K";
 }
 
-// Live server status: online count + heads in the banner, plus the dashboard
-// (TPS, in-game day, uptime, whitelist) from the pushed telemetry.
-function refreshStatus(): void {
-  fetch("/gamers/live")
-    .then((r) => r.json())
-    .then((d: Live) => {
-      const el = document.getElementById("mcstatus");
-      const heads = document.getElementById("mcheads");
-      if (heads) heads.textContent = "";
-      if (el) el.textContent = d.up ? `${d.online ?? 0}/${d.max ?? 0} PLAYING` : "SERVER OFFLINE";
+// backupClass colours backup freshness. The job runs daily at 04:00, so a gap
+// past ~26h means it missed a run, and past 48h it has missed two.
+function backupClass(ageH: number): string {
+  if (ageH >= 48) return "bad";
+  if (ageH >= 26) return "warn";
+  return "good";
+}
 
-      if (heads && d.up) {
+// Live server status. Valheim gives no player count over the wire (see
+// valheim.go), so the names come from the server log and there are no avatars to
+// render, unlike the Minecraft version this replaced.
+function refreshStatus(): void {
+  fetch("/gamers/valheim")
+    .then((r) => r.json())
+    .then((d: Valheim) => {
+      const el = document.getElementById("vhstatus");
+      const names = document.getElementById("vhplayers");
+
+      // known=false means the collector has never reported. That is a different
+      // thing from an empty server, and saying so beats implying nobody is on.
+      if (el) {
+        if (!d.known) el.textContent = "STATUS UNKNOWN";
+        else if (!d.up) el.textContent = "SERVER OFFLINE";
+        else {
+          const n = d.playerCount ?? 0;
+          el.textContent = n === 1 ? "1 VIKING ONLINE" : `${n} VIKINGS ONLINE`;
+        }
+      }
+
+      if (names) {
+        names.textContent = "";
         for (const p of d.players ?? []) {
           const fig = document.createElement("span");
-          fig.className = "head";
-          const img = document.createElement("img");
-          img.alt = p.name;
-          img.width = 40;
-          img.height = 40;
-          img.src = "/gamers/head/" + encodeURIComponent(p.uuid || p.name);
-          img.onerror = (): void => img.remove();
-          const label = document.createElement("span");
-          label.className = "hname";
-          label.textContent = p.name;
-          fig.appendChild(img);
-          fig.appendChild(label);
-          heads.appendChild(fig);
+          fig.className = "viking";
+          // textContent, never innerHTML: a player picks their own character
+          // name, so this string is outside our control.
+          fig.textContent = p;
+          names.appendChild(fig);
         }
       }
 
-      // Dashboard cells. A pushed field may be absent (never pushed) or stale.
-      const tpsEl = document.getElementById("dTps");
-      if (tpsEl) {
-        if (typeof d.tps === "number") {
-          tpsEl.textContent = d.tps.toFixed(1) + (d.stale ? " (stale)" : "");
-          tpsEl.className = "val " + (d.stale ? "warn" : tpsClass(d.tps));
+      const suffix = d.stale ? " (stale)" : "";
+      dash("dPlayers", d.known && typeof d.playerCount === "number" ? String(d.playerCount) + suffix : null);
+      dash("dUptime", d.known && typeof d.uptimeSec === "number" ? fmtUptime(d.uptimeSec) : null);
+      dash("dVersion", d.known && d.version ? d.version : null);
+      dash("dWorldSize", d.known && typeof d.worldSizeBytes === "number" ? fmtSize(d.worldSizeBytes) : null);
+
+      const bk = document.getElementById("dBackup");
+      if (bk) {
+        if (d.known && typeof d.backupAgeH === "number" && d.backupCount) {
+          bk.textContent = d.backupAgeH.toFixed(1) + "h";
+          bk.className = "val " + backupClass(d.backupAgeH);
         } else {
-          tpsEl.textContent = "--";
-          tpsEl.className = "val";
+          bk.textContent = "--";
+          bk.className = "val";
         }
       }
-      dash("dDay", typeof d.day === "number" ? String(d.day) : null);
-      dash("dUptime", typeof d.uptimeSec === "number" ? fmtUptime(d.uptimeSec) : null);
-      dash("dWhitelist", typeof d.whitelist === "number" ? String(d.whitelist) : null);
+
+      const seedEl = document.getElementById("vhseed");
+      if (seedEl && d.seed) seedEl.textContent = d.seed;
+      const worldEl = document.getElementById("vhworld");
+      if (worldEl && d.world) worldEl.textContent = d.world;
+      const modsEl = document.getElementById("vhmods");
+      if (modsEl) modsEl.textContent = (d.mods ?? []).join(" \u2022 ") || "vanilla";
     })
     .catch(() => {
       /* leave the placeholders on error */

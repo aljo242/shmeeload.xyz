@@ -3,51 +3,37 @@
 // else is derived from the feed and the game host's pushed service map.
 type Dot = "up" | "warn" | "down" | "unknown";
 
-interface MCPlayer {
-  name: string;
-  uuid: string;
-}
-
-interface Live {
+interface Valheim {
   up?: boolean;
-  online?: number;
-  players?: MCPlayer[];
-  tps?: number;
-  uptimeSec?: number;
+  players?: string[];
+  playerCount?: number;
+  world?: string;
+  version?: string;
   stale?: boolean;
-  pushedAt?: number;
+  known?: boolean;
 }
 
-// renderHeads paints the online players as head avatars (same same-origin proxy
-// the /gamers page uses), or a placeholder line when nobody is on.
-function renderHeads(d: Live): void {
+// renderPlayers lists who is on. Valheim has no avatar API, so these are name
+// chips rather than the head images the Minecraft version proxied.
+function renderPlayers(d: Valheim): void {
   const count = document.getElementById("online-count");
-  if (count) count.textContent = d.up ? String(d.online ?? 0) : "--";
-  const box = document.getElementById("mcheads");
+  if (count) count.textContent = d.known && d.up ? String(d.playerCount ?? 0) : "--";
+  const box = document.getElementById("vhplayers");
   if (!box) return;
   box.textContent = "";
   const players = d.up ? d.players ?? [] : [];
   if (players.length === 0) {
     const none = document.createElement("div");
     none.className = "none";
-    none.textContent = d.up ? "nobody on right now" : "server offline";
+    none.textContent = !d.known ? "status unknown" : d.up ? "nobody on right now" : "server offline";
     box.appendChild(none);
     return;
   }
   for (const p of players) {
     const fig = document.createElement("span");
-    fig.className = "head";
-    const img = document.createElement("img");
-    img.alt = p.name;
-    img.width = 40;
-    img.height = 40;
-    img.src = "/gamers/head/" + encodeURIComponent(p.uuid || p.name);
-    img.onerror = (): void => img.remove();
-    const label = document.createElement("span");
-    label.className = "hname";
-    label.textContent = p.name;
-    fig.appendChild(img);
-    fig.appendChild(label);
+    fig.className = "hname";
+    // textContent, not innerHTML: a player names their own character.
+    fig.textContent = p;
     box.appendChild(fig);
   }
 }
@@ -60,22 +46,24 @@ function setRow(idBase: string, dot: Dot, detail: string): void {
 }
 
 function refresh(): void {
-  fetch("/gamers/live")
+  fetch("/gamers/valheim")
     .then((r) => r.json())
-    .then((d: Live) => {
-      renderHeads(d);
+    .then((d: Valheim) => {
+      renderPlayers(d);
 
-      // Minecraft server: down if SLP is offline; degraded if slow or stale; else up.
-      if (!d.up) {
-        setRow("mc", "down", "offline");
-      } else if (typeof d.tps === "number" && (d.tps < 15 || d.stale)) {
-        setRow("mc", "warn", `${d.tps.toFixed(1)} TPS`);
+      // Never pushed is its own state: a dead collector is not an idle server.
+      if (!d.known) {
+        setRow("game", "unknown", "no data");
+      } else if (!d.up) {
+        setRow("game", "down", "offline");
+      } else if (d.stale) {
+        setRow("game", "warn", "stale");
       } else {
-        setRow("mc", "up", typeof d.tps === "number" ? `${d.tps.toFixed(1)} TPS` : "online");
+        setRow("game", "up", d.version ? "v" + d.version : "online");
       }
 
-      // Live feed: has the game host pushed recently?
-      if (!d.pushedAt) {
+      // Is the collector still reporting?
+      if (!d.known) {
         setRow("feed", "down", "no data");
       } else if (d.stale) {
         setRow("feed", "warn", "stale");
@@ -84,7 +72,7 @@ function refresh(): void {
       }
     })
     .catch(() => {
-      setRow("mc", "unknown", "unreachable");
+      setRow("game", "unknown", "unreachable");
       setRow("feed", "unknown", "unreachable");
     });
 }

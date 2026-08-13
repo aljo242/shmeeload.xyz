@@ -5,12 +5,12 @@
     <base href="/"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no"/>
     <meta name="theme-color" content="#000000"/>
-    <meta name="description" content="SHMEELAND - the shmee minecraft server. Join the hunt for Dark Enerjohn. Live map, Discord, and how to join."/>
+    <meta name="description" content="SHMEELAND - the shmee Valheim server. Tenth realm, private and password-only. World seed, who is online, Discord, and how to join."/>
 
     <meta property="og:type" content="website"/>
     <meta property="og:site_name" content="djinntek"/>
     <meta property="og:title" content="SHMEELAND"/>
-    <meta property="og:description" content="Join the hunt for Dark Enerjohn. The shmee minecraft server - live map, Discord, and how to join."/>
+    <meta property="og:description" content="The shmee Valheim server. World seed, who is online, Discord, and how to join."/>
     <meta property="og:url" content="https://djinntek.space/gamers/home"/>
     <link rel="canonical" href="https://djinntek.space/gamers/home"/>
 
@@ -68,6 +68,11 @@
         border: 2px solid #00e5ff; box-shadow: 3px 3px 0 #000; background:#000;
       }
       .heads .hname { font-family: Arial, sans-serif; font-size: 12px; color:#ffe600; max-width: 64px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      /* Valheim has no avatar API, so online players are name chips rather than
+         the 40px head images the Minecraft version used. */
+      .heads .viking { font-family: Arial, sans-serif; font-size: 13px; font-weight: bold;
+        color:#ffe600; background: rgba(8,0,20,0.8); border: 2px ridge #00e5ff;
+        box-shadow: 3px 3px 0 #000; padding: 4px 10px; }
 
       .dash { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin: 8px auto 2px; max-width: 560px; }
       .dash .cell { background: rgba(8,0,20,0.80); border: 3px ridge #7a00ff; padding: 8px 14px; min-width: 92px; }
@@ -137,7 +142,7 @@
 </head>
 <body>
   <div class="topbar">
-    <marquee scrollamount="6">&bull; Stargazer Champion &bull; Dark Enerjohn &bull; Tony Tundra &bull; Cozart Shmoopler &bull; Spyrus Quantonix &bull; Yoivixquartzsar &bull; Stargazer Champion &bull; Dark Enerjohn &bull; Tony Tundra &bull; Cozart Shmoopler &bull; Spyrus Quantonix &bull; Yoivixquartzsar</marquee>
+    <marquee scrollamount="6">&bull; SHMEELAND &bull; tenth realm &bull; no scrubs in the swamp &bull; bring a shield &bull; SHMEELAND &bull; tenth realm &bull; no scrubs in the swamp &bull; bring a shield</marquee>
   </div>
 
   <div class="wrap">
@@ -148,32 +153,36 @@
       <span class="title">SHMEELAND</span>
       <img src="/static/img/gifs/star-gold.gif" alt="">
     </div>
-    <div class="sub">join the hunt for Dark Enerjohn</div>
-    <div class="online"><img src="/static/img/gifs/torch.gif" alt=""><span><b>&bull;</b> <span id="mcstatus">SERVER ONLINE</span></span><img src="/static/img/gifs/torch.gif" alt=""></div>
-    <div class="heads" id="mcheads"></div>
+    <div class="sub">the tenth realm awaits</div>
+    <div class="online"><img src="/static/img/gifs/torch.gif" alt=""><span><b>&bull;</b> <span id="vhstatus">CHECKING&hellip;</span></span><img src="/static/img/gifs/torch.gif" alt=""></div>
+    <div class="heads" id="vhplayers"></div>
 
     <div class="dash">
-      <div class="cell"><div class="k">TPS</div><div class="val" id="dTps">--</div></div>
-      <div class="cell"><div class="k">DAY</div><div class="val" id="dDay">--</div></div>
+      <div class="cell"><div class="k">ONLINE</div><div class="val" id="dPlayers">--</div></div>
       <div class="cell"><div class="k">UPTIME</div><div class="val" id="dUptime">--</div></div>
-      <div class="cell"><div class="k">WHITELIST</div><div class="val" id="dWhitelist">--</div></div>
+      <div class="cell"><div class="k">VERSION</div><div class="val" id="dVersion">--</div></div>
+      <div class="cell"><div class="k">WORLD</div><div class="val" id="dWorldSize">--</div></div>
+      <div class="cell"><div class="k">BACKUP</div><div class="val" id="dBackup">--</div></div>
     </div>
 
     <img class="divider" src="/static/img/gifs/divider-rainbow.gif" alt="">
 
     <div class="panel">
       <h2>SERVER ADDRESS</h2>
-      <div class="ip">gamer.djinntek.space</div>
-      <div class="hint">Java Edition &bull; join through <a href="https://prismlauncher.org" target="_blank" rel="noopener">Prism Launcher</a> + Automodpack &bull; see the <a href="https://discord.gg/WnVTKa7vDJ" target="_blank" rel="noopener">Discord</a> for the full guide</div>
+      <div class="ip">valheim.djinntek.space:2456</div>
+      <div class="hint">password-protected &bull; ask in the <a href="https://discord.gg/WnVTKa7vDJ" target="_blank" rel="noopener">Discord</a> for it &bull; join by direct connect, we are not in the public server list</div>
+    </div>
+
+    <div class="panel">
+      <h2>THE WORLD</h2>
+      <div class="ip" id="vhseed">&hellip;</div>
+      <div class="hint">world <b id="vhworld">shmeeland</b> &bull; paste that seed into a fresh world to walk the same map &bull; mods: <span id="vhmods">&hellip;</span></div>
     </div>
 
     <img class="divider" src="/static/img/gifs/divider-fire.gif" alt="">
 
     <div class="btns">
       <img class="ptr flip" src="/static/img/gifs/pointer.gif" alt="">
-      <a class="btn map" href="https://map.djinntek.space" target="_blank" rel="noopener">
-        ENTER THE LIVE MAP<small>see the whole world in your browser</small>
-      </a>
       <a class="btn dc" href="https://discord.gg/WnVTKa7vDJ" target="_blank" rel="noopener">
         JOIN THE DISCORD<small>guides, chat, and the crew</small>
       </a>
@@ -185,10 +194,10 @@
     <div class="panel">
       <h2>HOW TO JOIN</h2>
       <div class="steps">
-        <img class="bullet" src="/static/img/gifs/bullet.gif" alt=""><b>1.</b> Install <a href="https://prismlauncher.org" target="_blank" rel="noopener">Prism Launcher</a> (free) and sign in with your Microsoft account.<br>
-        <img class="bullet" src="/static/img/gifs/bullet.gif" alt=""><b>2.</b> Make a new instance on <b>Minecraft 1.21.1</b> (careful: 1.21.1, not plain 1.21) with <b>NeoForge</b>, then drop <a href="https://modrinth.com/mod/automodpack" target="_blank" rel="noopener">Automodpack</a> for NeoForge 1.21.1 into its mods folder.<br>
-        <img class="bullet" src="/static/img/gifs/bullet.gif" alt=""><b>3.</b> Hop in our <a href="https://discord.gg/WnVTKa7vDJ" target="_blank" rel="noopener">Discord</a> and drop your Minecraft username so we can whitelist you.<br>
-        <img class="bullet" src="/static/img/gifs/bullet.gif" alt=""><b>4.</b> Add the server <b>gamer.djinntek.space</b> and connect &bull; Automodpack pulls the whole pack and drops you at the village. Verify the certificate when it asks (fingerprint is in the <a href="https://discord.gg/WnVTKa7vDJ" target="_blank" rel="noopener">Discord</a> guide).
+        <img class="bullet" src="/static/img/gifs/bullet.gif" alt=""><b>1.</b> Own <a href="https://store.steampowered.com/app/892970/Valheim/" target="_blank" rel="noopener">Valheim</a> on Steam. Windows, Linux and <b>macOS</b> all work &bull; the Mac build is native, no workarounds needed.<br>
+        <img class="bullet" src="/static/img/gifs/bullet.gif" alt=""><b>2.</b> Ask in the <a href="https://discord.gg/WnVTKa7vDJ" target="_blank" rel="noopener">Discord</a> for the server password.<br>
+        <img class="bullet" src="/static/img/gifs/bullet.gif" alt=""><b>3.</b> Start Game &rarr; pick or make a character &rarr; <b>Join Game</b> tab &rarr; <b>Join by IP</b> &rarr; enter <b>valheim.djinntek.space:2456</b>.<br>
+        <img class="bullet" src="/static/img/gifs/bullet.gif" alt=""><b>4.</b> Enter the password and you are in. Nothing to install: the mods here are <b>server-side only</b>, so a plain vanilla client works.
       </div>
     </div>
 

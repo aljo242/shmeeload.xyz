@@ -95,9 +95,7 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 	}
 	page := serveAsset
 	visits := newVisitCounter(filepath.Join(filepath.Dir(chatDBPathOf(cfg)), "gamers-visits"))
-	mcStat := newStatusCache(cfg.MCServerAddr)
-	heads := newMCHeadProxy()
-	live := newLiveStore()
+	valheim := newValheimStore()
 	pihole := newPiholeClient(cfg.PiholeURL, cfg.PiholePassword)
 	hosts := newHostStore()
 	edge := newEdgeStore()
@@ -148,23 +146,20 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 		w.Header().Set("Cache-Control", "no-cache")
 		_ = json.NewEncoder(w).Encode(map[string]int64{"visits": visits.Get()})
 	})
-	mux.HandleFunc("GET /gamers/status", func(w http.ResponseWriter, _ *http.Request) {
+	// Valheim status, pushed by foundry. Replaced the Minecraft telemetry when
+	// that server was retired; see valheim.go for why the shape differs.
+	mux.HandleFunc("GET /gamers/valheim", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Cache-Control", "no-cache")
-		_ = json.NewEncoder(w).Encode(mcStat.get())
-	})
-	// Merged live status: the fresh SLP fields plus the last pushed telemetry
-	// (TPS, in-game day, uptime, whitelist). Drives the /gamers dashboard and the
-	// /status page.
-	mux.HandleFunc("GET /gamers/live", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Cache-Control", "no-cache")
-		_ = json.NewEncoder(w).Encode(buildLive(mcStat.get(), live, time.Now()))
+		_ = json.NewEncoder(w).Encode(valheim.snapshot(time.Now()))
 	})
 	// Ingest for the game host's push. Registered only when a token is set; the
 	// bearer token is compared in constant time and the body is size-capped.
 	if cfg.MCPushToken != "" {
-		mux.HandleFunc("POST /gamers/live", func(w http.ResponseWriter, rq *http.Request) {
+		// Valheim ingest. Reuses MCPushToken rather than adding a config field:
+		// that value is already the site's general push token, shared by hostpush
+		// and edgelord, not something Minecraft-specific.
+		mux.HandleFunc("POST /gamers/valheim", func(w http.ResponseWriter, rq *http.Request) {
 			const prefix = "Bearer "
 			auth := rq.Header.Get("Authorization")
 			token, ok := strings.CutPrefix(auth, prefix)
@@ -172,14 +167,14 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 				http.Error(w, "unauthorized", http.StatusUnauthorized)
 				return
 			}
-			var p pushedStatus
-			dec := json.NewDecoder(io.LimitReader(rq.Body, 8<<10))
+			var v valheimStatus
+			dec := json.NewDecoder(io.LimitReader(rq.Body, 16<<10))
 			dec.DisallowUnknownFields()
-			if err := dec.Decode(&p); err != nil || !p.valid() {
+			if err := dec.Decode(&v); err != nil || !v.valid() {
 				http.Error(w, "bad payload", http.StatusBadRequest)
 				return
 			}
-			live.ingest(p, time.Now())
+			valheim.ingest(v, time.Now())
 			w.WriteHeader(http.StatusNoContent)
 		})
 		// Host stats ingest for the internal dashboard: each box (foundry, the Pi)
@@ -220,16 +215,6 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 		})
 	}
 	// Player-head avatars, proxied same-origin so the strict img-src CSP holds.
-	mux.HandleFunc("GET /gamers/head/{id}", func(w http.ResponseWriter, rq *http.Request) {
-		png, ok := heads.get(rq.Context(), rq.PathValue("id"))
-		if !ok {
-			http.NotFound(w, rq)
-			return
-		}
-		w.Header().Set("Content-Type", "image/png")
-		w.Header().Set("Cache-Control", "public, max-age=300")
-		_, _ = w.Write(png)
-	})
 	mux.HandleFunc("GET /under-construction", page("construction.html"))
 	mux.HandleFunc("GET /status", page("status.html"))
 
@@ -269,13 +254,13 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 			if strings.Contains(rq.Header.Get("Accept"), "application/json") || rq.URL.Query().Get("format") == "json" {
 				w.Header().Set("Content-Type", "application/json")
 				w.Header().Set("Cache-Control", "no-cache")
-				_ = json.NewEncoder(w).Encode(buildInternalAPI(pihole.snapshot(), buildLive(mcStat.get(), live, now), hosts.all(), certDays, certOK, edgeRep, edgeRecv, now))
+				_ = json.NewEncoder(w).Encode(buildInternalAPI(pihole.snapshot(), valheim.snapshot(now), hosts.all(), certDays, certOK, edgeRep, edgeRecv, now))
 				return
 			}
 			hist := func(series string) []float64 {
 				return metrics.recent(rq.Context(), series, now.Add(-metricsWindow).Unix())
 			}
-			renderInternal(w, buildInternalView(pihole.snapshot(), buildLive(mcStat.get(), live, now), hosts.all(), hist, certDays, certOK, edgeRep, edgeRecv, now))
+			renderInternal(w, buildInternalView(pihole.snapshot(), valheim.snapshot(now), hosts.all(), hist, certDays, certOK, edgeRep, edgeRecv, now))
 		}
 		// Push side of the same roll-up. Reuses buildInternalAPI so the alert and
 		// the page can never disagree about what "ok" means.
@@ -283,7 +268,7 @@ func buildRouter(cfg Config, hub *Hub, site *staticSite) http.Handler {
 			now := time.Now()
 			cd, co := cert.days()
 			er, ev := edge.get()
-			api := buildInternalAPI(pihole.snapshot(), buildLive(mcStat.get(), live, now), hosts.all(), cd, co, er, ev, now)
+			api := buildInternalAPI(pihole.snapshot(), valheim.snapshot(now), hosts.all(), cd, co, er, ev, now)
 			return api.Status, api.Warnings, api.Criticals
 		})
 
