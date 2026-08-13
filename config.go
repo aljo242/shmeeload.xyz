@@ -33,14 +33,11 @@ type Config struct {
 
 	TunesDir string `json:"tunesDir"` // directory of MP3s served on the tunes page (default /tunes)
 
-	// MCServerAddr is the "host:port" of the Minecraft server pinged for the live
-	// player count on /gamers (Server List Ping). Empty disables the feature.
-	MCServerAddr string `json:"mcServerAddr"`
-
-	// MCPushToken is the shared bearer token the game host presents when pushing
-	// live server stats (TPS, in-game day, uptime, whitelist) to POST
-	// /gamers/live. Empty disables the ingest endpoint (GET still serves whatever
-	// has been pushed, if anything).
+	// MCPushToken is the shared bearer token every pusher presents: the game host
+	// for POST /gamers/valheim, plus hostpush and edgelord for the internal
+	// dashboard. The name predates Minecraft's retirement and is kept because
+	// rotating it would mean touching four config files on two boxes at once.
+	// Empty disables the ingest endpoints (GET still serves what has been pushed).
 	MCPushToken string `json:"mcPushToken"`
 
 	// Internal homelab view (Pi-hole stats etc.) at /internal, gated by HTTP Basic
